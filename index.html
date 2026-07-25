@@ -16,8 +16,19 @@
     <style>
       html, body, #root { margin: 0; height: 100%; background: #12160F; }
       * { -webkit-tap-highlight-color: transparent; }
+      @media print {
+        body * { visibility: hidden; }
+        #verjuengung-druckbereich, #verjuengung-druckbereich * { visibility: visible; }
+        #verjuengung-druckbereich { position: absolute; left: 0; top: 0; width: 100%; padding: 0 !important; }
+        #verjuengung-druckbereich, #verjuengung-druckbereich * {
+          background: #fff !important;
+          color: #000 !important;
+          border-color: #999 !important;
+        }
+        #verjuengung-druckbereich .no-print { display: none !important; }
+      }
     </style>
-    <script type="module" crossorigin src="/assets/index-B81P9hMA-v8.js"></script>
+    <script type="module" crossorigin src="/assets/index-B81P9hMA-v9.js"></script>
   </head>
   <body>
     <div id="root"></div>
