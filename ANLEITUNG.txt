@@ -1,0 +1,41 @@
+VERJÜNGUNGSAUFNAHME – ALS WEB-APP VERÖFFENTLICHEN (NETLIFY)
+===========================================================
+
+Diesen Ordner (den "dist"-Ordner mit index.html darin) veröffentlichst du so:
+
+WEG 1 – Drag & Drop (am einfachsten, kein Konto-Zwang zum Testen)
+-----------------------------------------------------------------
+1. Gehe im Browser auf   https://app.netlify.com/drop
+2. Ziehe den ENTPACKTEN Ordner (den mit index.html darin) in das Fenster.
+3. Nach ein paar Sekunden bekommst du eine Adresse wie
+   https://zufallsname-12345.netlify.app
+4. Diese Adresse kannst du am Handy öffnen und an die Kollegen weitergeben.
+
+Zum Ändern des Namens oder für ein dauerhaftes Projekt:
+ein kostenloses Netlify-Konto anlegen, dann unter "Site settings" den
+Namen anpassen.
+
+ALS APP AUFS HANDY (nach dem Veröffentlichen)
+---------------------------------------------
+Die Adresse im Handy-Browser öffnen, dann:
+- Android/Chrome:  Menü (drei Punkte) > "App installieren" bzw.
+  "Zum Startbildschirm hinzufügen".
+- iPhone/Safari:   Teilen-Symbol > "Zum Home-Bildschirm".
+Danach liegt ein Icon auf dem Startbildschirm, die App öffnet ohne
+Browser-Leiste und startet auch offline. Es ist KEINE Play-Store-App,
+funktioniert aber im Alltag genauso.
+
+WICHTIG
+-------
+- Die Datei "index.html" MUSS direkt im hochgeladenen Ordner liegen,
+  nicht in einem Unterordner. Wenn du "dist" hochlädst, passt das.
+- Die App speichert lokal auf dem Handy und lädt die Zählungen in die
+  Datenbank, sobald "Hochladen" gedrückt wird und Netz da ist.
+- Offline starten geht erst NACH dem ersten Öffnen mit Netz (dann sind
+  die App-Dateien auf dem Handy zwischengespeichert).
+- Die Adresse ist offen erreichbar. Wer sie hat, kann die App benutzen.
+  Für ein internes Werkzeug ist das meist okay – aber vorher mit
+  der Betriebsleitung klären.
+
+Zum Aktualisieren später einfach den neuen dist-Ordner erneut auf
+netlify.com/drop ziehen (bzw. im Projekt "Deploys" neu ablegen).
