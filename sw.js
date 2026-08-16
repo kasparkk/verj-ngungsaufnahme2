@@ -1,7 +1,7 @@
 /* Cacht die App-Dateien, damit sie auch ohne Netz startet.
    Die Datenbank-Aufrufe (Supabase) laufen bewusst NICHT über den Cache -
    sie brauchen Netz und scheitern sonst still. */
-const CACHE = "verjuengung-v12";
+const CACHE = "verjuengung-v13";
 
 self.addEventListener("install", (e) => {
   self.skipWaiting();
