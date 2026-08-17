@@ -257,17 +257,16 @@ export default function App() {
   const minus = (artId, feld) => aendere(artId, feld, (alt) => alt - 1);
   const setzen = (artId, feld, zahl) => aendere(artId, feld, () => zahl);
 
-  /* GPS-Position fuer einen Kreis holen. still=true bei automatischem Versuch
-     (neuer Kreis) - dann keine Fehlermeldung, falls die Ortung abgelehnt wird.
+  /* Standort fuer einen Kreis holen - nur auf Antippen des 📍-Knopfes.
 
      Die Ortung kann bis zu 12 Sekunden brauchen. Wird in dieser Zeit der
      Aufnahmetag gewechselt, gehoert die Antwort nicht mehr zum offenen Blatt:
      sie wuerde sonst im falschen Tag landen (der Probekreis wird nur ueber
      seine Nummer gesucht, und die 1 gibt es an jedem Tag). Deshalb wird der
      Tag beim Start gemerkt und beim Eintreffen geprueft. */
-  const holeStandort = (nr, still) => {
+  const holeStandort = (nr) => {
     if (!navigator.geolocation) {
-      if (!still) setHinweis("Kein GPS auf diesem Gerät");
+      setHinweis("Kein GPS auf diesem Gerät");
       return;
     }
     const fuerTag = datumRef.current;
@@ -292,17 +291,20 @@ export default function App() {
       () => {
         setGpsLaeuft(false);
         if (datumRef.current !== fuerTag) return;
-        if (!still) setHinweis("Standort nicht verfügbar");
+        setHinweis("Standort nicht verfügbar");
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     );
   };
 
+  /* Neue Kreise werden bewusst OHNE Ortung angelegt. Frueher holte die App
+     den Standort bei jedem neuen Kreis von selbst - dadurch stand an jedem
+     Kreis und jedem Tag eine Koordinate, ob gewollt oder nicht. Der Standort
+     kommt jetzt nur noch auf Antippen des 📍-Knopfes. */
   const neuerKreis = () => {
     const nr = Math.max(...kreise.map((k) => k.nr)) + 1;
     setKreise((alle) => [...alle, leererKreis(nr)]);
     setAktiv(kreise.length);
-    holeStandort(nr, true);
   };
 
   // Fehlende niedrigere Nummer vorne einfuegen (z.B. wenn die Zaehlung bei 2 beginnt).
@@ -310,7 +312,6 @@ export default function App() {
     const nr = Math.min(...kreise.map((k) => k.nr)) - 1;
     setKreise((alle) => [leererKreis(nr), ...alle]);
     setAktiv(0);
-    holeStandort(nr, true);
   };
 
   const artHinzufuegen = (name) => {
@@ -639,7 +640,7 @@ export default function App() {
           </div>
           <div style={{ fontSize: 11, color: farben.muted }}>{pflanzenImKreis} Pflanzen</div>
           <button
-            onClick={() => holeStandort(aktuellerKreis?.nr, false)}
+            onClick={() => holeStandort(aktuellerKreis?.nr)}
             disabled={gpsLaeuft}
             style={{
               background: "none",
