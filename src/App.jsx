@@ -7,7 +7,8 @@ import {
   leererKreis,
 } from "./konfiguration.js";
 import { normDatum } from "./datum.js";
-import { baueTabelle } from "./tabelle.js";
+import { baueTabelle, baueZeilen } from "./tabelle.js";
+import { baueXlsx } from "./xlsx.js";
 import { zeilenHochladen, ergebnisAllePersonen, ergebnisEinePerson } from "./datenbank.js";
 import ZaehlBox from "./komponenten/ZaehlBox.jsx";
 import UebersichtTabelle from "./komponenten/UebersichtTabelle.jsx";
@@ -277,30 +278,48 @@ export default function App() {
     }
   };
 
-  /* Laedt die Aufnahme als Datei herunter, die Excel direkt oeffnet:
-     Semikolon als Trenner (deutsches Excel) und ein BOM voran, damit die
-     Umlaute stimmen. Klappt der Download nicht - manche App-Browser
-     unterbinden ihn -, bleibt der Text zum Kopieren als Rueckfall. */
-  const excelDatei = () => {
-    const inhalt = baueTabelle(kopf, arten, kreise, ";");
-    if (!inhalt) {
+  /* Gibt die Aufnahme als echte Excel-Datei (.xlsx) heraus.
+
+     Eine Web-App kann Excel nicht selbst starten - das laesst kein Browser zu.
+     Am naechsten dran ist der Teilen-Dialog des Handys: dort steht Excel als
+     Ziel, ein Tipp und die Tabelle ist offen. Gibt es den Dialog nicht (z.B.
+     am Rechner), wird die Datei heruntergeladen; ein Doppelklick oeffnet sie
+     dann in Excel. Klappt beides nicht, bleibt der Text zum Kopieren. */
+  const excelDatei = async () => {
+    const zeilen = baueZeilen(kopf, arten, kreise);
+    if (!zeilen) {
       setHinweis("Noch nichts gezählt");
       return;
     }
+
+    const name = `Verjuengung_${kopf.trupp || "Aufnahme"}.xlsx`;
+    const blob = baueXlsx(zeilen, "Verjüngung");
+
+    // Teilen-Dialog, falls das Geraet Dateien teilen kann.
     try {
-      const blob = new Blob(["﻿" + inhalt], { type: "text/csv;charset=utf-8" });
+      const datei = new File([blob], name, { type: blob.type });
+      if (navigator.canShare?.({ files: [datei] })) {
+        await navigator.share({ files: [datei], title: "Verjüngungsaufnahme" });
+        return;
+      }
+    } catch (fehler) {
+      // Abbruch durch den Nutzer ist kein Fehler - dann nichts weiter tun.
+      if (fehler?.name === "AbortError") return;
+    }
+
+    try {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `Verjuengung_${kopf.trupp || "Aufnahme"}.csv`;
+      link.download = name;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      setHinweis("Datei gespeichert – in den Downloads mit Excel öffnen");
+      setHinweis("Excel-Datei gespeichert – in den Downloads antippen");
     } catch {
-      setCsvText(inhalt); // Rueckfall: Text zum Markieren stehen lassen
-      setHinweis("Download hier nicht möglich – Text unten markieren und kopieren");
+      setCsvText(baueTabelle(kopf, arten, kreise, ";"));
+      setHinweis("Datei hier nicht möglich – Text unten markieren und kopieren");
     }
   };
 

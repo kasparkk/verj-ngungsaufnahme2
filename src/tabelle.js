@@ -1,9 +1,9 @@
 /* Baut die Aufnahme als Tabelle: eine Zeile je Probekreis, je Baumart zwei
-   Spalten (verbissen / unverbissen). Kreise ohne jede Zahl bleiben weg.
+   Spalten (verbissen / unverbissen). Kreise ohne jede Zahl bleiben weg. */
 
-   trenner ";" -> CSV-Datei, trenner "\t" -> Zwischenablage (faellt in Excel
-   direkt in die Spalten). Rueckgabe null heisst: noch nichts gezaehlt. */
-export function baueTabelle(kopf, arten, kreise, trenner = ";") {
+// Zeilen als Arrays - Zahlen bleiben Zahlen, damit Excel damit rechnen kann.
+// Rueckgabe null heisst: noch nichts gezaehlt.
+export function baueZeilen(kopf, arten, kreise) {
   const kopfzeile = [
     "Person",
     "Abteilung",
@@ -29,7 +29,7 @@ export function baueTabelle(kopf, arten, kreise, trenner = ";") {
       kopf.trupp,
       kopf.abteilung,
       kopf.datum,
-      kopf.radius,
+      Number(String(kopf.radius).replace(",", ".")) || 100,
       kreis.nr,
       kreis.lat ?? "",
       kreis.lon ?? "",
@@ -42,6 +42,14 @@ export function baueTabelle(kopf, arten, kreise, trenner = ";") {
     zeilen.push(zeile);
   });
 
-  if (zeilen.length === 1) return null;
+  return zeilen.length === 1 ? null : zeilen;
+}
+
+/* Dieselben Zeilen als Text.
+   trenner ";" -> CSV-Datei, trenner "\t" -> Zwischenablage (faellt in Excel
+   direkt in die Spalten). */
+export function baueTabelle(kopf, arten, kreise, trenner = ";") {
+  const zeilen = baueZeilen(kopf, arten, kreise);
+  if (!zeilen) return null;
   return zeilen.map((zeile) => zeile.join(trenner)).join("\n");
 }
