@@ -36,8 +36,22 @@
     <script type="module" src="/src/main.jsx"></script>
     <script>
       if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker.register("/sw.js").catch(() => {});
+        // Lief hier schon eine Fassung? Dann ist ein Wechsel ein echtes Update.
+        var hatteController = !!navigator.serviceWorker.controller;
+        var laedtNeu = false;
+
+        window.addEventListener("load", function () {
+          navigator.serviceWorker.register("/sw.js").catch(function () {});
+        });
+
+        /* Uebernimmt eine neue Fassung, wird die Seite einmal neu geladen.
+           Sonst laeuft die alte Oberflaeche weiter, bis die App vollstaendig
+           geschlossen wird - genau das hat frueher dazu gefuehrt, dass
+           Aenderungen auf dem Geraet erst viel spaeter ankamen. */
+        navigator.serviceWorker.addEventListener("controllerchange", function () {
+          if (!hatteController || laedtNeu) return;
+          laedtNeu = true;
+          location.reload();
         });
       }
     </script>
