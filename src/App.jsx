@@ -277,20 +277,30 @@ export default function App() {
     }
   };
 
-  const csvDatei = () => {
+  /* Laedt die Aufnahme als Datei herunter, die Excel direkt oeffnet:
+     Semikolon als Trenner (deutsches Excel) und ein BOM voran, damit die
+     Umlaute stimmen. Klappt der Download nicht - manche App-Browser
+     unterbinden ihn -, bleibt der Text zum Kopieren als Rueckfall. */
+  const excelDatei = () => {
     const inhalt = baueTabelle(kopf, arten, kreise, ";");
-    if (!inhalt) return;
+    if (!inhalt) {
+      setHinweis("Noch nichts gezählt");
+      return;
+    }
     try {
-      // BOM voran, damit Excel die Umlaute richtig liest.
       const blob = new Blob(["﻿" + inhalt], { type: "text/csv;charset=utf-8" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
       link.download = `Verjuengung_${kopf.trupp || "Aufnahme"}.csv`;
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
       URL.revokeObjectURL(url);
+      setHinweis("Datei gespeichert – in den Downloads mit Excel öffnen");
     } catch {
-      setHinweis("Download hier nicht möglich – bitte den Text kopieren");
+      setCsvText(inhalt); // Rueckfall: Text zum Markieren stehen lassen
+      setHinweis("Download hier nicht möglich – Text unten markieren und kopieren");
     }
   };
 
@@ -759,7 +769,7 @@ export default function App() {
           />
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             <button
-              onClick={csvDatei}
+              onClick={excelDatei}
               style={{ ...leisteKnopf, color: farben.muted, borderRadius: 10, padding: "10px 0", fontSize: 13 }}
             >
               Als Datei versuchen
@@ -834,12 +844,15 @@ export default function App() {
             </div>
           )}
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
+        <div style={{ display: "flex", gap: 8 }}>
           <button onClick={csvKopieren} style={leisteKnopf}>
             CSV
           </button>
           <button onClick={ergebnisOeffnen} style={leisteKnopf}>
             PDF
+          </button>
+          <button onClick={excelDatei} style={leisteKnopf}>
+            Excel
           </button>
         </div>
       </div>
