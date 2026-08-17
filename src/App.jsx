@@ -1,11 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import {
-  farben,
-  SPEICHER_SCHLUESSEL,
-  START_BAUMARTEN,
-  BAUMART_VORSCHLAEGE,
-  leererKreis,
-} from "./konfiguration.js";
+import { farben, BAUMART_VORSCHLAEGE, leererKreis } from "./konfiguration.js";
+import { ladeAlles, speichereAlles, heute, startBaumarten, leererTag } from "./speicher.js";
 import { normDatum } from "./datum.js";
 import { baueTabelle, baueZeilen } from "./tabelle.js";
 import { baueXlsx } from "./xlsx.js";
@@ -18,11 +13,23 @@ import ErgebnisAnsicht from "./komponenten/ErgebnisAnsicht.jsx";
 const SYNC_VERZOEGERUNG = 1500;
 
 export default function App() {
-  const [kopf, setKopf] = useState({ trupp: "", abteilung: "", datum: "", radius: "100" });
-  const [arten, setArten] = useState(START_BAUMARTEN.map((name, i) => ({ id: `a${i}`, name })));
+  // Geraeteweit - aendert sich nicht von Tag zu Tag.
+  const [trupp, setTrupp] = useState("");
+  const [radius, setRadius] = useState("100");
+
+  // Der gerade offene Aufnahmetag und seine Zaehlung.
+  const [datum, setDatum] = useState(heute());
+  const [abteilung, setAbteilung] = useState("");
+  const [arten, setArten] = useState(startBaumarten);
   const [kreise, setKreise] = useState([leererKreis(1)]);
   const [aktiv, setAktiv] = useState(0);
+
+  // Die uebrigen Aufnahmetage, nach Datum abgelegt.
+  const [andereTage, setAndereTage] = useState({});
   const [geladen, setGeladen] = useState(false);
+
+  // Fuer den restlichen Ablauf weiterhin als ein Block.
+  const kopf = { trupp, abteilung, datum, radius };
 
   const [hinweis, setHinweis] = useState("");
   const [neueArt, setNeueArt] = useState("");
@@ -42,20 +49,21 @@ export default function App() {
   const [ergebnisFehler, setErgebnisFehler] = useState(null);
   const [nurDiesePerson, setNurDiesePerson] = useState(false);
 
-  // Aufnahme beim Start vom Geraet laden.
+  // Aufnahmen beim Start vom Geraet laden (aelterer Stand wird mit uebernommen).
   useEffect(() => {
-    try {
-      const roh = localStorage.getItem(SPEICHER_SCHLUESSEL);
-      if (roh) {
-        const daten = JSON.parse(roh);
-        if (daten.kopf) setKopf(daten.kopf);
-        if (daten.arten?.length) setArten(daten.arten);
-        if (daten.kreise?.length) setKreise(daten.kreise);
-        if (typeof daten.aktiv === "number") setAktiv(daten.aktiv);
-      }
-    } catch {
-      // Kaputter Speicherstand: lieber frisch anfangen als gar nicht starten.
-    }
+    const stand = ladeAlles();
+    setTrupp(stand.trupp);
+    setRadius(stand.radius);
+    setDatum(stand.datum);
+
+    const { [stand.datum]: heutiger, ...uebrige } = stand.tage;
+    const tag = heutiger || leererTag();
+    setAbteilung(tag.abteilung ?? "");
+    setArten(tag.arten?.length ? tag.arten : startBaumarten());
+    setKreise(tag.kreise?.length ? tag.kreise : [leererKreis(1)]);
+    setAktiv(tag.aktiv ?? 0);
+    setAndereTage(uebrige);
+
     setGeladen(true);
   }, []);
 
@@ -63,14 +71,47 @@ export default function App() {
   useEffect(() => {
     if (!geladen) return;
     try {
-      localStorage.setItem(
-        SPEICHER_SCHLUESSEL,
-        JSON.stringify({ kopf, arten, kreise, aktiv })
-      );
+      speichereAlles({
+        trupp,
+        radius,
+        datum,
+        tage: { ...andereTage, [datum]: { abteilung, arten, kreise, aktiv } },
+      });
     } catch {
       setHinweis("Speichern fehlgeschlagen");
     }
-  }, [kopf, arten, kreise, aktiv, geladen]);
+  }, [trupp, radius, datum, abteilung, arten, kreise, aktiv, andereTage, geladen]);
+
+  /* Datum umstellen heisst: Blatt wechseln. Die bisherige Zaehlung wird unter
+     ihrem Tag abgelegt, und der neue Tag wird hervorgeholt - oder faengt leer
+     an. Die Baumartenliste und die Abteilung werden dabei uebernommen, weil
+     man sie sonst jeden Morgen neu eintippen muesste. */
+  const datumWechseln = (neuesDatum) => {
+    if (!neuesDatum || neuesDatum === datum) {
+      setDatum(neuesDatum);
+      return;
+    }
+
+    setAndereTage((alle) => {
+      const { [neuesDatum]: _weg, ...rest } = alle;
+      return { ...rest, [datum]: { abteilung, arten, kreise, aktiv } };
+    });
+
+    const zielTag = andereTage[neuesDatum];
+    if (zielTag) {
+      setAbteilung(zielTag.abteilung ?? "");
+      setArten(zielTag.arten?.length ? zielTag.arten : startBaumarten());
+      setKreise(zielTag.kreise?.length ? zielTag.kreise : [leererKreis(1)]);
+      setAktiv(zielTag.aktiv ?? 0);
+    } else {
+      setKreise([leererKreis(1)]);
+      setAktiv(0);
+    }
+
+    setDatum(neuesDatum);
+    setSyncStatus("");
+    setSyncGrund("");
+  };
 
   /* Automatischer Abgleich: kurz nach der letzten Aenderung, damit nicht bei
      jedem einzelnen Tippen gesendet wird. Der Upload ueberschreibt gleiche
@@ -160,7 +201,10 @@ export default function App() {
     if (!geladen) return;
     const timer = setTimeout(() => synchronisierenRef.current(), SYNC_VERZOEGERUNG);
     return () => clearTimeout(timer);
-  }, [kopf, arten, kreise, geladen]);
+    // Einzelwerte als Abhaengigkeiten, nicht das zusammengesetzte kopf-Objekt:
+    // das waere bei jedem Neuzeichnen neu und wuerde den Timer endlos neu
+    // setzen - der Abgleich liefe dann im Kreis.
+  }, [trupp, abteilung, datum, radius, arten, kreise, geladen]);
 
   // Sobald wieder Netz da ist, liegengebliebene Zeilen nachschicken.
   useEffect(() => {
@@ -456,7 +500,7 @@ export default function App() {
           <input
             style={feldStil}
             value={kopf.trupp}
-            onChange={(e) => setKopf({ ...kopf, trupp: e.target.value })}
+            onChange={(e) => setTrupp(e.target.value)}
             placeholder="A, B, C, ..."
           />
         </div>
@@ -466,7 +510,7 @@ export default function App() {
             type="date"
             style={feldStil}
             value={kopf.datum}
-            onChange={(e) => setKopf({ ...kopf, datum: e.target.value })}
+            onChange={(e) => datumWechseln(e.target.value)}
           />
         </div>
       </div>
@@ -494,7 +538,7 @@ export default function App() {
           <input
             style={feldStil}
             value={kopf.abteilung}
-            onChange={(e) => setKopf({ ...kopf, abteilung: e.target.value })}
+            onChange={(e) => setAbteilung(e.target.value)}
             placeholder="4138 b1"
           />
         </div>
@@ -503,7 +547,7 @@ export default function App() {
           <input
             style={feldStil}
             value={kopf.radius}
-            onChange={(e) => setKopf({ ...kopf, radius: e.target.value })}
+            onChange={(e) => setRadius(e.target.value)}
             placeholder="100"
             inputMode="decimal"
           />
