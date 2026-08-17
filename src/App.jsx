@@ -92,10 +92,12 @@ export default function App() {
      an. Die Baumartenliste und die Abteilung werden dabei uebernommen, weil
      man sie sonst jeden Morgen neu eintippen muesste. */
   const datumWechseln = (neuesDatum) => {
-    if (!neuesDatum || neuesDatum === datum) {
-      setDatum(neuesDatum);
-      return;
-    }
+    /* Ein leeres Feld ist kein Aufnahmetag. Beim Bearbeiten des Datums meldet
+       der Browser zwischendurch "" - wuerde das als eigener Tag durchgehen,
+       landete die laufende Zaehlung unter einem leeren Schluessel und der
+       eigentliche Tag faenge beim naechsten Umstellen leer an. Die Zahlen
+       waeren dann scheinbar weg. */
+    if (!neuesDatum || neuesDatum === datum) return;
 
     setAndereTage((alle) => {
       const { [neuesDatum]: _weg, ...rest } = alle;
