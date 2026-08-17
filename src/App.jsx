@@ -136,6 +136,16 @@ export default function App() {
     return () => window.removeEventListener("online", nachholen);
   }, []);
 
+  /* Nach einem misslungenen Abgleich in Ruhe weiterprobieren. Ohne Knopf zum
+     Nachhelfen darf ein Fehlversuch sonst liegen bleiben, bis zufaellig die
+     naechste Zaehlung kommt. Das "online"-Ereignis allein reicht nicht: im
+     Wald wechselt der Empfang oft, ohne dass der Browser es meldet. */
+  useEffect(() => {
+    if (syncStatus !== "err" && syncStatus !== "offline") return;
+    const timer = setInterval(() => synchronisierenRef.current(), 30000);
+    return () => clearInterval(timer);
+  }, [syncStatus]);
+
   // Hinweise blenden sich von selbst wieder aus.
   useEffect(() => {
     if (!hinweis) return;
@@ -353,11 +363,11 @@ export default function App() {
   const kleinsteNr = Math.min(...kreise.map((k) => k.nr));
 
   const syncText = () => {
-    if (!kopf.trupp.trim()) return "Person eintragen";
+    if (!kopf.trupp.trim()) return "Person eintragen – dann wird automatisch abgeglichen";
     if (sendet) return "Gleicht ab ...";
     if (syncStatus === "ok") return "✓ Abgeglichen";
-    if (syncStatus === "err") return "Fehler – nochmal versuchen";
-    if (syncStatus === "offline") return "Kein Netz – nochmal versuchen";
+    if (syncStatus === "err") return "Abgleich fehlgeschlagen – wird erneut versucht";
+    if (syncStatus === "offline") return "Kein Netz – wird nachgeholt, sobald wieder Empfang da ist";
     return "Noch nichts gezählt";
   };
   const syncFarbe =
@@ -374,7 +384,7 @@ export default function App() {
         background: farben.bg,
         color: farben.text,
         fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
-        padding: "14px 14px 96px",
+        padding: "14px 14px 112px",
         maxWidth: 560,
         margin: "0 auto",
       }}
@@ -768,32 +778,31 @@ export default function App() {
           bottom: 0,
           background: farben.surface,
           borderTop: `1px solid ${farben.line}`,
-          padding: "10px 14px",
-          display: "flex",
-          gap: 10,
+          padding: "8px 14px 10px",
           maxWidth: 560,
           margin: "0 auto",
         }}
       >
-        <button onClick={csvKopieren} style={leisteKnopf}>
-          CSV
-        </button>
-        <button onClick={ergebnisOeffnen} style={leisteKnopf}>
-          PDF
-        </button>
-        <button
-          onClick={() => synchronisierenRef.current()}
+        {/* Nur Anzeige, kein Knopf: der Abgleich laeuft von selbst und wird
+            nach einem Fehlversuch von allein wiederholt. */}
+        <div
           style={{
-            ...leisteKnopf,
-            flex: 1.4,
-            border: `1px solid ${syncStatus === "ok" || syncFarbe === farben.verb ? syncFarbe : farben.line}`,
+            fontSize: 11,
             color: syncFarbe,
-            fontSize: 13,
-            fontWeight: 600,
+            textAlign: "center",
+            padding: "2px 0 7px",
           }}
         >
           {syncText()}
-        </button>
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={csvKopieren} style={leisteKnopf}>
+            CSV
+          </button>
+          <button onClick={ergebnisOeffnen} style={leisteKnopf}>
+            PDF
+          </button>
+        </div>
       </div>
     </div>
   );
