@@ -16,6 +16,8 @@
     <style>
       html, body, #root { margin: 0; height: 100%; background: #12160F; }
       * { -webkit-tap-highlight-color: transparent; }
+      /* Nur die Ergebnis-Ansicht kommt in den Ausdruck bzw. ins PDF,
+         und zwar schwarz auf weiss statt im dunklen Bildschirm-Design. */
       @media print {
         body * { visibility: hidden; }
         #verjuengung-druckbereich, #verjuengung-druckbereich * { visibility: visible; }
@@ -28,10 +30,10 @@
         #verjuengung-druckbereich .no-print { display: none !important; }
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-B81P9hMA-v25.js"></script>
   </head>
   <body>
     <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
