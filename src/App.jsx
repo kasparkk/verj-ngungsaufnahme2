@@ -112,11 +112,18 @@ export default function App() {
           baumart: art.name.trim(),
           verbissen: zahl.v,
           unverbissen: zahl.u,
+          /* Standort IMMER mitgeben, notfalls als null. Beim Sammel-Einfuegen
+             verlangt PostgREST, dass alle Objekte dieselben Felder haben -
+             sonst lehnt es das ganze Paket ab ("All object keys must match").
+             Genau das passierte, sobald ein Kreis eine Ortung hatte und ein
+             anderer nicht. */
+          lat: kreis.lat ?? null,
+          lon: kreis.lon ?? null,
+          genauigkeit_m: kreis.acc ?? null,
         };
+        // Fuer alle Zeilen gleich, bleibt also einheitlich. Nicht als null
+        // senden: die Spalte ist NOT NULL und faellt sonst auf heute zurueck.
         if (datum) zeile.aufnahmedatum = datum;
-        if (kreis.lat != null) zeile.lat = kreis.lat;
-        if (kreis.lon != null) zeile.lon = kreis.lon;
-        if (kreis.acc != null) zeile.genauigkeit_m = kreis.acc;
         jeZeile.set(schluessel, zeile);
       })
     );
