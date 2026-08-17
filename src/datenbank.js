@@ -22,11 +22,18 @@ export async function zeilenHochladen(zeilen) {
     }
   );
 
-  if (!antwort.ok) {
-    const text = await antwort.text();
-    console.error("Supabase:", text);
+  if (antwort.ok) return { ok: true };
+
+  // Grund mitgeben, damit die Anzeige nicht nur "fehlgeschlagen" sagen muss.
+  const text = await antwort.text();
+  console.error("Supabase:", antwort.status, text);
+  let grund = "";
+  try {
+    grund = JSON.parse(text).message || "";
+  } catch {
+    grund = text.slice(0, 80);
   }
-  return antwort.ok;
+  return { ok: false, status: antwort.status, grund };
 }
 
 // Filter auf Abteilung und (falls vorhanden) Datum, wie ihn beide Abrufe brauchen.

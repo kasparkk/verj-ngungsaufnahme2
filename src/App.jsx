@@ -31,6 +31,7 @@ export default function App() {
 
   // "" = noch nichts zu senden, sonst sync | ok | err | offline
   const [syncStatus, setSyncStatus] = useState("");
+  const [syncGrund, setSyncGrund] = useState("");
   const [sendet, setSendet] = useState(false);
 
   const [ergebnis, setErgebnis] = useState(null);
@@ -82,19 +83,33 @@ export default function App() {
 
     const datum = normDatum(kopf.datum.trim());
     const flaeche = parseFloat(String(kopf.radius).replace(",", ".")) || 100;
-    const zeilen = [];
+
+    /* Nach Kreis + Baumart zusammenfassen. Taucht dieselbe Kombination zweimal
+       auf - etwa weil eine Baumart doppelt in der Liste steht - lehnt die
+       Datenbank sonst das GESAMTE Paket ab ("ON CONFLICT DO UPDATE command
+       cannot affect row a second time"), also auch alle einwandfreien Zeilen.
+       Die Zahlen werden dabei addiert: zweimal "Kiefer" ist dieselbe Baumart. */
+    const jeZeile = new Map();
 
     kreise.forEach((kreis) =>
       arten.forEach((art) => {
         const zahl = kreis.counts[art.id] || { v: 0, u: 0 };
         if (!zahl.v && !zahl.u) return;
 
+        const schluessel = `${kreis.nr}|${art.name.trim().toLowerCase()}`;
+        const vorhanden = jeZeile.get(schluessel);
+        if (vorhanden) {
+          vorhanden.verbissen += zahl.v;
+          vorhanden.unverbissen += zahl.u;
+          return;
+        }
+
         const zeile = {
           trupp: kopf.trupp.trim(),
           abteilung: kopf.abteilung.trim() || null,
           kreisflaeche: flaeche,
           kreis: kreis.nr,
-          baumart: art.name,
+          baumart: art.name.trim(),
           verbissen: zahl.v,
           unverbissen: zahl.u,
         };
@@ -102,9 +117,11 @@ export default function App() {
         if (kreis.lat != null) zeile.lat = kreis.lat;
         if (kreis.lon != null) zeile.lon = kreis.lon;
         if (kreis.acc != null) zeile.genauigkeit_m = kreis.acc;
-        zeilen.push(zeile);
+        jeZeile.set(schluessel, zeile);
       })
     );
+
+    const zeilen = [...jeZeile.values()];
 
     if (!zeilen.length) {
       setSyncStatus("");
@@ -114,9 +131,17 @@ export default function App() {
     setSendet(true);
     setSyncStatus("sync");
     try {
-      setSyncStatus((await zeilenHochladen(zeilen)) ? "ok" : "err");
-    } catch {
+      const ergebnis = await zeilenHochladen(zeilen);
+      if (ergebnis.ok) {
+        setSyncStatus("ok");
+        setSyncGrund("");
+      } else {
+        setSyncStatus("err");
+        setSyncGrund(`${ergebnis.status}${ergebnis.grund ? ": " + ergebnis.grund : ""}`);
+      }
+    } catch (fehler) {
       setSyncStatus("offline");
+      setSyncGrund(fehler?.message || "");
     } finally {
       setSendet(false);
     }
@@ -791,9 +816,16 @@ export default function App() {
             color: syncFarbe,
             textAlign: "center",
             padding: "2px 0 7px",
+            lineHeight: 1.35,
           }}
         >
           {syncText()}
+          {/* Klartext-Grund, damit man bei Problemen nicht raten muss. */}
+          {syncGrund && (syncStatus === "err" || syncStatus === "offline") && (
+            <div style={{ fontSize: 10, opacity: 0.85, marginTop: 2, wordBreak: "break-word" }}>
+              {syncGrund}
+            </div>
+          )}
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={csvKopieren} style={leisteKnopf}>
