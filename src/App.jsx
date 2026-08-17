@@ -31,6 +31,11 @@ export default function App() {
   // Fuer den restlichen Ablauf weiterhin als ein Block.
   const kopf = { trupp, abteilung, datum, radius };
 
+  /* Der offene Tag, auch fuer spaet eintreffende Antworten erreichbar
+     (siehe holeStandort). */
+  const datumRef = useRef(datum);
+  datumRef.current = datum;
+
   const [hinweis, setHinweis] = useState("");
   const [neueArt, setNeueArt] = useState("");
   const [csvText, setCsvText] = useState(null);
@@ -108,7 +113,9 @@ export default function App() {
       setAktiv(0);
     }
 
+    datumRef.current = neuesDatum; // sofort, damit laufende Ortungen es sehen
     setDatum(neuesDatum);
+    setGpsLaeuft(false);
     setSyncStatus("");
     setSyncGrund("");
   };
@@ -249,15 +256,24 @@ export default function App() {
   const setzen = (artId, feld, zahl) => aendere(artId, feld, () => zahl);
 
   /* GPS-Position fuer einen Kreis holen. still=true bei automatischem Versuch
-     (neuer Kreis) - dann keine Fehlermeldung, falls die Ortung abgelehnt wird. */
+     (neuer Kreis) - dann keine Fehlermeldung, falls die Ortung abgelehnt wird.
+
+     Die Ortung kann bis zu 12 Sekunden brauchen. Wird in dieser Zeit der
+     Aufnahmetag gewechselt, gehoert die Antwort nicht mehr zum offenen Blatt:
+     sie wuerde sonst im falschen Tag landen (der Probekreis wird nur ueber
+     seine Nummer gesucht, und die 1 gibt es an jedem Tag). Deshalb wird der
+     Tag beim Start gemerkt und beim Eintreffen geprueft. */
   const holeStandort = (nr, still) => {
     if (!navigator.geolocation) {
       if (!still) setHinweis("Kein GPS auf diesem Gerät");
       return;
     }
+    const fuerTag = datumRef.current;
     setGpsLaeuft(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
+        setGpsLaeuft(false);
+        if (datumRef.current !== fuerTag) return; // Tag inzwischen gewechselt
         setKreise((alle) =>
           alle.map((kreis) =>
             kreis.nr === nr
@@ -270,10 +286,10 @@ export default function App() {
               : kreis
           )
         );
-        setGpsLaeuft(false);
       },
       () => {
         setGpsLaeuft(false);
+        if (datumRef.current !== fuerTag) return;
         if (!still) setHinweis("Standort nicht verfügbar");
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
