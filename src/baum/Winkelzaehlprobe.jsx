@@ -7,10 +7,93 @@ import ZaehlBox from "../komponenten/ZaehlBox.jsx";
 const nk = (wert, stellen = 1) =>
   Number(wert).toLocaleString("de-DE", { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
 
+/* Liste gemessener Werte (Hoehen bzw. Durchmesser) mit Mittelwert.
+   Eintippen, mit + oder Eingabetaste uebernehmen, Wert antippen loescht ihn. */
+function WerteFeld({ titel, einheit, werte, platzhalter, entwurf, setEntwurf, onHinzu, onWeg, mittelwert, mittelText }) {
+  const feldStil = {
+    background: "transparent",
+    border: "none",
+    borderBottom: `1px solid ${farben.line}`,
+    color: farben.text,
+    padding: "4px 0",
+    fontSize: 18,
+    fontWeight: 700,
+    outline: "none",
+    flex: 1,
+    minWidth: 0,
+  };
+
+  return (
+    <div
+      style={{
+        background: farben.surfaceHi,
+        border: `1px solid ${farben.line}`,
+        borderRadius: 12,
+        padding: "8px 10px",
+      }}
+    >
+      <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
+        {titel} {einheit}
+      </div>
+      <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+        <input
+          style={feldStil}
+          value={entwurf}
+          onChange={(e) => setEntwurf(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && onHinzu()}
+          placeholder={platzhalter}
+          inputMode="decimal"
+        />
+        <button
+          onClick={onHinzu}
+          style={{
+            background: farben.surface,
+            border: `1px solid ${farben.line}`,
+            color: farben.text,
+            borderRadius: 8,
+            padding: "0 12px",
+            fontSize: 16,
+            cursor: "pointer",
+          }}
+        >
+          +
+        </button>
+      </div>
+
+      {werte.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 7 }}>
+          {werte.map((w, i) => (
+            <button
+              key={i}
+              onClick={() => onWeg(i)}
+              style={{
+                background: "transparent",
+                border: `1px solid ${farben.line}`,
+                color: farben.muted,
+                borderRadius: 999,
+                padding: "3px 8px",
+                fontSize: 12,
+                cursor: "pointer",
+              }}
+            >
+              {w} ×
+            </button>
+          ))}
+        </div>
+      )}
+
+      {mittelwert > 0 && (
+        <div style={{ fontSize: 11, color: farben.muted, marginTop: 6 }}>{mittelText}</div>
+      )}
+    </div>
+  );
+}
+
 /* Winkelzaehlprobe: am Standpunkt einmal im Kreis drehen und jeden Baum
    zaehlen, der breiter erscheint als der Spalt am Zaehlstab. */
 export default function Winkelzaehlprobe({ wzp, setWzp, formzahlen, setHinweis }) {
   const [neueHoehe, setNeueHoehe] = useState({});
+  const [neuerDm, setNeuerDm] = useState({});
 
   const erg = wzpAuswerten(wzp.arten, wzp.zaehlfaktor, formzahlen);
 
@@ -27,9 +110,19 @@ export default function Winkelzaehlprobe({ wzp, setWzp, formzahlen, setHinweis }
   const hoeheWeg = (id, i) =>
     aendere(id, (a) => ({ ...a, hoehen: a.hoehen.filter((_, j) => j !== i) }));
 
+  const dmHinzu = (id) => {
+    const wert = (neuerDm[id] ?? "").trim();
+    if (zahl(wert) <= 0) return;
+    aendere(id, (a) => ({ ...a, durchmesser: [...(a.durchmesser ?? []), wert] }));
+    setNeuerDm((alt) => ({ ...alt, [id]: "" }));
+  };
+
+  const dmWeg = (id, i) =>
+    aendere(id, (a) => ({ ...a, durchmesser: (a.durchmesser ?? []).filter((_, j) => j !== i) }));
+
   const artWeg = (id) => {
     const art = wzp.arten.find((a) => a.id === id);
-    if (art && (art.anzahl > 0 || art.hoehen.length)) {
+    if (art && (art.anzahl > 0 || art.hoehen.length || (art.durchmesser ?? []).length)) {
       setHinweis("Erst Zähler auf 0 setzen");
       return;
     }
@@ -96,6 +189,12 @@ export default function Winkelzaehlprobe({ wzp, setWzp, formzahlen, setHinweis }
               </div>
               <div style={{ fontSize: 10, color: farben.muted }}>Vorrat fm/ha</div>
             </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 24, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                {erg.gesamt.nHa > 0 ? nk(erg.gesamt.nHa, 0) : "–"}
+              </div>
+              <div style={{ fontSize: 10, color: farben.muted }}>Stämme/ha</div>
+            </div>
           </div>
           {erg.gesamt.vHa === 0 && (
             <div style={{ fontSize: 11, color: farben.verb, marginTop: 8 }}>
@@ -124,9 +223,9 @@ export default function Winkelzaehlprobe({ wzp, setWzp, formzahlen, setHinweis }
                 style={{
                   background: "none",
                   border: "none",
-                  color: a.anzahl > 0 || a.hoehen.length ? farben.line : farben.muted,
+                  color: a.anzahl > 0 || a.hoehen.length || (a.durchmesser ?? []).length ? farben.line : farben.muted,
                   fontSize: 12,
-                  cursor: a.anzahl > 0 || a.hoehen.length ? "default" : "pointer",
+                  cursor: a.anzahl > 0 || a.hoehen.length || (a.durchmesser ?? []).length ? "default" : "pointer",
                 }}
               >
                 entfernen
@@ -144,73 +243,45 @@ export default function Winkelzaehlprobe({ wzp, setWzp, formzahlen, setHinweis }
                 gross
               />
 
-              <div
-                style={{
-                  flex: 1,
-                  background: farben.surfaceHi,
-                  border: `1px solid ${farben.line}`,
-                  borderRadius: 14,
-                  padding: "10px 12px",
-                }}
-              >
-                <div style={{ ...beschriftung, textTransform: "uppercase" }}>Höhen m</div>
-                <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
-                  <input
-                    style={{ ...feldStil, flex: 1, fontSize: 18, fontWeight: 700 }}
-                    value={neueHoehe[a.id] ?? ""}
-                    onChange={(e) => setNeueHoehe((alt) => ({ ...alt, [a.id]: e.target.value }))}
-                    onKeyDown={(e) => e.key === "Enter" && hoeheHinzu(a.id)}
-                    placeholder="26"
-                    inputMode="decimal"
-                  />
-                  <button
-                    onClick={() => hoeheHinzu(a.id)}
-                    style={{
-                      background: farben.surface,
-                      border: `1px solid ${farben.line}`,
-                      color: farben.text,
-                      borderRadius: 8,
-                      padding: "0 12px",
-                      fontSize: 16,
-                      cursor: "pointer",
-                    }}
-                  >
-                    +
-                  </button>
-                </div>
-
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
-                  {a.hoehen.map((h, i) => (
-                    <button
-                      key={i}
-                      onClick={() => hoeheWeg(a.id, i)}
-                      style={{
-                        background: "transparent",
-                        border: `1px solid ${farben.line}`,
-                        color: farben.muted,
-                        borderRadius: 999,
-                        padding: "3px 8px",
-                        fontSize: 12,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {h} ×
-                    </button>
-                  ))}
-                </div>
-
-                {z.mittelHoehe > 0 && (
-                  <div style={{ fontSize: 11, color: farben.muted, marginTop: 8 }}>
-                    Mittel {nk(z.mittelHoehe, 1)} m
-                  </div>
-                )}
+              <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+                <WerteFeld
+                  titel="HÖHEN"
+                  einheit="m"
+                  platzhalter="26"
+                  werte={a.hoehen}
+                  entwurf={neueHoehe[a.id] ?? ""}
+                  setEntwurf={(w) => setNeueHoehe((alt) => ({ ...alt, [a.id]: w }))}
+                  onHinzu={() => hoeheHinzu(a.id)}
+                  onWeg={(i) => hoeheWeg(a.id, i)}
+                  mittelwert={z.mittelHoehe}
+                  mittelText={`Mittel ${nk(z.mittelHoehe, 1)} m`}
+                />
+                <WerteFeld
+                  titel="BHD"
+                  einheit="cm"
+                  platzhalter="34"
+                  werte={a.durchmesser ?? []}
+                  entwurf={neuerDm[a.id] ?? ""}
+                  setEntwurf={(w) => setNeuerDm((alt) => ({ ...alt, [a.id]: w }))}
+                  onHinzu={() => dmHinzu(a.id)}
+                  onWeg={(i) => dmWeg(a.id, i)}
+                  mittelwert={z.dg}
+                  mittelText={`Mittelstamm ${nk(z.dg, 1)} cm`}
+                />
               </div>
             </div>
 
             {z.anzahl > 0 && (
-              <div style={{ fontSize: 12, color: farben.muted, marginTop: 6 }}>
+              <div style={{ fontSize: 12, color: farben.muted, marginTop: 6, lineHeight: 1.5 }}>
                 {z.gHa} m²/ha
                 {z.vHa > 0 ? ` · ${nk(z.vHa, 0)} fm/ha (Formzahl ${nk(z.formzahl, 2)})` : ""}
+                {z.nHa > 0 && (
+                  <>
+                    <br />
+                    {nk(z.nHa, 0)} Stämme/ha · Mittelstamm {nk(z.dg, 1)} cm
+                    {z.vMittelstamm > 0 ? ` mit ${nk(z.vMittelstamm, 2)} fm` : ""}
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -245,7 +316,7 @@ export default function Winkelzaehlprobe({ wzp, setWzp, formzahlen, setHinweis }
       <div style={{ fontSize: 11, color: farben.muted, marginTop: 16, lineHeight: 1.5 }}>
         Am Standpunkt einmal im Kreis drehen und jeden Baum zählen, der in Brusthöhe breiter
         erscheint als der Spalt am Zählstab. Grundfläche je Hektar = gezählte Bäume × Zählfaktor;
-        der Vorrat ergibt sich daraus mit der mittleren Höhe und der Formzahl.
+        der Vorrat ergibt sich daraus mit der mittleren Höhe und der Formzahl. Trägt man auch Durchmesser ein, kommt der Mittelstamm dazu und daraus die Stammzahl je Hektar.
       </div>
     </div>
   );

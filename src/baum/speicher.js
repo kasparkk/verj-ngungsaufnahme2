@@ -10,7 +10,7 @@ const SCHLUESSEL = "baummessung:aufnahme";
 
 const WZP_START = ["Fichte", "Kiefer", "Buche", "Eiche"];
 
-export const leereArt = (name) => ({ id: `w${name}`, name, anzahl: 0, hoehen: [] });
+export const leereArt = (name) => ({ id: `w${name}`, name, anzahl: 0, hoehen: [], durchmesser: [] });
 
 export const leererStand = () => ({
   modus: "wzp",
@@ -42,7 +42,12 @@ export function laden() {
       formzahlen: { ...standard.formzahlen, ...(daten.formzahlen ?? {}) },
       wzp: {
         zaehlfaktor: daten.wzp?.zaehlfaktor ?? 4,
-        arten: daten.wzp?.arten?.length ? daten.wzp.arten : standard.wzp.arten,
+        // Fehlende Listen ergaenzen - aeltere Staende kannten die Durchmesser noch nicht.
+        arten: (daten.wzp?.arten?.length ? daten.wzp.arten : standard.wzp.arten).map((a) => ({
+          ...a,
+          hoehen: a.hoehen ?? [],
+          durchmesser: a.durchmesser ?? [],
+        })),
       },
       flaeche: daten.flaeche ?? standard.flaeche,
       baeume: Array.isArray(daten.baeume) ? daten.baeume : [],

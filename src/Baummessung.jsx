@@ -58,7 +58,8 @@ export default function Baummessung() {
       }
       zeilen = [
         ["Ort", "Verfahren", "Zaehlfaktor", "Baumart", "Anzahl", "Hoehen_m", "Mittelhoehe_m",
-         "Formzahl", "Grundflaeche_m2_ha", "Vorrat_fm_ha"],
+         "BHD_cm", "Mittelstamm_cm", "Formzahl", "Grundflaeche_m2_ha", "Vorrat_fm_ha",
+         "Staemme_ha", "Volumen_Mittelstamm_m3"],
         ...mitZahlen.map((a) => [
           stand.ort,
           "Winkelzaehlprobe",
@@ -67,9 +68,13 @@ export default function Baummessung() {
           a.anzahl,
           a.hoehen.join(" "),
           Math.round(mittel(a.hoehen) * 10) / 10,
+          (a.durchmesser ?? []).join(" "),
+          Math.round(a.dg * 10) / 10,
           a.formzahl,
           Math.round(a.gHa * 10) / 10,
           Math.round(a.vHa * 10) / 10,
+          Math.round(a.nHa),
+          Math.round(a.vMittelstamm * 1000) / 1000,
         ]),
       ];
     } else {

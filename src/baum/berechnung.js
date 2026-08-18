@@ -110,7 +110,31 @@ export function wzpAuswerten(arten, zaehlfaktor, formzahlen) {
     const mittelHoehe = mittel(a.hoehen);
     const formzahl = zahl(formzahlen?.[a.name]) || STANDARD_FORMZAHL;
     const gHa = anzahl * k;
-    return { ...a, anzahl, mittelHoehe, formzahl, gHa, vHa: gHa * mittelHoehe * formzahl };
+
+    /* Mittelstamm aus den gemessenen Durchmessern: nicht das schlichte Mittel,
+       sondern der Grundflaechenmittelstamm - der Baum mit der mittleren
+       Grundflaeche. Weil die Grundflaeche quadratisch mit dem Durchmesser
+       waechst, liegt er ueber dem arithmetischen Mittel (30 und 40 cm ergeben
+       35,4 statt 35,0 cm). Mit ihm laesst sich die Grundflaeche je Hektar in
+       eine Stammzahl umrechnen. */
+    const dm = (a.durchmesser ?? []).map(zahl).filter((d) => d > 0);
+    const dg = dm.length ? Math.sqrt(dm.reduce((s, d) => s + d * d, 0) / dm.length) : 0;
+    const gMittelstamm = dg > 0 ? grundflaeche(dg) : 0;
+    const nHa = gMittelstamm > 0 ? gHa / gMittelstamm : 0;
+    const vMittelstamm = gMittelstamm * mittelHoehe * formzahl;
+
+    return {
+      ...a,
+      anzahl,
+      mittelHoehe,
+      formzahl,
+      gHa,
+      vHa: gHa * mittelHoehe * formzahl,
+      dg,
+      gMittelstamm,
+      nHa,
+      vMittelstamm,
+    };
   });
 
   return {
@@ -119,6 +143,7 @@ export function wzpAuswerten(arten, zaehlfaktor, formzahlen) {
       anzahl: jeArt.reduce((s, a) => s + a.anzahl, 0),
       gHa: jeArt.reduce((s, a) => s + a.gHa, 0),
       vHa: jeArt.reduce((s, a) => s + a.vHa, 0),
+      nHa: jeArt.reduce((s, a) => s + a.nHa, 0),
     },
   };
 }
