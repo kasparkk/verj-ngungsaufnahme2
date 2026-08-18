@@ -1,13 +1,25 @@
 import { BAUMARTEN } from "./berechnung.js";
 
 /* Eigener Speicherplatz, voellig getrennt von der Verjuengungsaufnahme -
-   die beiden Seiten teilen sich nichts. */
+   die beiden Seiten teilen sich nichts.
+
+   Innerhalb der Baummessung liegen beide Verfahren zusammen, damit sie sich
+   Ort und Formzahlen teilen: die gelten fuer den Bestand, nicht fuer das
+   Verfahren. */
 const SCHLUESSEL = "baummessung:aufnahme";
 
+const WZP_START = ["Fichte", "Kiefer", "Buche", "Eiche"];
+
+export const leereArt = (name) => ({ id: `w${name}`, name, anzahl: 0, hoehen: [] });
+
 export const leererStand = () => ({
+  modus: "wzp",
   ort: "",
-  flaeche: "500",
   formzahlen: Object.fromEntries(BAUMARTEN.map((a) => [a.name, String(a.formzahl)])),
+  // Winkelzaehlprobe
+  wzp: { zaehlfaktor: 4, arten: WZP_START.map(leereArt) },
+  // Einzelbaeume
+  flaeche: "500",
   baeume: [],
 });
 
@@ -24,10 +36,15 @@ export function laden() {
     const daten = JSON.parse(roh);
     const standard = leererStand();
     return {
+      modus: daten.modus === "einzel" ? "einzel" : "wzp",
       ort: daten.ort ?? "",
-      flaeche: daten.flaeche ?? standard.flaeche,
       // Fehlende Arten aus den Voreinstellungen ergaenzen.
       formzahlen: { ...standard.formzahlen, ...(daten.formzahlen ?? {}) },
+      wzp: {
+        zaehlfaktor: daten.wzp?.zaehlfaktor ?? 4,
+        arten: daten.wzp?.arten?.length ? daten.wzp.arten : standard.wzp.arten,
+      },
+      flaeche: daten.flaeche ?? standard.flaeche,
       baeume: Array.isArray(daten.baeume) ? daten.baeume : [],
     };
   } catch {
@@ -36,5 +53,5 @@ export function laden() {
 }
 
 export function speichern(stand) {
-  localStorage.setItem(SCHLUESSEL, JSON.stringify({ version: 1, ...stand }));
+  localStorage.setItem(SCHLUESSEL, JSON.stringify({ version: 2, ...stand }));
 }

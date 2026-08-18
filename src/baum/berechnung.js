@@ -80,3 +80,45 @@ export function auswerten(baeume, flaecheM2) {
     },
   };
 }
+
+/* --- Winkelzaehlprobe (Bitterlich) -------------------------------------
+
+   Man dreht sich am Standpunkt einmal im Kreis und zaehlt jeden Baum, der in
+   Brusthoehe breiter erscheint als der Spalt am Zaehlstab. Die Flaeche muss
+   dabei nicht abgesteckt werden - das ist der Witz des Verfahrens:
+
+       Grundflaeche je Hektar = gezaehlte Baeume * Zaehlfaktor
+
+   Mit der mittleren Hoehe und der Formzahl daraus der Vorrat:
+
+       Vorrat je Hektar = G/ha * Hoehe * Formzahl                           */
+
+export const ZAEHLFAKTOREN = [1, 2, 4];
+
+// Mittelwert der eingetragenen Hoehen; leere Felder zaehlen nicht mit.
+export function mittel(werte) {
+  const zahlen = (werte ?? []).map(zahl).filter((n) => n > 0);
+  if (!zahlen.length) return 0;
+  return zahlen.reduce((s, n) => s + n, 0) / zahlen.length;
+}
+
+export function wzpAuswerten(arten, zaehlfaktor, formzahlen) {
+  const k = zahl(zaehlfaktor) || 4;
+
+  const jeArt = arten.map((a) => {
+    const anzahl = Math.max(0, Math.round(zahl(a.anzahl)));
+    const mittelHoehe = mittel(a.hoehen);
+    const formzahl = zahl(formzahlen?.[a.name]) || STANDARD_FORMZAHL;
+    const gHa = anzahl * k;
+    return { ...a, anzahl, mittelHoehe, formzahl, gHa, vHa: gHa * mittelHoehe * formzahl };
+  });
+
+  return {
+    jeArt,
+    gesamt: {
+      anzahl: jeArt.reduce((s, a) => s + a.anzahl, 0),
+      gHa: jeArt.reduce((s, a) => s + a.gHa, 0),
+      vHa: jeArt.reduce((s, a) => s + a.vHa, 0),
+    },
+  };
+}

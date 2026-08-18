@@ -1,42 +1,38 @@
 import { useState, useEffect } from "react";
 import { farben } from "./konfiguration.js";
-import { BAUMARTEN, STANDARD_FORMZAHL, zahl, grundflaeche, volumen, auswerten } from "./baum/berechnung.js";
+import { BAUMARTEN, zahl, grundflaeche, volumen, mittel, wzpAuswerten } from "./baum/berechnung.js";
 import { laden, speichern, leererStand } from "./baum/speicher.js";
 import { baueXlsx } from "./xlsx.js";
+import Winkelzaehlprobe from "./baum/Winkelzaehlprobe.jsx";
+import Einzelbaeume from "./baum/Einzelbaeume.jsx";
 
-const nk = (wert, stellen = 2) =>
-  Number(wert).toLocaleString("de-DE", { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
+/* Rahmen der Baummessung mit zwei Verfahren:
 
+   Winkelzaehlprobe - am Standpunkt zaehlen, keine Flaeche noetig (das
+   uebliche Vorgehen im Bestand), und Einzelbaeume - jeder Baum mit BHD und
+   Hoehe auf einer abgesteckten Flaeche.
+
+   Ort und Formzahlen gelten fuer den Bestand und werden deshalb von beiden
+   Verfahren geteilt. */
 export default function Baummessung() {
-  const [ort, setOrt] = useState("");
-  const [flaeche, setFlaeche] = useState("500");
-  const [formzahlen, setFormzahlen] = useState(leererStand().formzahlen);
-  const [baeume, setBaeume] = useState([]);
+  const [stand, setStand] = useState(leererStand);
   const [geladen, setGeladen] = useState(false);
-
-  const [art, setArt] = useState(BAUMARTEN[0].name);
-  const [bhd, setBhd] = useState("");
-  const [hoehe, setHoehe] = useState("");
   const [hinweis, setHinweis] = useState("");
   const [formzahlenOffen, setFormzahlenOffen] = useState(false);
 
   useEffect(() => {
-    const stand = laden();
-    setOrt(stand.ort);
-    setFlaeche(stand.flaeche);
-    setFormzahlen(stand.formzahlen);
-    setBaeume(stand.baeume);
+    setStand(laden());
     setGeladen(true);
   }, []);
 
   useEffect(() => {
     if (!geladen) return;
     try {
-      speichern({ ort, flaeche, formzahlen, baeume });
+      speichern(stand);
     } catch {
       setHinweis("Speichern fehlgeschlagen");
     }
-  }, [ort, flaeche, formzahlen, baeume, geladen]);
+  }, [stand, geladen]);
 
   useEffect(() => {
     if (!hinweis) return;
@@ -44,45 +40,61 @@ export default function Baummessung() {
     return () => clearTimeout(t);
   }, [hinweis]);
 
-  const formzahlVon = (name) => zahl(formzahlen[name]) || STANDARD_FORMZAHL;
-
-  const hinzufuegen = () => {
-    if (zahl(bhd) <= 0) {
-      setHinweis("BHD eintragen");
-      return;
-    }
-    setBaeume((alle) => [
-      ...alle,
-      { id: `b${Date.now()}`, art, bhd, hoehe, formzahl: String(formzahlVon(art)) },
-    ]);
-    // Baumart stehen lassen - meist misst man mehrere derselben Art nacheinander.
-    setBhd("");
-    setHoehe("");
-  };
-
-  const entfernen = (id) => setBaeume((alle) => alle.filter((b) => b.id !== id));
-
-  const erg = auswerten(baeume, flaeche);
+  const setzeFeld = (feld) => (wert) => setStand((alt) => ({ ...alt, [feld]: wert }));
+  const setWzp = (wie) =>
+    setStand((alt) => ({ ...alt, wzp: typeof wie === "function" ? wie(alt.wzp) : wie }));
+  const setBaeume = (wie) =>
+    setStand((alt) => ({ ...alt, baeume: typeof wie === "function" ? wie(alt.baeume) : wie }));
 
   const excelDatei = async () => {
-    if (!baeume.length) {
-      setHinweis("Noch keine Bäume eingetragen");
-      return;
+    let zeilen;
+
+    if (stand.modus === "wzp") {
+      const erg = wzpAuswerten(stand.wzp.arten, stand.wzp.zaehlfaktor, stand.formzahlen);
+      const mitZahlen = erg.jeArt.filter((a) => a.anzahl > 0);
+      if (!mitZahlen.length) {
+        setHinweis("Noch nichts gezählt");
+        return;
+      }
+      zeilen = [
+        ["Ort", "Verfahren", "Zaehlfaktor", "Baumart", "Anzahl", "Hoehen_m", "Mittelhoehe_m",
+         "Formzahl", "Grundflaeche_m2_ha", "Vorrat_fm_ha"],
+        ...mitZahlen.map((a) => [
+          stand.ort,
+          "Winkelzaehlprobe",
+          zahl(stand.wzp.zaehlfaktor),
+          a.name,
+          a.anzahl,
+          a.hoehen.join(" "),
+          Math.round(mittel(a.hoehen) * 10) / 10,
+          a.formzahl,
+          Math.round(a.gHa * 10) / 10,
+          Math.round(a.vHa * 10) / 10,
+        ]),
+      ];
+    } else {
+      if (!stand.baeume.length) {
+        setHinweis("Noch keine Bäume eingetragen");
+        return;
+      }
+      zeilen = [
+        ["Ort", "Verfahren", "Flaeche_m2", "Baumart", "BHD_cm", "Hoehe_m", "Formzahl",
+         "Grundflaeche_m2", "Volumen_m3"],
+        ...stand.baeume.map((b) => [
+          stand.ort,
+          "Einzelbaeume",
+          zahl(stand.flaeche),
+          b.art,
+          zahl(b.bhd),
+          zahl(b.hoehe),
+          zahl(b.formzahl),
+          Math.round(grundflaeche(b.bhd) * 10000) / 10000,
+          Math.round(volumen(b.bhd, b.hoehe, b.formzahl) * 1000) / 1000,
+        ]),
+      ];
     }
-    const zeilen = [
-      ["Ort", "Flaeche_m2", "Baumart", "BHD_cm", "Hoehe_m", "Formzahl", "Grundflaeche_m2", "Volumen_m3"],
-      ...baeume.map((b) => [
-        ort,
-        zahl(flaeche),
-        b.art,
-        zahl(b.bhd),
-        zahl(b.hoehe),
-        zahl(b.formzahl),
-        Math.round(grundflaeche(b.bhd) * 10000) / 10000,
-        Math.round(volumen(b.bhd, b.hoehe, b.formzahl) * 1000) / 1000,
-      ]),
-    ];
-    const name = `Baummessung_${ort || "Aufnahme"}.xlsx`;
+
+    const name = `Baummessung_${stand.ort || "Aufnahme"}.xlsx`;
     const blob = baueXlsx(zeilen, "Baummessung");
 
     try {
@@ -116,176 +128,61 @@ export default function Baummessung() {
     width: "100%",
     outline: "none",
   };
-  const beschriftung = { fontSize: 10, color: farben.muted, letterSpacing: 0.6 };
-  const kennzahl = { fontSize: 22, fontWeight: 700, fontVariantNumeric: "tabular-nums" };
+
+  const verfahren = (ziel, text) => (
+    <button
+      onClick={() => setStand((alt) => ({ ...alt, modus: ziel }))}
+      style={{
+        flex: 1,
+        background: stand.modus === ziel ? farben.surfaceHi : "transparent",
+        border: `1px solid ${farben.line}`,
+        color: stand.modus === ziel ? farben.text : farben.muted,
+        borderRadius: 10,
+        padding: "9px 0",
+        fontSize: 13,
+        fontWeight: stand.modus === ziel ? 700 : 400,
+        cursor: "pointer",
+      }}
+    >
+      {text}
+    </button>
+  );
 
   return (
     <div style={{ color: farben.text, padding: "14px 14px 96px", maxWidth: 560, margin: "0 auto" }}>
-      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-        <div style={{ flex: 2 }}>
-          <div style={beschriftung}>ORT / BESTAND</div>
-          <input style={feldStil} value={ort} onChange={(e) => setOrt(e.target.value)} placeholder="4138 b1" />
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={beschriftung}>FLÄCHE m²</div>
-          <input
-            style={feldStil}
-            value={flaeche}
-            onChange={(e) => setFlaeche(e.target.value)}
-            placeholder="500"
-            inputMode="decimal"
-          />
-        </div>
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>ORT / BESTAND</div>
+        <input
+          style={feldStil}
+          value={stand.ort}
+          onChange={(e) => setzeFeld("ort")(e.target.value)}
+          placeholder="4138 b1"
+        />
       </div>
 
-      {/* Eingabe eines Baumes */}
-      <div style={{ background: farben.surface, borderRadius: 14, padding: "12px 14px", marginBottom: 14 }}>
-        <div style={{ ...beschriftung, marginBottom: 6 }}>BAUMART</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-          {BAUMARTEN.map((a) => (
-            <button
-              key={a.name}
-              onClick={() => setArt(a.name)}
-              style={{
-                background: art === a.name ? farben.unverb : "transparent",
-                border: `1px solid ${art === a.name ? farben.unverb : farben.line}`,
-                color: art === a.name ? farben.bg : farben.muted,
-                borderRadius: 999,
-                padding: "6px 11px",
-                fontSize: 13,
-                fontWeight: art === a.name ? 700 : 400,
-                cursor: "pointer",
-                WebkitTapHighlightColor: "transparent",
-              }}
-            >
-              {a.name}
-            </button>
-          ))}
-        </div>
-
-        <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
-          <div style={{ flex: 1 }}>
-            <div style={beschriftung}>BHD cm</div>
-            <input
-              style={{ ...feldStil, fontSize: 22, fontWeight: 700 }}
-              value={bhd}
-              onChange={(e) => setBhd(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && hinzufuegen()}
-              placeholder="30"
-              inputMode="decimal"
-            />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={beschriftung}>HÖHE m</div>
-            <input
-              style={{ ...feldStil, fontSize: 22, fontWeight: 700 }}
-              value={hoehe}
-              onChange={(e) => setHoehe(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && hinzufuegen()}
-              placeholder="25"
-              inputMode="decimal"
-            />
-          </div>
-          <button
-            onClick={hinzufuegen}
-            style={{
-              background: farben.unverb,
-              border: "none",
-              color: farben.bg,
-              borderRadius: 12,
-              padding: "12px 18px",
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-          >
-            +
-          </button>
-        </div>
-        <div style={{ fontSize: 10, color: farben.muted, marginTop: 8 }}>
-          Formzahl {nk(formzahlVon(art), 2)} für {art}
-        </div>
+      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+        {verfahren("wzp", "Winkelzählprobe")}
+        {verfahren("einzel", "Einzelbäume")}
       </div>
 
-      {/* Ergebnis */}
-      {erg.anzahl > 0 && (
-        <div style={{ background: farben.surface, borderRadius: 14, padding: "12px 14px", marginBottom: 14 }}>
-          <div style={{ ...beschriftung, marginBottom: 8 }}>
-            ERGEBNIS · {erg.anzahl} {erg.anzahl === 1 ? "Baum" : "Bäume"}
-          </div>
-
-          {erg.jeHektar ? (
-            <div style={{ display: "flex", gap: 14, marginBottom: 12 }}>
-              <div style={{ flex: 1 }}>
-                <div style={kennzahl}>{nk(erg.jeHektar.vorrat, 1)}</div>
-                <div style={{ fontSize: 10, color: farben.muted }}>Vorrat fm/ha</div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={kennzahl}>{nk(erg.jeHektar.grundflaeche, 1)}</div>
-                <div style={{ fontSize: 10, color: farben.muted }}>Grundfläche m²/ha</div>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={kennzahl}>{nk(erg.jeHektar.staemme, 0)}</div>
-                <div style={{ fontSize: 10, color: farben.muted }}>Stämme/ha</div>
-              </div>
-            </div>
-          ) : (
-            <div style={{ fontSize: 12, color: farben.verb, marginBottom: 10 }}>
-              Fläche eintragen, dann wird auf Hektar hochgerechnet.
-            </div>
-          )}
-
-          <div style={{ fontSize: 12, color: farben.muted, lineHeight: 1.6 }}>
-            Summe Grundfläche {nk(erg.summeG, 3)} m² · Summe Volumen {nk(erg.summeV, 3)} fm
-            <br />
-            Mittelhöhe {nk(erg.mittelHoehe, 1)} m · Grundflächenmittelstamm {nk(erg.dg, 1)} cm
-          </div>
-        </div>
+      {stand.modus === "wzp" ? (
+        <Winkelzaehlprobe
+          wzp={stand.wzp}
+          setWzp={setWzp}
+          formzahlen={stand.formzahlen}
+          setHinweis={setHinweis}
+        />
+      ) : (
+        <Einzelbaeume
+          flaeche={stand.flaeche}
+          setFlaeche={setzeFeld("flaeche")}
+          formzahlen={stand.formzahlen}
+          baeume={stand.baeume}
+          setBaeume={setBaeume}
+          setHinweis={setHinweis}
+        />
       )}
 
-      {/* Liste der Baeume */}
-      {baeume.length > 0 && (
-        <div style={{ border: `1px solid ${farben.line}`, borderRadius: 10, overflow: "hidden", marginBottom: 14 }}>
-          {baeume.map((b, i) => (
-            <div
-              key={b.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "8px 10px",
-                borderTop: i === 0 ? "none" : `1px solid ${farben.line}`,
-                fontSize: 13,
-              }}
-            >
-              <div style={{ width: 22, color: farben.muted, fontVariantNumeric: "tabular-nums" }}>{i + 1}</div>
-              <div style={{ flex: 1, fontWeight: 600 }}>{b.art}</div>
-              <div style={{ fontVariantNumeric: "tabular-nums", color: farben.muted }}>
-                {nk(zahl(b.bhd), 0)} cm · {nk(zahl(b.hoehe), 0)} m
-              </div>
-              <div style={{ fontVariantNumeric: "tabular-nums", width: 62, textAlign: "right" }}>
-                {nk(volumen(b.bhd, b.hoehe, b.formzahl), 3)}
-              </div>
-              <button
-                onClick={() => entfernen(b.id)}
-                aria-label="Baum entfernen"
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: farben.muted,
-                  fontSize: 18,
-                  cursor: "pointer",
-                  padding: "0 2px",
-                }}
-              >
-                ×
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Formzahlen anpassen */}
       <button
         onClick={() => setFormzahlenOffen(!formzahlenOffen)}
         style={{
@@ -296,6 +193,7 @@ export default function Baummessung() {
           borderRadius: 10,
           padding: "8px 0",
           fontSize: 13,
+          marginTop: 18,
           cursor: "pointer",
         }}
       >
@@ -307,15 +205,21 @@ export default function Baummessung() {
           <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, marginBottom: 10 }}>
             Die Formzahl beschreibt, wie stark sich der Stamm nach oben verjüngt. Die Werte sind
             Richtwerte für Derbholz – je nach Alter, Bonität und Herkunft weichen sie ab. Das
-            Volumen ist damit eine Schätzung, keine Massentafel. Eigene Werte gerne eintragen.
+            Volumen ist damit eine Schätzung, keine Massentafel. Eigene Werte gerne eintragen; sie
+            gelten für beide Verfahren.
           </div>
           {BAUMARTEN.map((a) => (
             <div key={a.name} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
               <div style={{ flex: 1, fontSize: 13 }}>{a.name}</div>
               <input
                 style={{ ...feldStil, width: 70, textAlign: "right" }}
-                value={formzahlen[a.name] ?? ""}
-                onChange={(e) => setFormzahlen((alle) => ({ ...alle, [a.name]: e.target.value }))}
+                value={stand.formzahlen[a.name] ?? ""}
+                onChange={(e) =>
+                  setStand((alt) => ({
+                    ...alt,
+                    formzahlen: { ...alt.formzahlen, [a.name]: e.target.value },
+                  }))
+                }
                 inputMode="decimal"
               />
             </div>

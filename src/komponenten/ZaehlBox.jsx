@@ -98,7 +98,20 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
         ✎
       </div>
 
-      <div style={{ fontSize: 11, letterSpacing: 0.8, textTransform: "uppercase", color: farbe }}>
+      <div
+        style={{
+          fontSize: 11,
+          letterSpacing: 0.8,
+          textTransform: "uppercase",
+          color: farbe,
+          // Platz fuer die beiden Knoepfe oben rechts freihalten - sonst
+          // laeuft die Beschriftung in schmalen Boxen darunter.
+          paddingRight: 72,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
         {label}
       </div>
 
