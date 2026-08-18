@@ -930,9 +930,6 @@ export default function App() {
           <button onClick={csvKopieren} style={leisteKnopf}>
             CSV
           </button>
-          <button onClick={ergebnisOeffnen} style={leisteKnopf}>
-            PDF
-          </button>
           <button onClick={excelDatei} style={leisteKnopf}>
             Excel
           </button>
