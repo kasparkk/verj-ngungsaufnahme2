@@ -726,7 +726,7 @@ export default function Verjuengung() {
           cursor: "pointer",
         }}
       >
-        {standorteOffen ? "Standorte ausblenden" : "Standorte auf Karte"}
+        {standorteOffen ? "Standorte ausblenden" : "Standorte anzeigen"}
       </button>
 
       {standorteOffen && <StandortKarte kreise={kreise} />}
