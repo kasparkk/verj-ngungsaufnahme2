@@ -15,14 +15,11 @@ const RAND = 26;
 const METER_JE_BREITENGRAD = 110540;
 const METER_JE_LAENGENGRAD = 111320;
 
-const istApple = () =>
-  typeof navigator !== "undefined" && /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent);
-
-// Apple-Geraete kennen kein geo:, Android oeffnet damit die Karten-App (auch offline).
-export const kartenLink = (lat, lon, nr) =>
-  istApple()
-    ? `https://maps.apple.com/?q=${lat},${lon}`
-    : `geo:${lat},${lon}?q=${lat},${lon}(Probekreis ${nr})`;
+/* Google Maps statt einer geraetespezifischen Adresse: das oeffnet auf
+   Android die Maps-App, auf dem iPhone Maps oder den Browser, und am Rechner
+   einfach die Seite - ein Link, der ueberall ankommt. */
+export const kartenLink = (lat, lon) =>
+  `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
 
 // Runder Wert fuer den Massstabsbalken.
 function netteLaenge(meter) {
@@ -141,13 +138,15 @@ export default function StandortKarte({ kreise }) {
 
       <div style={{ fontSize: 10, color: farben.muted, margin: "6px 2px 8px", lineHeight: 1.5 }}>
         Lage der Probekreise zueinander, Norden oben – ohne Kartenhintergrund, damit es auch ohne
-        Empfang funktioniert. Punkt antippen öffnet die Karten-App.
+        Empfang funktioniert. Zum Navigieren unten auf „Maps“ tippen.
       </div>
 
       {meter.map((m) => (
         <a
           key={m.nr}
-          href={kartenLink(m.lat, m.lon, m.nr)}
+          href={kartenLink(m.lat, m.lon)}
+          target="_blank"
+          rel="noopener noreferrer"
           style={{
             display: "flex",
             alignItems: "center",
@@ -164,7 +163,7 @@ export default function StandortKarte({ kreise }) {
             {m.lat.toFixed(5)}, {m.lon.toFixed(5)}
             {m.acc != null ? ` · ±${Math.round(m.acc)} m` : ""}
           </div>
-          <div style={{ color: farben.unverb }}>Karte ›</div>
+          <div style={{ color: farben.unverb, whiteSpace: "nowrap" }}>Maps ›</div>
         </a>
       ))}
     </div>
