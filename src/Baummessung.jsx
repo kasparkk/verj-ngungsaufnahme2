@@ -57,11 +57,12 @@ export default function Baummessung() {
         return;
       }
       zeilen = [
-        ["Ort", "Verfahren", "Zaehlfaktor", "Baumart", "Anzahl", "Hoehen_m", "Mittelhoehe_m",
+        ["Ort", "Alter_Jahre", "Verfahren", "Zaehlfaktor", "Baumart", "Anzahl", "Hoehen_m", "Mittelhoehe_m",
          "BHD_cm", "Mittelstamm_cm", "Formzahl", "Grundflaeche_m2_ha", "Vorrat_fm_ha",
          "Staemme_ha", "Volumen_Mittelstamm_m3"],
         ...mitZahlen.map((a) => [
           stand.ort,
+          zahl(stand.alter),
           "Winkelzaehlprobe",
           zahl(stand.wzp.zaehlfaktor),
           a.name,
@@ -155,14 +156,26 @@ export default function Baummessung() {
 
   return (
     <div style={{ color: farben.text, padding: "14px 14px 96px", maxWidth: 560, margin: "0 auto" }}>
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>ORT / BESTAND</div>
-        <input
-          style={feldStil}
-          value={stand.ort}
-          onChange={(e) => setzeFeld("ort")(e.target.value)}
-          placeholder="4138 b1"
-        />
+      <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
+        <div style={{ flex: 2 }}>
+          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>ORT / BESTAND</div>
+          <input
+            style={feldStil}
+            value={stand.ort}
+            onChange={(e) => setzeFeld("ort")(e.target.value)}
+            placeholder="4138 b1"
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>ALTER Jahre</div>
+          <input
+            style={feldStil}
+            value={stand.alter}
+            onChange={(e) => setzeFeld("alter")(e.target.value)}
+            placeholder="80"
+            inputMode="numeric"
+          />
+        </div>
       </div>
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
@@ -172,6 +185,7 @@ export default function Baummessung() {
 
       {stand.modus === "wzp" ? (
         <Winkelzaehlprobe
+          alter={stand.alter}
           wzp={stand.wzp}
           setWzp={setWzp}
           formzahlen={stand.formzahlen}

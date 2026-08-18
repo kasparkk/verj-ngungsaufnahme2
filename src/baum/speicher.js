@@ -15,6 +15,7 @@ export const leereArt = (name) => ({ id: `w${name}`, name, anzahl: 0, hoehen: []
 export const leererStand = () => ({
   modus: "wzp",
   ort: "",
+  alter: "",
   formzahlen: Object.fromEntries(BAUMARTEN.map((a) => [a.name, String(a.formzahl)])),
   // Winkelzaehlprobe
   wzp: { zaehlfaktor: 4, arten: WZP_START.map(leereArt) },
@@ -38,6 +39,7 @@ export function laden() {
     return {
       modus: daten.modus === "einzel" ? "einzel" : "wzp",
       ort: daten.ort ?? "",
+      alter: daten.alter ?? "",
       // Fehlende Arten aus den Voreinstellungen ergaenzen.
       formzahlen: { ...standard.formzahlen, ...(daten.formzahlen ?? {}) },
       wzp: {
