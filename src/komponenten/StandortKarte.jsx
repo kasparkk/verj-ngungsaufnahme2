@@ -8,8 +8,8 @@ import { farben } from "../konfiguration.js";
    Karte braucht, tippt einen Punkt an und landet in der Karten-App des
    Geraets (die offline gespeicherte Karten nutzen kann). */
 
-const HOEHE = 220;
-const RAND = 26;
+const HOEHE = 150;
+const RAND = 18;
 
 // Meter je Grad - fuer die kleinen Abstaende einer Aufnahme genau genug.
 const METER_JE_BREITENGRAD = 110540;
@@ -151,19 +151,31 @@ export default function StandortKarte({ kreise }) {
             display: "flex",
             alignItems: "center",
             gap: 10,
-            padding: "8px 10px",
+            padding: "10px 4px",
             borderTop: `1px solid ${farben.line}`,
-            fontSize: 13,
             color: farben.text,
             textDecoration: "none",
+            WebkitTapHighlightColor: "transparent",
           }}
         >
-          <div style={{ fontWeight: 700, width: 22 }}>{m.nr}</div>
-          <div style={{ flex: 1, color: farben.muted, fontVariantNumeric: "tabular-nums" }}>
+          <div style={{ fontWeight: 700, width: 20, fontSize: 15 }}>{m.nr}</div>
+          <div style={{ flex: 1, color: farben.muted, fontSize: 12, fontVariantNumeric: "tabular-nums" }}>
             {m.lat.toFixed(5)}, {m.lon.toFixed(5)}
             {m.acc != null ? ` · ±${Math.round(m.acc)} m` : ""}
           </div>
-          <div style={{ color: farben.unverb, whiteSpace: "nowrap" }}>Maps ›</div>
+          <div
+            style={{
+              background: farben.unverb,
+              color: farben.bg,
+              borderRadius: 10,
+              padding: "11px 18px",
+              fontSize: 15,
+              fontWeight: 700,
+              whiteSpace: "nowrap",
+            }}
+          >
+            Maps
+          </div>
         </a>
       ))}
     </div>
