@@ -7,6 +7,7 @@ import { baueXlsx } from "./xlsx.js";
 import { zeilenHochladen, ergebnisAllePersonen, ergebnisEinePerson } from "./datenbank.js";
 import ZaehlBox from "./komponenten/ZaehlBox.jsx";
 import UebersichtTabelle from "./komponenten/UebersichtTabelle.jsx";
+import StandortKarte from "./komponenten/StandortKarte.jsx";
 import ErgebnisAnsicht from "./komponenten/ErgebnisAnsicht.jsx";
 
 // Wartezeit nach der letzten Aenderung, bevor automatisch abgeglichen wird.
@@ -40,6 +41,7 @@ export default function Verjuengung() {
   const [neueArt, setNeueArt] = useState("");
   const [csvText, setCsvText] = useState(null);
   const [uebersichtOffen, setUebersichtOffen] = useState(false);
+  const [standorteOffen, setStandorteOffen] = useState(false);
   const [gpsLaeuft, setGpsLaeuft] = useState(false);
 
   // "" = noch nichts zu senden, sonst sync | ok | err | offline
@@ -709,6 +711,25 @@ export default function Verjuengung() {
       </button>
 
       {uebersichtOffen && <UebersichtTabelle arten={arten} kreise={kreise} />}
+
+      <button
+        onClick={() => setStandorteOffen(!standorteOffen)}
+        style={{
+          width: "100%",
+          background: "transparent",
+          border: `1px solid ${farben.line}`,
+          color: farben.text,
+          borderRadius: 10,
+          padding: "8px 0",
+          fontSize: 13,
+          marginBottom: standorteOffen ? 10 : 14,
+          cursor: "pointer",
+        }}
+      >
+        {standorteOffen ? "Standorte ausblenden" : "Standorte auf Karte"}
+      </button>
+
+      {standorteOffen && <StandortKarte kreise={kreise} />}
 
       {arten.map((art) => (
         <div key={art.id} style={{ marginBottom: 14 }}>
