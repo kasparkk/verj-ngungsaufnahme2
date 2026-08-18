@@ -22,9 +22,12 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
     setEingabe(false);
   };
 
+  /* Die beiden kleinen Knoepfe sitzen unten rechts, nicht oben: oben
+     braucht die Beschriftung die volle Zeile, sonst wird sie auf schmalen
+     Geraeten abgeschnitten. */
   const kleinerKnopf = {
     position: "absolute",
-    top: 8,
+    bottom: 8,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -54,6 +57,8 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
       aria-label={label}
       style={{
         flex: gross ? 1.18 : 1,
+        // Damit die Box in schmalen Reihen mitschrumpft statt die Seite zu weiten.
+        minWidth: 0,
         minHeight: gross ? 118 : 104,
         background: farben.surfaceHi,
         border: `2px solid ${farbe}`,
@@ -101,15 +106,9 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
       <div
         style={{
           fontSize: 11,
-          letterSpacing: 0.8,
+          letterSpacing: 0.4,
           textTransform: "uppercase",
           color: farbe,
-          // Platz fuer die beiden Knoepfe oben rechts freihalten - sonst
-          // laeuft die Beschriftung in schmalen Boxen darunter.
-          paddingRight: 72,
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
         }}
       >
         {label}
@@ -149,7 +148,10 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
         <div style={zahlStil}>{wert}</div>
       )}
 
-      <Strichliste n={wert} color={farbe} />
+      {/* Abstand zu den Knoepfen unten rechts */}
+      <div style={{ paddingRight: 62 }}>
+        <Strichliste n={wert} color={farbe} />
+      </div>
     </div>
   );
 }

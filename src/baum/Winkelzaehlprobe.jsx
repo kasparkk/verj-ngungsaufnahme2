@@ -40,6 +40,10 @@ function WerteFeld({
   return (
     <div
       style={{
+        flex: 1,
+        // Ohne dies waechst das Feld auf seine Inhaltsbreite und schiebt die
+        // Seite ueber den Bildschirmrand hinaus.
+        minWidth: 0,
         background: farben.surfaceHi,
         border: `1px solid ${farben.line}`,
         borderRadius: 12,
@@ -330,7 +334,7 @@ export default function Winkelzaehlprobe({
               </button>
             </div>
 
-            <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <ZaehlBox
                 label="gezählt"
                 wert={a.anzahl}
@@ -350,14 +354,7 @@ export default function Winkelzaehlprobe({
                 gross
               />
 
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                }}
-              >
+              <div style={{ display: "flex", gap: 10 }}>
                 <WerteFeld
                   titel="HÖHEN"
                   einheit="m"
