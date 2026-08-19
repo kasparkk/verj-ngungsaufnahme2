@@ -102,7 +102,7 @@ export function mittel(werte) {
   return zahlen.reduce((s, n) => s + n, 0) / zahlen.length;
 }
 
-export function wzpAuswerten(arten, zaehlfaktor, formzahlen) {
+export function wzpAuswerten(arten, zaehlfaktor, formzahlen, bestandesalter) {
   const k = zahl(zaehlfaktor) || 4;
 
   const jeArt = arten.map((a) => {
@@ -117,6 +117,11 @@ export function wzpAuswerten(arten, zaehlfaktor, formzahlen) {
        waechst, liegt er ueber dem arithmetischen Mittel (30 und 40 cm ergeben
        35,4 statt 35,0 cm). Mit ihm laesst sich die Grundflaeche je Hektar in
        eine Stammzahl umrechnen. */
+    /* Alter: je Baumart eintragbar, sonst gilt das Bestandesalter. Im
+       Mischbestand sind die Arten oft verschieden alt, und die Ertragstafel
+       wird ohnehin je Baumart gewaehlt. */
+    const alterJahre = zahl(a.alter) || zahl(bestandesalter);
+
     const dm = (a.durchmesser ?? []).map(zahl).filter((d) => d > 0);
     const dg = dm.length ? Math.sqrt(dm.reduce((s, d) => s + d * d, 0) / dm.length) : 0;
     const gMittelstamm = dg > 0 ? grundflaeche(dg) : 0;
@@ -126,6 +131,7 @@ export function wzpAuswerten(arten, zaehlfaktor, formzahlen) {
     return {
       ...a,
       anzahl,
+      alterJahre,
       mittelHoehe,
       formzahl,
       gHa,

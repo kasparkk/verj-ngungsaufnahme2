@@ -10,7 +10,15 @@ const SCHLUESSEL = "baummessung:aufnahme";
 
 const WZP_START = ["Fichte", "Kiefer", "Buche", "Eiche"];
 
-export const leereArt = (name) => ({ id: `w${name}`, name, anzahl: 0, hoehen: [], durchmesser: [] });
+export const leereArt = (name) => ({
+  id: `w${name}`,
+  name,
+  anzahl: 0,
+  hoehen: [],
+  durchmesser: [],
+  // Leer heisst: das Bestandesalter oben gilt.
+  alter: "",
+});
 
 export const leererStand = () => ({
   modus: "wzp",
@@ -49,6 +57,7 @@ export function laden() {
           ...a,
           hoehen: a.hoehen ?? [],
           durchmesser: a.durchmesser ?? [],
+          alter: a.alter ?? "",
         })),
       },
       flaeche: daten.flaeche ?? standard.flaeche,

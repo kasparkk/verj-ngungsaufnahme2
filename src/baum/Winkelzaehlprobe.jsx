@@ -123,7 +123,8 @@ export default function Winkelzaehlprobe({
   const [neueHoehe, setNeueHoehe] = useState({});
   const [neuerDm, setNeuerDm] = useState({});
 
-  const erg = wzpAuswerten(wzp.arten, wzp.zaehlfaktor, formzahlen);
+  /* Das Alter oben gilt als Vorgabe; je Baumart laesst es sich ueberschreiben. */
+  const erg = wzpAuswerten(wzp.arten, wzp.zaehlfaktor, formzahlen, alter);
 
   /* Die drei Werte, die der Ertragstafel-Rechner der Landesforst braucht.
      Vorausfuellen per Link geht dort nicht - der Rechner nimmt keine Werte
@@ -131,7 +132,7 @@ export default function Winkelzaehlprobe({
      Kopieren beieinander. */
   const kopieren = async (a) => {
     const zeile =
-      `${a.name} · Alter ${zahl(alter) || "?"} Jahre · Mittelhöhe ${nk(a.mittelHoehe, 1)} m` +
+      `${a.name} · Alter ${a.alterJahre || "?"} Jahre · Mittelhöhe ${nk(a.mittelHoehe, 1)} m` +
       ` · Grundfläche ${nk(a.gHa, 0)} m²/ha`;
     try {
       await navigator.clipboard.writeText(zeile);
@@ -411,47 +412,73 @@ export default function Winkelzaehlprobe({
                   )}
                 </div>
 
-                {z.mittelHoehe > 0 && (
-                  <div
-                    style={{
-                      marginTop: 8,
-                      border: `1px solid ${farben.line}`,
-                      borderRadius: 10,
-                      padding: "8px 10px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
-                    }}
-                  >
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div
-                        style={{
-                          fontSize: 9,
-                          color: farben.muted,
-                          letterSpacing: 0.6,
-                        }}
-                      >
-                        FÜR DIE ERTRAGSTAFEL
-                      </div>
-                      <div
-                        style={{
-                          fontSize: 13,
-                          marginTop: 3,
-                          fontVariantNumeric: "tabular-nums",
-                        }}
-                      >
-                        Alter{" "}
-                        <b
-                          style={{
-                            color: zahl(alter) ? farben.text : farben.verb,
-                          }}
-                        >
-                          {zahl(alter) || "?"}
-                        </b>{" "}
-                        · Höhe <b>{nk(z.mittelHoehe, 1)} m</b> · G{" "}
-                        <b>{nk(z.gHa, 0)} m²/ha</b>
-                      </div>
+                {/* Die drei Werte fuer den Ertragstafel-Rechner. Das Alter
+                    steht hier als eigenes Feld: im Mischbestand ist die Buche
+                    unter der Kiefer selten gleich alt. Bleibt es leer, gilt
+                    das Bestandesalter von oben. */}
+                <div
+                  style={{
+                    marginTop: 8,
+                    border: `1px solid ${farben.line}`,
+                    borderRadius: 10,
+                    padding: "8px 10px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        fontSize: 9,
+                        color: farben.muted,
+                        letterSpacing: 0.6,
+                      }}
+                    >
+                      FÜR DIE ERTRAGSTAFEL
                     </div>
+                    <div
+                      style={{
+                        fontSize: 13,
+                        marginTop: 3,
+                        display: "flex",
+                        alignItems: "baseline",
+                        flexWrap: "wrap",
+                        gap: 4,
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      <span>Alter</span>
+                      <input
+                        value={a.alter ?? ""}
+                        onChange={(e) =>
+                          aendere(a.id, (x) => ({ ...x, alter: e.target.value }))
+                        }
+                        placeholder={String(zahl(alter) || "?")}
+                        inputMode="numeric"
+                        aria-label={`Alter ${a.name}`}
+                        style={{
+                          width: 42,
+                          background: "transparent",
+                          border: "none",
+                          borderBottom: `1px solid ${farben.line}`,
+                          color: z.alterJahre ? farben.text : farben.verb,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          padding: 0,
+                          outline: "none",
+                        }}
+                      />
+                      <span>
+                        · Höhe{" "}
+                        <b style={{ color: z.mittelHoehe > 0 ? farben.text : farben.verb }}>
+                          {z.mittelHoehe > 0 ? `${nk(z.mittelHoehe, 1)} m` : "?"}
+                        </b>{" "}
+                        · G <b>{nk(z.gHa, 0)} m²/ha</b>
+                      </span>
+                    </div>
+                  </div>
+                  {z.mittelHoehe > 0 && (
                     <button
                       onClick={() => kopieren(z)}
                       style={{
@@ -467,8 +494,8 @@ export default function Winkelzaehlprobe({
                     >
                       Kopieren
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </>
             )}
           </div>

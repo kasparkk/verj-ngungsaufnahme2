@@ -50,7 +50,7 @@ export default function Baummessung() {
     let zeilen;
 
     if (stand.modus === "wzp") {
-      const erg = wzpAuswerten(stand.wzp.arten, stand.wzp.zaehlfaktor, stand.formzahlen);
+      const erg = wzpAuswerten(stand.wzp.arten, stand.wzp.zaehlfaktor, stand.formzahlen, stand.alter);
       const mitZahlen = erg.jeArt.filter((a) => a.anzahl > 0);
       if (!mitZahlen.length) {
         setHinweis("Noch nichts gezählt");
@@ -62,7 +62,7 @@ export default function Baummessung() {
          "Staemme_ha", "Volumen_Mittelstamm_m3"],
         ...mitZahlen.map((a) => [
           stand.ort,
-          zahl(stand.alter),
+          a.alterJahre,
           "Winkelzaehlprobe",
           zahl(stand.wzp.zaehlfaktor),
           a.name,
@@ -177,6 +177,12 @@ export default function Baummessung() {
           />
         </div>
       </div>
+
+      {stand.modus === "wzp" && (
+        <div style={{ fontSize: 10, color: farben.muted, marginTop: -8, marginBottom: 14 }}>
+          Das Alter gilt für alle Baumarten – bei jeder Baumart lässt es sich einzeln überschreiben.
+        </div>
+      )}
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
         {verfahren("wzp", "Winkelzählprobe")}
