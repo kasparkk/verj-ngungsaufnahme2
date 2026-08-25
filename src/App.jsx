@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { farben } from "./konfiguration.js";
 import Verjuengung from "./Verjuengung.jsx";
 import Baummessung from "./Baummessung.jsx";
+import Monitoring from "./Monitoring.jsx";
 
 /* Rahmen um die beiden Seiten.
 
@@ -17,7 +18,7 @@ export default function App() {
   useEffect(() => {
     try {
       const gemerkt = localStorage.getItem(SEITE_SCHLUESSEL);
-      if (gemerkt === "baum" || gemerkt === "verjuengung") setSeite(gemerkt);
+      if (["baum", "verjuengung", "monitoring"].includes(gemerkt)) setSeite(gemerkt);
     } catch {
       // Ohne gemerkte Seite faengt die App bei der Verjuengungsaufnahme an.
     }
@@ -71,9 +72,12 @@ export default function App() {
       >
         {reiter("verjuengung", "Verjüngung")}
         {reiter("baum", "Baummessung")}
+        {reiter("monitoring", "Monitoring")}
       </div>
 
-      {seite === "verjuengung" ? <Verjuengung /> : <Baummessung />}
+      {seite === "verjuengung" && <Verjuengung />}
+      {seite === "baum" && <Baummessung />}
+      {seite === "monitoring" && <Monitoring />}
     </div>
   );
 }
