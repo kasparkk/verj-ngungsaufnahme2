@@ -6,6 +6,7 @@ import Pflanzen from "./monitoring/Pflanzen.jsx";
 import Auswertung from "./monitoring/Auswertung.jsx";
 import { laden, speichern, neuerPunkt, naechsteNummer, VORLAGE_FELDER } from "./monitoring/speicher.js";
 import { masterZeilen, baueCsv, baueGeoJson } from "./monitoring/export.js";
+import { sollpunkteLesen } from "./monitoring/einlesen.js";
 import { istVerbissen } from "./monitoring/berechnung.js";
 
 /* Verjuengungszustandsmonitoring - die Aufnahmemaske der Landesforst
@@ -56,6 +57,67 @@ export default function Monitoring() {
       for (const feld of VORLAGE_FELDER) vorlage[feld] = structuredClone(aktiv[feld]);
       return { ...alt, punkte, vorlage };
     });
+
+  /* Sollpunkte aus dem Geoprogramm uebernehmen.
+
+     Ein Punkt, dessen Nummer es schon gibt, bekommt nur die Soll-Lage
+     dazu - bereits aufgenommene Daten bleiben unberuehrt. Alles andere
+     waere im Gelaende ein Datenverlust mit einem einzigen Fehlgriff. */
+  const sollpunkteLaden = async (datei) => {
+    if (!datei) return;
+    let text;
+    try {
+      text = await datei.text();
+    } catch {
+      setHinweis("Datei nicht lesbar");
+      return;
+    }
+
+    const { punkte, format, grund } = sollpunkteLesen(text);
+    if (!punkte.length) {
+      setHinweis(grund);
+      return;
+    }
+
+    setStand((alt) => {
+      const vorhanden = new Map(alt.punkte.map((p, i) => [Number(p.nr), i]));
+      const neue = [...alt.punkte];
+      let ergaenzt = 0;
+
+      for (const s of punkte) {
+        const i = vorhanden.get(Number(s.nr));
+        if (i != null) {
+          neue[i] = { ...neue[i], sollLat: s.breite, sollLon: s.laenge };
+          ergaenzt += 1;
+        } else {
+          neue.push({
+            ...neuerPunkt(s.nr, alt.vorlage),
+            sollLat: s.breite,
+            sollLon: s.laenge,
+          });
+        }
+      }
+
+      /* Ein unberuehrter Startpunkt ohne Soll-Lage waere nach dem Einlesen
+         nur noch im Weg. */
+      const bereinigt = neue.filter(
+        (p) =>
+          p.sollLat != null ||
+          p.lat != null ||
+          p.pflanzen.length > 0 ||
+          p.abgeschlossen,
+      );
+      const liste = (bereinigt.length ? bereinigt : neue).sort(
+        (a, b) => Number(a.nr) - Number(b.nr),
+      );
+
+      setHinweis(
+        `${punkte.length} Sollpunkte aus ${format} übernommen` +
+          (ergaenzt ? ` (${ergaenzt} vorhandenen ergänzt)` : ""),
+      );
+      return { ...alt, punkte: liste, aktiv: 0 };
+    });
+  };
 
   const punktHinzu = () =>
     setStand((alt) => ({
@@ -168,6 +230,7 @@ export default function Monitoring() {
             >
               {p.nr}
               {p.verlegt && !fertig ? " ↷" : ""}
+              {!fertig && p.lat == null && p.sollLat != null ? " ·" : ""}
             </button>
           );
         })}
@@ -187,6 +250,32 @@ export default function Monitoring() {
         >
           + Punkt
         </button>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
+        <label
+          style={{
+            flex: 1, textAlign: "center", background: "transparent",
+            border: `1px dashed ${farben.line}`, color: farben.muted,
+            borderRadius: 10, padding: "9px 0", fontSize: 12, cursor: "pointer",
+          }}
+        >
+          Sollpunkte aus dem Geoprogramm laden
+          <input
+            type="file"
+            accept=".geojson,.json,.csv,.txt,.gpx,.kml,application/geo+json,text/csv,application/gpx+xml"
+            onChange={(e) => {
+              sollpunkteLaden(e.target.files?.[0]);
+              // Damit dieselbe Datei erneut gewaehlt werden kann.
+              e.target.value = "";
+            }}
+            style={{ display: "none" }}
+          />
+        </label>
+      </div>
+      <div style={{ fontSize: 9, color: farben.muted, marginBottom: 12, lineHeight: 1.5 }}>
+        GeoJSON, CSV (Rechts-/Hochwert oder Länge/Breite), GPX oder KML. Das
+        Format und das Bezugssystem erkennt die App selbst.
       </div>
 
       <div style={{ fontSize: 10, color: farben.muted, marginBottom: 14 }}>

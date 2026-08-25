@@ -73,6 +73,10 @@ export function neuerPunkt(nr, vorlage) {
     lat: null,
     lon: null,
     genauigkeit: null,
+    /* Woher die Ist-Koordinate stammt: "geraet" = Handy-GNSS (Meter),
+       "stab" = Messstab/Rover (Zentimeter). Der Unterschied ist gross genug,
+       dass er in den Daten stehen muss. */
+    quelle: "",
     verlegt: false,
     abgeschlossen: false,
     ...Object.fromEntries(VORLAGE_FELDER.map((f) => [f, structuredClone(v[f])])),

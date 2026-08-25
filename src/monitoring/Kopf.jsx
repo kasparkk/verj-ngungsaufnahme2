@@ -6,9 +6,9 @@ import {
   artNach,
 } from "./stammdaten.js";
 import {
-  probekreisflaeche, zielProfil, aktiverBzt, verjuengungsfreundlich,
+  probekreisflaeche, zielProfil, aktiverBzt, verjuengungsfreundlich, giltAlsVerlegt,
 } from "./berechnung.js";
-import { nachUtm33, entfernung, peilung, himmelsrichtung } from "./utm33.js";
+import { nachUtm33, ausUtm33, entfernung, peilung, himmelsrichtung } from "./utm33.js";
 import { Abschnitt, Feld, TextFeld, AuswahlFeld, KnopfWahl, JaNein, beschriftung } from "./Felder.jsx";
 
 const nk = (wert, stellen = 1) =>
@@ -42,6 +42,11 @@ function AutoFeld({ titel, wert, hinweis }) {
 export default function Kopf({ punkt, aendere, setHinweis }) {
   const [gpsLaeuft, setGpsLaeuft] = useState(false);
   const [artOffen, setArtOffen] = useState(false);
+  const [stabOffen, setStabOffen] = useState(false);
+  const [stab, setStab] = useState({ x: "", y: "", genau: "" });
+  // Ergebnis des letzten Peilens zum Sollpunkt - bewusst nicht gespeichert,
+  // es gilt nur fuer den Augenblick, in dem man dort steht.
+  const [peil, setPeil] = useState(null);
 
   const setzeBeschreibung = (feld) => (wert) =>
     aendere((p) => ({ ...p, beschreibung: { ...p.beschreibung, [feld]: wert } }));
@@ -63,15 +68,13 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
           lat: pos.coords.latitude,
           lon: pos.coords.longitude,
           genauigkeit: pos.coords.accuracy,
-          /* Liegt eine Soll-Lage vor und ist die gemessene mehr als der
-             Probekreisradius davon entfernt, gilt der Punkt als verlegt.
-             Innerhalb des Radius ist die Abweichung die uebliche
-             GNSS-Unschaerfe und kein Verlegen. */
+          quelle: "geraet",
           verlegt:
-            p.sollLat != null && p.sollLon != null
-              ? entfernung(p.sollLat, p.sollLon, pos.coords.latitude, pos.coords.longitude) >
-                Math.max(10, Number(p.radius) || 0)
-              : p.verlegt,
+            giltAlsVerlegt(
+              p.sollLat, p.sollLon,
+              pos.coords.latitude, pos.coords.longitude,
+              p.radius, pos.coords.accuracy,
+            ) ?? p.verlegt,
         }));
       },
       () => {
@@ -82,7 +85,58 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
     );
   };
 
+  /* Uebernimmt die am Messstab abgelesene Koordinate. Gerechnet wird
+     intern in Laenge und Breite, damit Karte, Entfernung und Export
+     dieselbe Grundlage haben wie eine Handy-Messung. */
+  const stabUebernehmen = () => {
+    const x = parseFloat(String(stab.x).replace(",", "."));
+    const y = parseFloat(String(stab.y).replace(",", "."));
+    const grad = ausUtm33(x, y);
+    if (!grad) {
+      setHinweis("Rechts- und Hochwert prüfen (UTM 33N)");
+      return;
+    }
+    const genau = parseFloat(String(stab.genau).replace(",", "."));
+    aendere((p) => ({
+      ...p,
+      lat: grad.breite,
+      lon: grad.laenge,
+      genauigkeit: Number.isFinite(genau) ? genau : null,
+      quelle: "stab",
+      verlegt:
+        giltAlsVerlegt(
+          p.sollLat, p.sollLon, grad.breite, grad.laenge,
+          p.radius, Number.isFinite(genau) ? genau : 0,
+        ) ?? p.verlegt,
+    }));
+    setStabOffen(false);
+    setStab({ x: "", y: "", genau: "" });
+    setHinweis("Koordinate vom Messstab übernommen");
+  };
+
+  /* Peilung zum Sollpunkt: einmal messen, Entfernung und Richtung anzeigen.
+     Kein Dauerbetrieb - eine laufende Ortung leert im Bestand den Akku,
+     ohne genauer zu werden. */
+  const peilen = () => {
+    if (!navigator.geolocation) {
+      setHinweis("Kein GPS auf diesem Gerät");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) =>
+        setPeil({
+          m: entfernung(pos.coords.latitude, pos.coords.longitude, punkt.sollLat, punkt.sollLon),
+          grad: peilung(pos.coords.latitude, pos.coords.longitude, punkt.sollLat, punkt.sollLon),
+          genau: pos.coords.accuracy,
+        }),
+      () => setHinweis("Standort nicht verfügbar"),
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+    );
+  };
+
   const utm = punkt.lat != null && punkt.lon != null ? nachUtm33(punkt.lat, punkt.lon) : null;
+  const sollUtm =
+    punkt.sollLat != null && punkt.sollLon != null ? nachUtm33(punkt.sollLat, punkt.sollLon) : null;
   const abweichung =
     punkt.lat != null && punkt.sollLat != null
       ? {
@@ -136,8 +190,35 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
           </div>
         </div>
 
-        {/* Standort */}
-        <Feld titel="Standort (GNSS)">
+        {/* Sollpunkt anlaufen */}
+        {punkt.sollLat != null && (
+          <Feld titel="Sollpunkt">
+            <div style={{ fontSize: 12, color: farben.muted, marginBottom: 6, fontVariantNumeric: "tabular-nums" }}>
+              {sollUtm ? `X ${nk(sollUtm.x, 2)} · Y ${nk(sollUtm.y, 2)}` : ""}
+            </div>
+            <button
+              onClick={peilen}
+              style={{
+                width: "100%", background: "transparent", border: `1px solid ${farben.line}`,
+                borderRadius: 10, color: farben.text, padding: "12px 11px", fontSize: 14,
+                cursor: "pointer", textAlign: "left",
+              }}
+            >
+              {peil
+                ? `➤ noch ${nk(peil.m, 0)} m Richtung ${himmelsrichtung(peil.grad)} (${nk(peil.grad, 0)}°)`
+                : "➤ Entfernung und Richtung zum Sollpunkt"}
+            </button>
+            {peil && (
+              <div style={{ fontSize: 10, color: farben.muted, marginTop: 4 }}>
+                Vom Handy gemessen, ±{Math.round(peil.genau)} m. Zum Anlaufen reicht das;
+                die genaue Lage kommt vom Messstab.
+              </div>
+            )}
+          </Feld>
+        )}
+
+        {/* Ist-Position */}
+        <Feld titel="Ist-Position">
           <button
             onClick={orten}
             style={{
@@ -150,16 +231,57 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
               ? "📍 Position wird gesucht …"
               : punkt.lat != null
                 ? `📍 ${punkt.lat.toFixed(6)}, ${punkt.lon.toFixed(6)}` +
-                  (punkt.genauigkeit != null ? `  ±${Math.round(punkt.genauigkeit)} m` : "")
-                : "📍 Ist-Position erfassen"}
+                  (punkt.genauigkeit != null ? `  ±${nk(punkt.genauigkeit, 2)} m` : "")
+                : "📍 Mit dem Handy erfassen"}
           </button>
+
           {utm && (
             <div style={{ fontSize: 11, color: farben.muted, marginTop: 6, fontVariantNumeric: "tabular-nums" }}>
               ETRS89 / UTM 33N: X {nk(utm.x, 2)} · Y {nk(utm.y, 2)}
+              {punkt.quelle === "stab" ? " · vom Messstab" : punkt.quelle === "geraet" ? " · vom Handy" : ""}
             </div>
           )}
+
+          {/* Der Messstab liefert Zentimeter, das Handy Meter. Wer den Stab
+              dabei hat, traegt dessen Rechts- und Hochwert hier ein - dann
+              steht in den Daten die genaue Lage und nicht die ungefaehre. */}
+          {stabOffen ? (
+            <div style={{ marginTop: 8, border: `1px solid ${farben.line}`, borderRadius: 10, padding: 10 }}>
+              <div style={{ ...beschriftung, marginBottom: 6 }}>Vom Messstab (UTM 33N)</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <TextFeld wert={stab.x} setWert={(w) => setStab((a) => ({ ...a, x: w }))} platzhalter="Rechtswert" inputMode="decimal" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <TextFeld wert={stab.y} setWert={(w) => setStab((a) => ({ ...a, y: w }))} platzhalter="Hochwert" inputMode="decimal" />
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <TextFeld wert={stab.genau} setWert={(w) => setStab((a) => ({ ...a, genau: w }))} platzhalter="Genauigkeit m" inputMode="decimal" />
+                </div>
+                <button onClick={stabUebernehmen} style={{
+                  flex: 1, background: farben.unverb, border: "none", color: farben.bg,
+                  borderRadius: 10, padding: "10px 0", fontSize: 14, fontWeight: 700, cursor: "pointer",
+                }}>
+                  Übernehmen
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setStabOffen(true)}
+              style={{
+                marginTop: 6, background: "transparent", border: `1px dashed ${farben.line}`,
+                color: farben.muted, borderRadius: 8, padding: "9px 12px", fontSize: 13, cursor: "pointer",
+              }}
+            >
+              Koordinate vom Messstab eintragen …
+            </button>
+          )}
+
           {abweichung && (
-            <div style={{ fontSize: 11, color: punkt.verlegt ? farben.verb : farben.muted, marginTop: 4 }}>
+            <div style={{ fontSize: 11, color: punkt.verlegt ? farben.verb : farben.muted, marginTop: 6 }}>
               {nk(abweichung.m, 1)} m {himmelsrichtung(abweichung.grad)} vom Sollpunkt
               {punkt.verlegt ? " · als verlegt vermerkt" : ""}
             </div>

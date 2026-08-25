@@ -35,7 +35,7 @@ export const MASTER_SPALTEN = [
   "Verbissziel ZB2", "Referenzbaum Baumart", "Referenzbaum BHD (cm)",
   "Referenzbaum Winkel (gon)", "Referenzbaum Abstand (m)",
   // Ab hier ueber die Excel-Maske hinaus:
-  "Breite (WGS84)", "Länge (WGS84)", "GNSS-Genauigkeit (m)",
+  "Breite (WGS84)", "Länge (WGS84)", "GNSS-Genauigkeit (m)", "Quelle Ist-Koordinate",
   "Soll-X", "Soll-Y", "Punkt verlegt", "Punkt abgeschlossen",
 ];
 
@@ -98,7 +98,8 @@ export function masterZeilen(punkte) {
       zahl(p.referenz.abstand) || "",
       breite != null ? Math.round(breite * 1e7) / 1e7 : "",
       laenge != null ? Math.round(laenge * 1e7) / 1e7 : "",
-      p.genauigkeit != null ? Math.round(p.genauigkeit * 10) / 10 : "",
+      p.genauigkeit != null ? Math.round(p.genauigkeit * 100) / 100 : "",
+      { geraet: "Handy-GNSS", stab: "Messstab" }[p.quelle] ?? "",
       soll ? soll.x : "",
       soll ? soll.y : "",
       p.verlegt ? "JA" : "NEIN",
@@ -181,6 +182,7 @@ export function baueGeoJson(punkte) {
           soll_x_utm33: soll?.x ?? null,
           soll_y_utm33: soll?.y ?? null,
           genauigkeit_m: p.genauigkeit ?? null,
+          quelle: p.quelle || null,
           verlegt: !!p.verlegt,
           abgeschlossen: !!p.abgeschlossen,
           pflanzen: p.pflanzen.filter((pf) => pf.kuerzel).length,

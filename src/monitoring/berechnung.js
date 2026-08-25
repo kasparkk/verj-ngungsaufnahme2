@@ -5,6 +5,7 @@
    etwas anderes zu rechnen waere schlimmer als der Widerspruch selbst. */
 
 import { BAUMARTEN, VERBISSZIELE, artNach } from "./stammdaten.js";
+import { entfernung } from "./utm33.js";
 
 export const zahl = (wert) => {
   const n = parseFloat(String(wert ?? "").replace(",", "."));
@@ -16,6 +17,25 @@ export const probekreisflaeche = (radius) => {
   const r = zahl(radius);
   return r > 0 ? Math.round(Math.PI * r * r * 10) / 10 : 0;
 };
+
+/* Gilt der Punkt als verlegt?
+
+   Ein verlegter Punkt liegt nicht mehr dort, wo er geplant war. Die Frage
+   ist, ab welcher Abweichung das gilt - und dabei zaehlt, womit gemessen
+   wurde: der Messstab trifft auf Zentimeter, das Handy im Bestand auf
+   5 bis 15 m. Wuerde jede Abweichung ueber 10 m als Verlegung gelten,
+   waere bei einer Handy-Messung fast jeder Punkt verlegt, obwohl der Pfahl
+   unveraendert steht.
+
+   Deshalb muss die Abweichung sowohl den Probekreis als auch die doppelte
+   Messgenauigkeit ueberschreiten. Der Schalter bleibt trotzdem von Hand
+   bedienbar: wer den Punkt versetzt hat, weiss es besser als die Rechnung. */
+export function giltAlsVerlegt(sollBreite, sollLaenge, breite, laenge, radius, genauigkeit) {
+  if (sollBreite == null || sollLaenge == null || breite == null || laenge == null) return null;
+  const abstand = entfernung(sollBreite, sollLaenge, breite, laenge);
+  const schwelle = Math.max(10, zahl(radius), 2 * (zahl(genauigkeit) || 0));
+  return abstand > schwelle;
+}
 
 /* Ziel-Profil = Mischung-Schichtung-Struktur, z.B. "LN-MS-DI".
    Erst vollstaendig, wenn alle drei gewaehlt sind. */
