@@ -5,6 +5,23 @@ const kopfzeilen = {
   Authorization: `Bearer ${SUPABASE_KEY}`,
 };
 
+/* Der kostenlose Tarif von Supabase legt eine Datenbank schlafen, wenn sie
+   etwa eine Woche lang nicht benutzt wurde. Sie antwortet dann mit einem
+   Serverfehler - und in der App sah das bisher aus wie "nichts eingetragen"
+   statt wie "Datenbank schlaeft". Genau dieser Unterschied entscheidet aber,
+   ob man weitersucht oder einfach kurz wartet.
+
+   Nach dem Aufwecken dauert es ein bis zwei Minuten, bis sie wieder
+   antwortet. Die eigenen Zahlen auf dem Geraet sind davon nie betroffen. */
+const SCHLAEFT = [500, 502, 503, 504, 521, 522, 540, 544];
+
+export const istSchlafend = (status) => SCHLAEFT.includes(status);
+
+export const RUHE_HINWEIS =
+  "Datenbank schläft (kostenloser Tarif, nach einer Woche ohne Nutzung). " +
+  "Sie wacht gerade auf – in ein bis zwei Minuten nochmal versuchen. " +
+  "Die eigenen Zahlen sind davon nicht betroffen.";
+
 /* Schickt die gezaehlten Zeilen hoch. Gleiche Kombination aus Person, Datum,
    Kreis und Baumart wird ueberschrieben statt doppelt angelegt - deshalb darf
    der automatische Abgleich beliebig oft laufen. */
@@ -59,7 +76,8 @@ export async function ergebnisAllePersonen(abteilung, datum) {
   ]);
 
   if (!auswertung.ok || !rohzeilen.ok) {
-    throw new Error(`Abruf fehlgeschlagen (${auswertung.ok ? rohzeilen.status : auswertung.status})`);
+    const status = auswertung.ok ? rohzeilen.status : auswertung.status;
+    throw new Error(istSchlafend(status) ? RUHE_HINWEIS : `Abruf fehlgeschlagen (${status})`);
   }
 
   return { auswertung: await auswertung.json(), zeilen: await rohzeilen.json() };
@@ -75,7 +93,11 @@ export async function ergebnisEinePerson(person, abteilung, datum) {
     { headers: kopfzeilen }
   );
 
-  if (!antwort.ok) throw new Error(`Abruf fehlgeschlagen (${antwort.status})`);
+  if (!antwort.ok) {
+    throw new Error(
+      istSchlafend(antwort.status) ? RUHE_HINWEIS : `Abruf fehlgeschlagen (${antwort.status})`,
+    );
+  }
 
   const zeilen = await antwort.json();
   const kreiseGesamt = new Set(zeilen.map((z) => z.kreis)).size;

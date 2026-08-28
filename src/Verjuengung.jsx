@@ -4,7 +4,7 @@ import { ladeAlles, speichereAlles, heute, startBaumarten, leererTag } from "./s
 import { normDatum } from "./datum.js";
 import { baueTabelle, baueZeilen } from "./tabelle.js";
 import { baueXlsx } from "./xlsx.js";
-import { zeilenHochladen, ergebnisAllePersonen, ergebnisEinePerson } from "./datenbank.js";
+import { zeilenHochladen, ergebnisAllePersonen, ergebnisEinePerson, istSchlafend, RUHE_HINWEIS } from "./datenbank.js";
 import ZaehlBox from "./komponenten/ZaehlBox.jsx";
 import UebersichtTabelle from "./komponenten/UebersichtTabelle.jsx";
 import StandortKarte from "./komponenten/StandortKarte.jsx";
@@ -195,6 +195,11 @@ export default function Verjuengung() {
       if (ergebnis.ok) {
         setSyncStatus("ok");
         setSyncGrund("");
+      } else if (istSchlafend(ergebnis.status)) {
+        // Schlafende Datenbank ist kein Fehler, nur Warten - und der
+        // Wiederholungsversuch laeuft ohnehin schon von selbst.
+        setSyncStatus("schlaeft");
+        setSyncGrund("");
       } else {
         setSyncStatus("err");
         setSyncGrund(`${ergebnis.status}${ergebnis.grund ? ": " + ergebnis.grund : ""}`);
@@ -229,7 +234,7 @@ export default function Verjuengung() {
      naechste Zaehlung kommt. Das "online"-Ereignis allein reicht nicht: im
      Wald wechselt der Empfang oft, ohne dass der Browser es meldet. */
   useEffect(() => {
-    if (syncStatus !== "err" && syncStatus !== "offline") return;
+    if (!["err", "offline", "schlaeft"].includes(syncStatus)) return;
     const timer = setInterval(() => synchronisierenRef.current(), 30000);
     return () => clearInterval(timer);
   }, [syncStatus]);
@@ -438,10 +443,14 @@ export default function Verjuengung() {
         )
       );
     } catch (fehler) {
+      /* Drei verschiedene Ursachen, drei verschiedene Antworten: schlafende
+         Datenbank (warten), abgelehnter Abruf (Fehler melden), gar kein Netz
+         (spaeter nochmal). Vorher las sich alles gleich. */
+      const meldung = fehler?.message ?? "";
       setErgebnisFehler(
-        fehler?.message?.startsWith("Abruf")
-          ? fehler.message
-          : "Kein Netz – Ergebnis kann gerade nicht geladen werden"
+        meldung === RUHE_HINWEIS || meldung.startsWith("Abruf")
+          ? meldung
+          : "Kein Netz – Ergebnis kann gerade nicht geladen werden",
       );
     } finally {
       setErgebnisLaedt(false);
@@ -492,12 +501,14 @@ export default function Verjuengung() {
     if (!kopf.trupp.trim()) return "Person eintragen – dann wird automatisch abgeglichen";
     if (sendet) return "Gleicht ab ...";
     if (syncStatus === "ok") return "✓ Abgeglichen";
+    if (syncStatus === "schlaeft")
+      return "Datenbank schläft – wacht auf, wird von selbst nachgeholt";
     if (syncStatus === "err") return "Abgleich fehlgeschlagen – wird erneut versucht";
     if (syncStatus === "offline") return "Kein Netz – wird nachgeholt, sobald wieder Empfang da ist";
     return "Noch nichts gezählt";
   };
   const syncFarbe =
-    syncStatus === "err" || syncStatus === "offline"
+    syncStatus === "err" || syncStatus === "offline" || syncStatus === "schlaeft"
       ? farben.verb
       : syncStatus === "ok"
         ? farben.unverb
