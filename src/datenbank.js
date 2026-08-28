@@ -73,8 +73,12 @@ export async function ergebnisAllePersonen(abteilung, datum) {
 
   const [auswertung, rohzeilen] = await Promise.all([
     fetch(`${SUPABASE_URL}/rest/v1/verjuengung_auswertung?select=*&${wo}`, { headers: kopfzeilen }),
+    /* Koordinaten und Kreisflaeche kommen mit, damit sich aus derselben
+       Abfrage auch die Probekreisliste und der Export bauen lassen. */
     fetch(
-      `${SUPABASE_URL}/rest/v1/verjuengung?select=trupp,kreis,baumart,verbissen,unverbissen&${wo}`,
+      `${SUPABASE_URL}/rest/v1/verjuengung` +
+        `?select=trupp,abteilung,aufnahmedatum,kreis,kreisflaeche,baumart,verbissen,unverbissen,lat,lon,genauigkeit_m` +
+        `&${wo}`,
       { headers: kopfzeilen }
     ),
   ]);
@@ -92,7 +96,7 @@ export async function ergebnisAllePersonen(abteilung, datum) {
 export async function ergebnisEinePerson(person, abteilung, datum) {
   const antwort = await fetch(
     `${SUPABASE_URL}/rest/v1/verjuengung` +
-      `?select=kreis,baumart,verbissen,unverbissen,kreisflaeche` +
+      `?select=trupp,abteilung,aufnahmedatum,kreis,kreisflaeche,baumart,verbissen,unverbissen,lat,lon,genauigkeit_m` +
       `&trupp=eq.${encodeURIComponent(person)}&${filter(abteilung, datum)}`,
     { headers: kopfzeilen }
   );

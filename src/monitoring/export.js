@@ -8,7 +8,7 @@
    und der Bearbeitungsstand des Punktes. */
 
 import { artNach } from "./stammdaten.js";
-import { nachUtm33 } from "./utm33.js";
+import { nachUtm33 } from "../utm33.js";
 import {
   probekreisflaeche,
   zielProfil,

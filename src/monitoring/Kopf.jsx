@@ -8,7 +8,7 @@ import {
 import {
   probekreisflaeche, zielProfil, aktiverBzt, verjuengungsfreundlich, giltAlsVerlegt,
 } from "./berechnung.js";
-import { nachUtm33, ausUtm33, entfernung, peilung, himmelsrichtung } from "./utm33.js";
+import { nachUtm33, ausUtm33, entfernung, peilung, himmelsrichtung } from "../utm33.js";
 import { Abschnitt, Feld, TextFeld, AuswahlFeld, KnopfWahl, JaNein, beschriftung } from "./Felder.jsx";
 
 const nk = (wert, stellen = 1) =>

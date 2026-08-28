@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { farben } from "../konfiguration.js";
+import { baueErgebnisDatei, ergebnisDateiname, probekreise } from "../ergebnisExport.js";
 
 const kopfZelle = {
   padding: "6px 8px",
@@ -26,6 +28,45 @@ export default function ErgebnisAnsicht({
   onNurDiesePerson,
   onAktualisieren,
 }) {
+  const [meldung, setMeldung] = useState("");
+  const kreise = probekreise(zeilen);
+  /* Ohne gesetztes Datum kommen mehrere Aufnahmetage zusammen. Dann sehen
+     Zeilen gleich aus, die es nicht sind - derselbe Kreis, dieselbe Baumart,
+     aber ein anderer Tag. In dem Fall bekommt die Tabelle eine Datumsspalte. */
+  const mehrereTage = new Set(zeilen.map((z) => z.aufnahmedatum)).size > 1;
+  const mitOrt = kreise.filter((k) => k.lat != null).length;
+
+  /* Erst der Weg ueber das Teilen-Menue - damit landet die Datei direkt in
+     Excel, Mail oder der Wolke. Klappt das nicht, wird sie heruntergeladen. */
+  const excel = async () => {
+    if (!zeilen.length) {
+      setMeldung("Noch keine Einträge zum Ausgeben");
+      return;
+    }
+    const name = ergebnisDateiname(kopf);
+    const blob = baueErgebnisDatei(ergebnis ?? [], zeilen, kopf);
+
+    try {
+      const datei = new File([blob], name, { type: blob.type });
+      if (navigator.canShare?.({ files: [datei] })) {
+        await navigator.share({ files: [datei], title: "Verjüngungsaufnahme" });
+        return;
+      }
+    } catch (fehler) {
+      if (fehler?.name === "AbortError") return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setMeldung(`${name} gespeichert`);
+  };
+
   return (
     <div
       id="verjuengung-druckbereich"
@@ -182,6 +223,7 @@ export default function ErgebnisAnsicht({
                   <thead>
                     <tr>
                       <th style={{ ...kopfZelle, textAlign: "left" }}>Person</th>
+                      {mehrereTage && <th style={{ ...kopfZelle, textAlign: "left" }}>Datum</th>}
                       <th style={{ ...kopfZelle, textAlign: "left" }}>Kreis</th>
                       <th style={{ ...kopfZelle, textAlign: "left" }}>Baumart</th>
                       <th style={{ ...kopfZelle, textAlign: "center" }}>verb.</th>
@@ -194,6 +236,11 @@ export default function ErgebnisAnsicht({
                         <td style={{ padding: "6px 8px", whiteSpace: "nowrap", fontWeight: 700 }}>
                           {zeile.trupp}
                         </td>
+                        {mehrereTage && (
+                          <td style={{ padding: "6px 8px", whiteSpace: "nowrap", color: farben.muted }}>
+                            {zeile.aufnahmedatum}
+                          </td>
+                        )}
                         <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>{zeile.kreis}</td>
                         <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>{zeile.baumart}</td>
                         <td style={{ padding: "6px 8px", textAlign: "center", color: farben.verb }}>
@@ -230,6 +277,21 @@ export default function ErgebnisAnsicht({
           {laedt ? "Wird geladen ..." : "Aktualisieren"}
         </button>
         <button
+          onClick={excel}
+          style={{
+            flex: 1,
+            background: "transparent",
+            border: `1px solid ${farben.line}`,
+            color: farben.text,
+            borderRadius: 12,
+            padding: "13px 0",
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+        >
+          Excel
+        </button>
+        <button
           onClick={() => window.print()}
           style={{
             flex: 1,
@@ -242,9 +304,22 @@ export default function ErgebnisAnsicht({
             cursor: "pointer",
           }}
         >
-          Als PDF speichern / Drucken
+          PDF
         </button>
       </div>
+
+      <div className="no-print" style={{ fontSize: 10, color: farben.muted, marginTop: 8, lineHeight: 1.5 }}>
+        Die Excel-Datei hat drei Blätter: Auswertung, Probekreise (je Kreis eine
+        Zeile mit Koordinate und Kartenlink) und Einträge.
+        {kreise.length > 0 &&
+          ` ${mitOrt} von ${kreise.length} Probekreisen haben eine Koordinate.`}
+      </div>
+
+      {meldung && (
+        <div className="no-print" style={{ fontSize: 12, color: farben.muted, marginTop: 10, textAlign: "center" }}>
+          {meldung}
+        </div>
+      )}
     </div>
   );
 }

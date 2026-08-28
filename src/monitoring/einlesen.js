@@ -11,7 +11,7 @@
    Rechts- und Hochwert in UTM 33N. Dazwischen gibt es in Brandenburg nichts,
    was zu verwechseln waere. */
 
-import { ausUtm33 } from "./utm33.js";
+import { ausUtm33 } from "../utm33.js";
 
 const zahlVon = (roh) => {
   const n = parseFloat(String(roh ?? "").trim().replace(",", "."));
