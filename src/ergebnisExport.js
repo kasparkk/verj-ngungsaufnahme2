@@ -93,72 +93,6 @@ export function eingegrenzt(auswertung, zeilen, kopf) {
   };
 }
 
-/* Was jede Person an diesem Tag gezaehlt hat.
-
-   Die Auswertung fasst ueber alle Personen zusammen - fuer die Frage, ob
-   sich zwei Truppen bei derselben Baumart einig sind, hilft das nicht. Hier
-   wird deshalb je Person aufgeschluesselt, mit den Baumarten darunter.
-
-   Ansicht und Excel-Datei rechnen ueber dieselbe Funktion, damit auf dem
-   Bildschirm nichts anderes steht als in der Datei. */
-export function jePerson(zeilen) {
-  const personen = new Map();
-
-  for (const z of zeilen) {
-    const name = z.trupp ?? "";
-    if (!personen.has(name)) {
-      personen.set(name, {
-        name,
-        kreise: new Set(),
-        verbissen: 0,
-        unverbissen: 0,
-        arten: new Map(),
-      });
-    }
-    const p = personen.get(name);
-    const verbissen = Number(z.verbissen) || 0;
-    const unverbissen = Number(z.unverbissen) || 0;
-
-    p.kreise.add(z.kreis);
-    p.verbissen += verbissen;
-    p.unverbissen += unverbissen;
-
-    if (!p.arten.has(z.baumart)) {
-      p.arten.set(z.baumart, { baumart: z.baumart, verbissen: 0, unverbissen: 0, kreise: new Set() });
-    }
-    const a = p.arten.get(z.baumart);
-    a.verbissen += verbissen;
-    a.unverbissen += unverbissen;
-    a.kreise.add(z.kreis);
-  }
-
-  const anteil = (verbissen, gesamt) => (gesamt > 0 ? rund((verbissen / gesamt) * 100, 1) : null);
-
-  return [...personen.values()]
-    .map((p) => {
-      const gesamt = p.verbissen + p.unverbissen;
-      return {
-        name: p.name,
-        kreise: p.kreise.size,
-        verbissen: p.verbissen,
-        unverbissen: p.unverbissen,
-        gesamt,
-        anteil: anteil(p.verbissen, gesamt),
-        arten: [...p.arten.values()]
-          .map((a) => ({
-            baumart: a.baumart,
-            kreise: a.kreise.size,
-            verbissen: a.verbissen,
-            unverbissen: a.unverbissen,
-            gesamt: a.verbissen + a.unverbissen,
-            anteil: anteil(a.verbissen, a.verbissen + a.unverbissen),
-          }))
-          .sort((x, y) => y.gesamt - x.gesamt),
-      };
-    })
-    .sort((a, b) => String(a.name).localeCompare(String(b.name)));
-}
-
 export function baueErgebnisDatei(auswertung, zeilen, kopf) {
   const blattAuswertung = [
     ["Abteilung", "Datum", "Baumart", "verbissen", "unverbissen", "gesamt",
@@ -238,22 +172,8 @@ export function baueErgebnisDatei(auswertung, zeilen, kopf) {
     }),
   ];
 
-  /* Je Person zuerst die Zusammenfassung, darunter ihre Baumarten. Eine
-     Zeilenart, zwei Ebenen - die Spalte "Baumart" bleibt bei der
-     Zusammenfassung leer, damit sich beides filtern laesst. */
-  const blattPersonen = [
-    ["Person", "Baumart", "Probekreise", "verbissen", "unverbissen", "gesamt", "Verbiss_Prozent"],
-    ...jePerson(zeilen).flatMap((p) => [
-      [p.name, "— alle Baumarten —", p.kreise, p.verbissen, p.unverbissen, p.gesamt, p.anteil ?? ""],
-      ...p.arten.map((a) => [
-        p.name, a.baumart, a.kreise, a.verbissen, a.unverbissen, a.gesamt, a.anteil ?? "",
-      ]),
-    ]),
-  ];
-
   return baueXlsxMehrblatt([
     { name: "Zählungen", zeilen: blattZaehlungen },
-    { name: "Je Person", zeilen: blattPersonen },
     { name: "Probekreise", zeilen: blattKreise },
     { name: "Auswertung", zeilen: blattAuswertung },
   ]);

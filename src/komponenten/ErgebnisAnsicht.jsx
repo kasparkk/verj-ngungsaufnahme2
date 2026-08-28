@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { farben } from "../konfiguration.js";
-import { baueErgebnisDatei, ergebnisDateiname, probekreise, eingegrenzt, jePerson } from "../ergebnisExport.js";
+import { baueErgebnisDatei, ergebnisDateiname, probekreise, eingegrenzt } from "../ergebnisExport.js";
 
 const kopfZelle = {
   padding: "6px 8px",
@@ -37,7 +37,6 @@ export default function ErgebnisAnsicht({
      Zeilen gleich aus, die es nicht sind - derselbe Kreis, dieselbe Baumart,
      aber ein anderer Tag. In dem Fall bekommt die Tabelle eine Datumsspalte. */
   const mehrereTage = new Set(zeilen.map((z) => z.aufnahmedatum)).size > 1;
-  const personenZahlen = jePerson(zeilen);
   const mitOrt = kreise.filter((k) => k.lat != null).length;
 
   /* Erst der Weg ueber das Teilen-Menue - damit landet die Datei direkt in
@@ -221,57 +220,6 @@ export default function ErgebnisAnsicht({
             );
           })}
 
-          {personenZahlen.length > 0 && (
-            <div style={{ marginTop: 24 }}>
-              <div style={{ fontSize: 11, color: farben.muted, letterSpacing: 0.6, marginBottom: 8 }}>
-                JE PERSON
-              </div>
-              {personenZahlen.map((p) => (
-                <div
-                  key={p.name}
-                  style={{
-                    background: farben.surface,
-                    borderRadius: 10,
-                    padding: "10px 12px",
-                    marginBottom: 8,
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
-                    <div style={{ fontSize: 15, fontWeight: 700 }}>{p.name || "ohne Namen"}</div>
-                    <div style={{ fontSize: 12, color: farben.muted, fontVariantNumeric: "tabular-nums" }}>
-                      {p.kreise} {p.kreise === 1 ? "Kreis" : "Kreise"} · {p.gesamt} gezählt
-                      {p.anteil != null && ` · ${p.anteil.toLocaleString("de-DE")} % verbissen`}
-                    </div>
-                  </div>
-                  {p.arten.map((a) => (
-                    <div
-                      key={a.baumart}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        gap: 8,
-                        fontSize: 12,
-                        marginTop: 5,
-                        fontVariantNumeric: "tabular-nums",
-                      }}
-                    >
-                      <div style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {a.baumart}
-                      </div>
-                      <div style={{ color: farben.muted, whiteSpace: "nowrap" }}>
-                        {a.gesamt} ·{" "}
-                        <span style={{ color: a.verbissen ? farben.verb : farben.muted }}>
-                          {a.verbissen} verbissen
-                        </span>
-                        {a.anteil != null && ` (${a.anteil.toLocaleString("de-DE")} %)`}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          )}
-
           {zeilen.length > 0 && (
             <div style={{ marginTop: 24 }}>
               <div style={{ fontSize: 11, color: farben.muted, letterSpacing: 0.6, marginBottom: 6 }}>
@@ -375,10 +323,9 @@ export default function ErgebnisAnsicht({
             {fuerDatei.zeilen.length === 1 ? "Eintrag" : "Einträge"}
             {fuerDatei.weggelassen > 0 &&
               `, ${fuerDatei.weggelassen} von anderen Tagen bleiben draußen`}
-            . Vier Blätter: Zählungen (je Probekreis und Baumart eine Zeile),
-            Je Person, Probekreise (je Kreis eine Zeile mit Koordinate und
-            Kartenlink) und Auswertung (je Baumart, über alle Kreise
-            zusammengefasst).
+            . Drei Blätter: Zählungen (je Probekreis und Baumart eine Zeile),
+            Probekreise (je Kreis eine Zeile mit Koordinate und Kartenlink) und
+            Auswertung (je Baumart, über alle Kreise zusammengefasst).
             {kreise.length > 0 &&
               ` ${mitOrt} von ${kreise.length} Probekreisen haben eine Koordinate.`}
           </>
