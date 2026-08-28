@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { farben } from "../konfiguration.js";
-import { baueErgebnisDatei, ergebnisDateiname, probekreise } from "../ergebnisExport.js";
+import { baueErgebnisDatei, ergebnisDateiname, probekreise, eingegrenzt } from "../ergebnisExport.js";
 
 const kopfZelle = {
   padding: "6px 8px",
@@ -29,7 +29,10 @@ export default function ErgebnisAnsicht({
   onAktualisieren,
 }) {
   const [meldung, setMeldung] = useState("");
-  const kreise = probekreise(zeilen);
+  /* Die Datei bekommt nur den einen Tag in der einen Abteilung - die Ansicht
+     darf mehr zeigen, die Datei soll es nicht. */
+  const fuerDatei = eingegrenzt(ergebnis ?? [], zeilen, kopf);
+  const kreise = probekreise(fuerDatei.zeilen);
   /* Ohne gesetztes Datum kommen mehrere Aufnahmetage zusammen. Dann sehen
      Zeilen gleich aus, die es nicht sind - derselbe Kreis, dieselbe Baumart,
      aber ein anderer Tag. In dem Fall bekommt die Tabelle eine Datumsspalte. */
@@ -39,12 +42,16 @@ export default function ErgebnisAnsicht({
   /* Erst der Weg ueber das Teilen-Menue - damit landet die Datei direkt in
      Excel, Mail oder der Wolke. Klappt das nicht, wird sie heruntergeladen. */
   const excel = async () => {
-    if (!zeilen.length) {
-      setMeldung("Noch keine Einträge zum Ausgeben");
+    if (!fuerDatei.datum) {
+      setMeldung("Kein Aufnahmedatum gesetzt – ohne Datum keine Ausgabe");
+      return;
+    }
+    if (!fuerDatei.zeilen.length) {
+      setMeldung(`Für den ${fuerDatei.datum} gibt es hier keine Einträge`);
       return;
     }
     const name = ergebnisDateiname(kopf);
-    const blob = baueErgebnisDatei(ergebnis ?? [], zeilen, kopf);
+    const blob = baueErgebnisDatei(fuerDatei.auswertung, fuerDatei.zeilen, kopf);
 
     try {
       const datei = new File([blob], name, { type: blob.type });
@@ -309,10 +316,24 @@ export default function ErgebnisAnsicht({
       </div>
 
       <div className="no-print" style={{ fontSize: 10, color: farben.muted, marginTop: 8, lineHeight: 1.5 }}>
-        Die Excel-Datei hat drei Blätter: Auswertung, Probekreise (je Kreis eine
-        Zeile mit Koordinate und Kartenlink) und Einträge.
-        {kreise.length > 0 &&
-          ` ${mitOrt} von ${kreise.length} Probekreisen haben eine Koordinate.`}
+        {fuerDatei.datum ? (
+          <>
+            Die Excel-Datei enthält nur {fuerDatei.abteilung || "die Aufnahme ohne Abteilung"} vom{" "}
+            {fuerDatei.datum} – {fuerDatei.zeilen.length}{" "}
+            {fuerDatei.zeilen.length === 1 ? "Eintrag" : "Einträge"}
+            {fuerDatei.weggelassen > 0 &&
+              `, ${fuerDatei.weggelassen} von anderen Tagen bleiben draußen`}
+            . Drei Blätter: Auswertung, Probekreise (je Kreis eine Zeile mit
+            Koordinate und Kartenlink) und Einträge.
+            {kreise.length > 0 &&
+              ` ${mitOrt} von ${kreise.length} Probekreisen haben eine Koordinate.`}
+          </>
+        ) : (
+          <span style={{ color: farben.verb }}>
+            Für die Excel-Datei fehlt das Aufnahmedatum. Sie soll immer genau
+            einen Tag enthalten – oben ein Datum setzen.
+          </span>
+        )}
       </div>
 
       {meldung && (

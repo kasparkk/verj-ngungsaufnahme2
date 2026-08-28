@@ -7,6 +7,7 @@
 
 import { baueXlsxMehrblatt } from "./xlsx.js";
 import { nachUtm33 } from "./utm33.js";
+import { normDatum } from "./datum.js";
 
 const rund = (wert, stellen) => {
   const n = Number(wert);
@@ -56,6 +57,35 @@ export function probekreise(zeilen) {
       String(a.trupp).localeCompare(String(b.trupp)) ||
       a.kreis - b.kreis,
   );
+}
+
+/* Was in die Datei gehoert: nur der eine Aufnahmetag in der einen
+   Abteilung.
+
+   Die Ansicht kann mehr zeigen - ohne gesetztes Datum holt sie alle Tage
+   der Abteilung, damit man sich einen Ueberblick verschaffen kann. Fuer
+   eine Datei, die weitergegeben und ausgewertet wird, ist das aber falsch:
+   dort stuenden Zahlen verschiedener Tage untereinander, ohne dass es beim
+   Weiterrechnen jemandem auffiele.
+
+   Ohne Datum gibt es keinen "gleichen Tag" - dann wird nichts ausgegeben,
+   sondern nachgefragt. */
+export function eingegrenzt(auswertung, zeilen, kopf) {
+  const abteilung = (kopf?.abteilung ?? "").trim();
+  const datum = normDatum((kopf?.datum ?? "").trim());
+  if (!datum) return { datum: null, abteilung, auswertung: [], zeilen: [], weggelassen: 0 };
+
+  const passt = (z) =>
+    z.aufnahmedatum === datum && (z.abteilung ?? "") === abteilung;
+
+  const gefiltert = zeilen.filter(passt);
+  return {
+    datum,
+    abteilung,
+    auswertung: auswertung.filter(passt),
+    zeilen: gefiltert,
+    weggelassen: zeilen.length - gefiltert.length,
+  };
 }
 
 export function baueErgebnisDatei(auswertung, zeilen, kopf) {
