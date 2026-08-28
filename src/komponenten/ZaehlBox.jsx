@@ -5,8 +5,13 @@ import Strichliste from "./Strichliste.jsx";
 /* Eine Zaehlbox (verbissen bzw. unverbissen) fuer eine Baumart.
 
    Die ganze Flaeche ist der Plus-Knopf - im Gelaende mit Handschuhen soll man
-   nicht zielen muessen. Oben rechts sitzen zwei kleine Knoepfe: "−" zieht eins
-   ab, "✎" oeffnet ein Zahlenfeld zum direkten Eintippen.
+   nicht zielen muessen. Unten rechts sitzen drei kleine Knoepfe: "+5" legt
+   fuenf auf einmal drauf, "−" zieht eins ab, "✎" oeffnet ein Zahlenfeld zum
+   direkten Eintippen.
+
+   Das "+5" ist gefuellt statt umrandet: Hinzufuegen und Berichtigen sollen
+   sich auf den ersten Blick unterscheiden. Bei siebzig Kiefern im Probekreis
+   ist einzeln tippen sonst die halbe Aufnahmezeit.
 
    gross=true macht die Box etwas groesser (fuer "unverbissen", die haeufigere
    Eingabe). */
@@ -22,12 +27,13 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
     setEingabe(false);
   };
 
-  /* Die beiden kleinen Knoepfe sitzen unten rechts, nicht oben: oben
-     braucht die Beschriftung die volle Zeile, sonst wird sie auf schmalen
-     Geraeten abgeschnitten. */
+  /* Die drei kleinen Knoepfe stehen in einer eigenen Zeile am Fuss der Box.
+
+     Zwei haben frueher frei schwebend unten rechts gesessen; mit dem dritten
+     blieb der Strichliste daneben nur noch die Breite eines einzigen
+     Fuenferbuendels, und sie wuchs in die Hoehe. Eine eigene Zeile kostet
+     etwas Hoehe, gibt der Strichliste aber die volle Breite zurueck. */
   const kleinerKnopf = {
-    position: "absolute",
-    bottom: 8,
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -60,6 +66,11 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
         // Damit die Box in schmalen Reihen mitschrumpft statt die Seite zu weiten.
         minWidth: 0,
         minHeight: gross ? 118 : 104,
+        /* Spalte, damit die Knopfreihe unten haengen kann: sonst steht sie in
+           der einen Box direkt unter der Zahl und in der daneben erst unter
+           einer dreizeiligen Strichliste - und man tippt daneben. */
+        display: "flex",
+        flexDirection: "column",
         background: farben.surfaceHi,
         border: `2px solid ${farbe}`,
         borderRadius: 14,
@@ -72,37 +83,6 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
         position: "relative",
       }}
     >
-      <div
-        onClick={(e) => {
-          e.stopPropagation();
-          if (wert !== 0) onMinus();
-        }}
-        role="button"
-        aria-label="Eins abziehen"
-        style={{
-          ...kleinerKnopf,
-          right: 8,
-          border: `1px solid ${farbe}`,
-          color: wert === 0 ? farben.muted : farbe,
-          fontSize: 16,
-          pointerEvents: wert === 0 ? "none" : "auto",
-        }}
-      >
-        −
-      </div>
-
-      <div
-        onClick={(e) => {
-          e.stopPropagation();
-          setEingabe(true);
-        }}
-        role="button"
-        aria-label="Zahl eingeben"
-        style={{ ...kleinerKnopf, right: 42, border: `1px solid ${farbe}`, color: farbe, fontSize: 13 }}
-      >
-        ✎
-      </div>
-
       <div
         style={{
           fontSize: 11,
@@ -148,9 +128,57 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
         <div style={zahlStil}>{wert}</div>
       )}
 
-      {/* Abstand zu den Knoepfen unten rechts */}
-      <div style={{ paddingRight: 62 }}>
-        <Strichliste n={wert} color={farbe} />
+      <Strichliste n={wert} color={farbe} />
+
+      <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", marginTop: "auto", paddingTop: 8 }}>
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            setEingabe(true);
+          }}
+          role="button"
+          aria-label="Zahl eingeben"
+          style={{ ...kleinerKnopf, border: `1px solid ${farbe}`, color: farbe, fontSize: 13 }}
+        >
+          ✎
+        </div>
+
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            if (wert !== 0) onMinus();
+          }}
+          role="button"
+          aria-label="Eins abziehen"
+          style={{
+            ...kleinerKnopf,
+            border: `1px solid ${farbe}`,
+            color: wert === 0 ? farben.muted : farbe,
+            fontSize: 16,
+            pointerEvents: wert === 0 ? "none" : "auto",
+          }}
+        >
+          −
+        </div>
+
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            onSet(wert + 5);
+          }}
+          role="button"
+          aria-label="Fünf dazu"
+          style={{
+            ...kleinerKnopf,
+            width: 34,
+            background: farbe,
+            color: farben.bg,
+            fontSize: 13,
+            fontWeight: 700,
+          }}
+        >
+          +5
+        </div>
       </div>
     </div>
   );
