@@ -1,5 +1,4 @@
 import { SUPABASE_URL, SUPABASE_KEY } from "./konfiguration.js";
-import { auswertenAusZeilen } from "./auswerten.js";
 
 const kopfzeilen = {
   apikey: SUPABASE_KEY,
@@ -109,7 +108,27 @@ export async function ergebnisEinePerson(person, abteilung, datum) {
   }
 
   const zeilen = await antwort.json();
-  const { auswertung, kreiseGesamt } = auswertenAusZeilen(zeilen);
+  const kreiseGesamt = new Set(zeilen.map((z) => z.kreis)).size;
+  const flaeche = zeilen.length ? Number(zeilen[0].kreisflaeche) || 100 : 100;
+
+  const jeBaumart = new Map();
+  zeilen.forEach((z) => {
+    const eintrag = jeBaumart.get(z.baumart) || { baumart: z.baumart, verbissen: 0, unverbissen: 0 };
+    eintrag.verbissen += z.verbissen;
+    eintrag.unverbissen += z.unverbissen;
+    jeBaumart.set(z.baumart, eintrag);
+  });
+
+  const auswertung = [...jeBaumart.values()].map((eintrag) => {
+    const gesamt = eintrag.verbissen + eintrag.unverbissen;
+    return {
+      ...eintrag,
+      gesamt,
+      verbiss_prozent: gesamt ? Math.round((eintrag.verbissen / gesamt) * 1000) / 10 : null,
+      kreise_gesamt: kreiseGesamt,
+      stueck_je_ha: kreiseGesamt && flaeche ? Math.round((gesamt * 10000) / (kreiseGesamt * flaeche)) : null,
+    };
+  });
 
   return { auswertung, zeilen, kreiseGesamt };
 }
