@@ -1,0 +1,49 @@
+# Haelt die Supabase-Datenbank wach.
+#
+# Der kostenlose Tarif legt eine Datenbank schlafen, wenn sie etwa eine Woche
+# lang keine Anfrage bekommen hat. Aufgeweckt werden muss sie dann von Hand im
+# Supabase-Konto - das ist im Gelaende der denkbar unpassendste Zeitpunkt.
+# Deshalb ruft dieser Ablauf zweimal die Woche eine einzelne Zeile ab. Das
+# zaehlt als Nutzung, und die Woche laeuft nie voll.
+#
+# Der Schluessel steht offen im Text und ist kein Versehen: es ist derselbe
+# oeffentliche Schluessel, der ohnehin in der ausgelieferten App steht. Er
+# darf nur das, was die Datenbank jedem erlaubt.
+
+name: Datenbank wachhalten
+
+on:
+  schedule:
+    # Montag und Donnerstag um 06:00 UTC - groesster Abstand vier Tage,
+    # also deutlich unter der Woche, nach der Supabase pausiert.
+    - cron: "0 6 * * 1,4"
+  # Zum Ausprobieren auch von Hand ausloesbar (Actions -> Run workflow).
+  workflow_dispatch:
+
+jobs:
+  anfragen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Eine Zeile abrufen
+        run: |
+          URL="https://xrrcuapiugwgqxxatkiq.supabase.co/rest/v1/verjuengung?select=trupp&limit=1"
+          KEY="sb_publishable_kcP8-40mEnwPGuFwVGigKA_b5swelLm"
+
+          # Drei Versuche: eine einzelne Stoerung soll nicht gleich als
+          # Fehlschlag gemeldet werden.
+          for versuch in 1 2 3; do
+            code=$(curl -s -o antwort.txt -w '%{http_code}' \
+              -H "apikey: $KEY" -H "Authorization: Bearer $KEY" "$URL")
+            echo "Versuch $versuch: HTTP $code"
+            if [ "$code" = "200" ]; then
+              echo "Datenbank ist wach."
+              exit 0
+            fi
+            sleep 30
+          done
+
+          echo "::error::Datenbank antwortet nicht (zuletzt HTTP $code)."
+          echo "Sie schlaeft vermutlich und muss auf supabase.com einmal"
+          echo "ueber Restore geweckt werden."
+          head -c 300 antwort.txt
+          exit 1

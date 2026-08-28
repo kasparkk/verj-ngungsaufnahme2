@@ -9,18 +9,22 @@ const kopfzeilen = {
    etwa eine Woche lang nicht benutzt wurde. Sie antwortet dann mit einem
    Serverfehler - und in der App sah das bisher aus wie "nichts eingetragen"
    statt wie "Datenbank schlaeft". Genau dieser Unterschied entscheidet aber,
-   ob man weitersucht oder einfach kurz wartet.
+   ob man weitersucht oder Bescheid gibt.
 
-   Nach dem Aufwecken dauert es ein bis zwei Minuten, bis sie wieder
-   antwortet. Die eigenen Zahlen auf dem Geraet sind davon nie betroffen. */
+   Wichtig: Eine schlafende Datenbank wacht NICHT davon auf, dass man sie
+   anfragt - sie muss im Supabase-Konto geweckt werden. Wer im Gelaende
+   darauf wartet, wartet vergebens. Die eigenen Zahlen auf dem Geraet sind
+   davon nie betroffen; der Abgleich holt alles nach, sobald sie wieder
+   laeuft. */
 const SCHLAEFT = [500, 502, 503, 504, 521, 522, 540, 544];
 
 export const istSchlafend = (status) => SCHLAEFT.includes(status);
 
 export const RUHE_HINWEIS =
-  "Datenbank schläft (kostenloser Tarif, nach einer Woche ohne Nutzung). " +
-  "Sie wacht gerade auf – in ein bis zwei Minuten nochmal versuchen. " +
-  "Die eigenen Zahlen sind davon nicht betroffen.";
+  "Datenbank nicht erreichbar – sie schläft vermutlich (kostenloser Tarif, " +
+  "nach etwa einer Woche ohne Nutzung). Sie muss einmal im Supabase-Konto " +
+  "geweckt werden, von allein passiert das nicht. Die eigenen Zahlen auf " +
+  "diesem Gerät sind davon nicht betroffen und werden nachgetragen.";
 
 /* Schickt die gezaehlten Zeilen hoch. Gleiche Kombination aus Person, Datum,
    Kreis und Baumart wird ueberschrieben statt doppelt angelegt - deshalb darf

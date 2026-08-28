@@ -502,7 +502,7 @@ export default function Verjuengung() {
     if (sendet) return "Gleicht ab ...";
     if (syncStatus === "ok") return "✓ Abgeglichen";
     if (syncStatus === "schlaeft")
-      return "Datenbank schläft – wacht auf, wird von selbst nachgeholt";
+      return "Datenbank schläft – Zahlen sind gesichert und werden nachgetragen";
     if (syncStatus === "err") return "Abgleich fehlgeschlagen – wird erneut versucht";
     if (syncStatus === "offline") return "Kein Netz – wird nachgeholt, sobald wieder Empfang da ist";
     return "Noch nichts gezählt";
