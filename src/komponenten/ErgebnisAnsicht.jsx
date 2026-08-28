@@ -323,8 +323,9 @@ export default function ErgebnisAnsicht({
             {fuerDatei.zeilen.length === 1 ? "Eintrag" : "Einträge"}
             {fuerDatei.weggelassen > 0 &&
               `, ${fuerDatei.weggelassen} von anderen Tagen bleiben draußen`}
-            . Drei Blätter: Auswertung, Probekreise (je Kreis eine Zeile mit
-            Koordinate und Kartenlink) und Einträge.
+            . Drei Blätter: Zählungen (je Probekreis und Baumart eine Zeile),
+            Probekreise (je Kreis eine Zeile mit Koordinate und Kartenlink) und
+            Auswertung (je Baumart, über alle Kreise zusammengefasst).
             {kreise.length > 0 &&
               ` ${mitOrt} von ${kreise.length} Probekreisen haben eine Koordinate.`}
           </>

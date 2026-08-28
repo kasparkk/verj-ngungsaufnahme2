@@ -1,9 +1,14 @@
 /* Excel-Datei zur Auswertung ueber alle Personen.
 
    Die Ansicht zeigt drei verschiedene Dinge - die zusammengefasste
-   Auswertung, die Einzeleintraege und die abgelaufenen Probekreise. In eine
+   Auswertung, die Einzelzaehlungen und die abgelaufenen Probekreise. In eine
    einzige Tabelle gehoeren die nicht: sie haben verschiedene Zeilenarten.
-   Deshalb bekommt jedes sein eigenes Blatt. */
+   Deshalb bekommt jedes sein eigenes Blatt.
+
+   Zuerst kommen die Zaehlungen, denn nur dort steht, aus welchem Probekreis
+   eine Zahl stammt. Die Auswertung fasst ueber alle Kreise zusammen und
+   kann den Probekreis gar nicht nennen - stand sie vorn, sah die Datei aus,
+   als fehle die Angabe. */
 
 import { baueXlsxMehrblatt } from "./xlsx.js";
 import { nachUtm33 } from "./utm33.js";
@@ -105,11 +110,18 @@ export function baueErgebnisDatei(auswertung, zeilen, kopf) {
     ]),
   ];
 
-  const blattEintraege = [
+  /* Je Probekreis und Baumart eine Zeile - die Ebene, auf der im Gelaende
+     gezaehlt wird. Summe und Verbissanteil stehen gleich daneben, damit man
+     einen auffaelligen Kreis findet, ohne selbst zu rechnen. */
+  const blattZaehlungen = [
     ["Person", "Abteilung", "Datum", "Probekreis", "Kreisflaeche_m2", "Baumart",
-     "verbissen", "unverbissen", "Breite", "Laenge", "Genauigkeit_m", "X_UTM33", "Y_UTM33"],
+     "verbissen", "unverbissen", "gesamt", "Verbiss_Prozent",
+     "Breite", "Laenge", "Genauigkeit_m", "X_UTM33", "Y_UTM33"],
     ...zeilen.map((z) => {
       const utm = z.lat != null && z.lon != null ? nachUtm33(Number(z.lat), Number(z.lon)) : null;
+      const verbissen = Number(z.verbissen) || 0;
+      const unverbissen = Number(z.unverbissen) || 0;
+      const gesamt = verbissen + unverbissen;
       return [
         z.trupp ?? "",
         z.abteilung ?? "",
@@ -117,8 +129,10 @@ export function baueErgebnisDatei(auswertung, zeilen, kopf) {
         z.kreis,
         Number(z.kreisflaeche) || "",
         z.baumart,
-        Number(z.verbissen) || 0,
-        Number(z.unverbissen) || 0,
+        verbissen,
+        unverbissen,
+        gesamt,
+        gesamt > 0 ? rund((verbissen / gesamt) * 100, 1) : "",
         z.lat == null ? "" : rund(z.lat, 7),
         z.lon == null ? "" : rund(z.lon, 7),
         z.genauigkeit_m == null ? "" : rund(z.genauigkeit_m, 1),
@@ -130,8 +144,8 @@ export function baueErgebnisDatei(auswertung, zeilen, kopf) {
 
   const blattKreise = [
     ["Person", "Abteilung", "Datum", "Probekreis", "Kreisflaeche_m2", "Baumarten",
-     "verbissen", "unverbissen", "gesamt", "Breite", "Laenge", "Genauigkeit_m",
-     "X_UTM33", "Y_UTM33", "Karte"],
+     "verbissen", "unverbissen", "gesamt", "Verbiss_Prozent",
+     "Breite", "Laenge", "Genauigkeit_m", "X_UTM33", "Y_UTM33", "Karte"],
     ...probekreise(zeilen).map((k) => {
       const utm = k.lat != null ? nachUtm33(k.lat, k.lon) : null;
       return [
@@ -144,6 +158,9 @@ export function baueErgebnisDatei(auswertung, zeilen, kopf) {
         k.verbissen,
         k.unverbissen,
         k.verbissen + k.unverbissen,
+        k.verbissen + k.unverbissen > 0
+          ? rund((k.verbissen / (k.verbissen + k.unverbissen)) * 100, 1)
+          : "",
         k.lat == null ? "" : rund(k.lat, 7),
         k.lon == null ? "" : rund(k.lon, 7),
         k.genauigkeit == null ? "" : rund(k.genauigkeit, 1),
@@ -156,9 +173,9 @@ export function baueErgebnisDatei(auswertung, zeilen, kopf) {
   ];
 
   return baueXlsxMehrblatt([
-    { name: "Auswertung", zeilen: blattAuswertung },
+    { name: "Zählungen", zeilen: blattZaehlungen },
     { name: "Probekreise", zeilen: blattKreise },
-    { name: "Einträge", zeilen: blattEintraege },
+    { name: "Auswertung", zeilen: blattAuswertung },
   ]);
 }
 
