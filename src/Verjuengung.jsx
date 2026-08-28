@@ -4,6 +4,7 @@ import { ladeAlles, speichereAlles, heute, startBaumarten, leererTag } from "./s
 import { normDatum } from "./datum.js";
 import { baueTabelle, baueZeilen } from "./tabelle.js";
 import { baueXlsx } from "./xlsx.js";
+import PersonWahl, { alsBuchstabe } from "./komponenten/PersonWahl.jsx";
 import { zeilenHochladen, ergebnisAllePersonen, ergebnisEinePerson, istSchlafend, RUHE_HINWEIS } from "./datenbank.js";
 import ZaehlBox from "./komponenten/ZaehlBox.jsx";
 import UebersichtTabelle from "./komponenten/UebersichtTabelle.jsx";
@@ -59,7 +60,10 @@ export default function Verjuengung() {
   // Aufnahmen beim Start vom Geraet laden (aelterer Stand wird mit uebernommen).
   useEffect(() => {
     const stand = ladeAlles();
-    setTrupp(stand.trupp);
+    /* Alte Speicherstaende koennen freien Text enthalten. "c" wird zu "C",
+       alles andere faellt weg - lieber einmal neu waehlen als unbemerkt
+       unter einem falschen Namen weiterzaehlen. */
+    setTrupp(alsBuchstabe(stand.trupp));
     setRadius(stand.radius);
     setDatum(stand.datum);
 
@@ -497,6 +501,15 @@ export default function Verjuengung() {
     });
   const kleinsteNr = Math.min(...kreise.map((k) => k.nr));
 
+  // Alles, was an diesem Tag bisher gezaehlt wurde - fuer die Rueckfrage
+  // beim Wechsel der Person.
+  const gezaehltHeute = kreise.reduce(
+    (summe, kreis) =>
+      summe +
+      Object.values(kreis.counts ?? {}).reduce((s, z) => s + (z?.v ?? 0) + (z?.u ?? 0), 0),
+    0,
+  );
+
   const syncText = () => {
     if (!kopf.trupp.trim()) return "Person eintragen – dann wird automatisch abgeglichen";
     if (sendet) return "Gleicht ab ...";
@@ -524,25 +537,26 @@ export default function Verjuengung() {
         margin: "0 auto",
       }}
     >
-      <div style={{ display: "flex", gap: 12, marginBottom: 10 }}>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>PERSON</div>
-          <input
-            style={feldStil}
-            value={kopf.trupp}
-            onChange={(e) => setTrupp(e.target.value)}
-            placeholder="A, B, C, ..."
-          />
-        </div>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>DATUM</div>
-          <input
-            type="date"
-            style={feldStil}
-            value={kopf.datum}
-            onChange={(e) => datumWechseln(e.target.value)}
-          />
-        </div>
+      <PersonWahl
+        wert={kopf.trupp}
+        setWert={setTrupp}
+        warnen={(alt, neu) =>
+          gezaehltHeute > 0
+            ? `An diesem Tag wurden ${gezaehltHeute} Pflanzen unter ${alt} gezählt.\n\n` +
+              `Sie bleiben bei ${alt} stehen. Ab jetzt zählt ${neu} weiter.\n\n` +
+              `Wirklich zu ${neu} wechseln?`
+            : ""
+        }
+      />
+
+      <div style={{ marginBottom: 10 }}>
+        <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>DATUM</div>
+        <input
+          type="date"
+          style={feldStil}
+          value={kopf.datum}
+          onChange={(e) => datumWechseln(e.target.value)}
+        />
       </div>
 
       <button
