@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { farben } from "../konfiguration.js";
 import { baueErgebnisDatei, ergebnisDateiname, probekreise, eingegrenzt } from "../ergebnisExport.js";
+import { auswertenAusZeilen } from "../auswerten.js";
 
 const kopfZelle = {
   padding: "6px 8px",
@@ -29,6 +30,11 @@ export default function ErgebnisAnsicht({
   onAktualisieren,
 }) {
   const [meldung, setMeldung] = useState("");
+  /* Antippen einer Person zeigt nur ihre Zahlen. Gerechnet wird aus den
+     bereits geladenen Zeilen - kein neuer Abruf, damit das Umschalten auch
+     ohne Empfang geht. Steht die gemerkte Person nach einem Neuladen nicht
+     mehr in den Daten, gilt wieder "alle zusammen". */
+  const [gewaehlt, setGewaehlt] = useState(null);
   /* Die Datei bekommt nur den einen Tag in der einen Abteilung - die Ansicht
      darf mehr zeigen, die Datei soll es nicht. */
   const fuerDatei = eingegrenzt(ergebnis ?? [], zeilen, kopf);
@@ -37,6 +43,12 @@ export default function ErgebnisAnsicht({
      Zeilen gleich aus, die es nicht sind - derselbe Kreis, dieselbe Baumart,
      aber ein anderer Tag. In dem Fall bekommt die Tabelle eine Datumsspalte. */
   const mehrereTage = new Set(zeilen.map((z) => z.aufnahmedatum)).size > 1;
+
+  const person = personen.some((p) => p.name === gewaehlt) ? gewaehlt : null;
+  const sichtbareZeilen = person ? zeilen.filter((z) => z.trupp === person) : zeilen;
+  const sichtbareAuswertung = person
+    ? auswertenAusZeilen(sichtbareZeilen).auswertung
+    : ergebnis;
   const mitOrt = kreise.filter((k) => k.lat != null).length;
 
   /* Erst der Weg ueber das Teilen-Menue - damit landet die Datei direkt in
@@ -149,7 +161,11 @@ export default function ErgebnisAnsicht({
       <div style={{ fontSize: 12, color: farben.muted, marginBottom: 16 }}>
         {kopf.abteilung || "ohne Abteilung"}
         {kopf.datum ? ` · ${kopf.datum}` : ""} ·{" "}
-        {nurDiesePerson ? `nur ${kopf.trupp.trim() || "?"}` : "alle Personen zusammen"}
+        {person
+          ? `nur ${person}`
+          : nurDiesePerson
+            ? `nur ${kopf.trupp.trim() || "?"}`
+            : "alle Personen zusammen"}
       </div>
 
       {laedt && <div style={{ color: farben.muted }}>Wird geladen ...</div>}
@@ -173,15 +189,62 @@ export default function ErgebnisAnsicht({
             }}
           >
             <div style={{ fontSize: 11, color: farben.muted, letterSpacing: 0.6 }}>
-              PROBEKREISE INSGESAMT
+              {person ? `PROBEKREISE VON ${person.toUpperCase()}` : "PROBEKREISE INSGESAMT"}
             </div>
-            <div style={{ fontSize: 30, fontWeight: 700 }}>{ergebnis[0].kreise_gesamt}</div>
-            <div style={{ fontSize: 12, color: farben.muted, marginTop: 4 }}>
+            <div style={{ fontSize: 30, fontWeight: 700 }}>
+              {sichtbareAuswertung[0]?.kreise_gesamt ?? 0}
+            </div>
+
+            {/* Person antippen heisst: nur ihre Zahlen. Nochmal antippen
+                blendet wieder alle zusammen ein. */}
+            <div
+              className="no-print"
+              style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}
+            >
+              {personen.map((p) => {
+                const aktiv = person === p.name;
+                return (
+                  <button
+                    key={p.name}
+                    onClick={() => setGewaehlt(aktiv ? null : p.name)}
+                    style={{
+                      background: aktiv ? farben.unverb : "transparent",
+                      border: `1px solid ${aktiv ? farben.unverb : farben.line}`,
+                      color: aktiv ? farben.bg : farben.text,
+                      borderRadius: 999,
+                      padding: "7px 12px",
+                      fontSize: 13,
+                      fontWeight: aktiv ? 700 : 400,
+                      cursor: "pointer",
+                      WebkitTapHighlightColor: "transparent",
+                    }}
+                  >
+                    {p.name || "ohne Namen"}{" "}
+                    <span style={{ opacity: 0.7, fontWeight: 400 }}>
+                      {p.kreise}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Im Ausdruck gibt es nichts zum Antippen - dort nur der Text. */}
+            <div
+              style={{ fontSize: 12, color: farben.muted, marginTop: 4, display: "none" }}
+              className="nur-print"
+            >
               {personen.map((p) => `${p.name}: ${p.kreise}`).join("  ·  ")}
             </div>
+
+            {person && (
+              <div style={{ fontSize: 11, color: farben.muted, marginTop: 8, lineHeight: 1.5 }}>
+                Es werden nur die Zählungen von {person} gezeigt. Nochmal
+                antippen zeigt wieder alle zusammen.
+              </div>
+            )}
           </div>
 
-          {ergebnis.map((zeile) => {
+          {sichtbareAuswertung.map((zeile) => {
             const prozent = Number(zeile.verbiss_prozent);
             return (
               <div
@@ -220,16 +283,17 @@ export default function ErgebnisAnsicht({
             );
           })}
 
-          {zeilen.length > 0 && (
+          {sichtbareZeilen.length > 0 && (
             <div style={{ marginTop: 24 }}>
               <div style={{ fontSize: 11, color: farben.muted, letterSpacing: 0.6, marginBottom: 6 }}>
-                ALLE EINTRÄGE ({zeilen.length})
+                {person ? `EINTRÄGE VON ${person.toUpperCase()}` : "ALLE EINTRÄGE"} (
+                {sichtbareZeilen.length})
               </div>
               <div style={{ overflowX: "auto", border: `1px solid ${farben.line}`, borderRadius: 10 }}>
                 <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 12 }}>
                   <thead>
                     <tr>
-                      <th style={{ ...kopfZelle, textAlign: "left" }}>Person</th>
+                      {!person && <th style={{ ...kopfZelle, textAlign: "left" }}>Person</th>}
                       {mehrereTage && <th style={{ ...kopfZelle, textAlign: "left" }}>Datum</th>}
                       <th style={{ ...kopfZelle, textAlign: "left" }}>Kreis</th>
                       <th style={{ ...kopfZelle, textAlign: "left" }}>Baumart</th>
@@ -238,11 +302,13 @@ export default function ErgebnisAnsicht({
                     </tr>
                   </thead>
                   <tbody>
-                    {zeilen.map((zeile, i) => (
+                    {sichtbareZeilen.map((zeile, i) => (
                       <tr key={i} style={{ borderTop: `1px solid ${farben.line}` }}>
-                        <td style={{ padding: "6px 8px", whiteSpace: "nowrap", fontWeight: 700 }}>
-                          {zeile.trupp}
-                        </td>
+                        {!person && (
+                          <td style={{ padding: "6px 8px", whiteSpace: "nowrap", fontWeight: 700 }}>
+                            {zeile.trupp}
+                          </td>
+                        )}
                         {mehrereTage && (
                           <td style={{ padding: "6px 8px", whiteSpace: "nowrap", color: farben.muted }}>
                             {zeile.aufnahmedatum}
