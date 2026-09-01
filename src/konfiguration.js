@@ -25,6 +25,8 @@ export const BAUMART_VORSCHLAEGE = [
   "Buche",
   "Buche Saat",
   "Buche alt",
+  "Eiche Saat",
+  "Eiche alt",
   "Trauben-Eiche",
   "Stiel-Eiche",
   "Sand-Birke",
