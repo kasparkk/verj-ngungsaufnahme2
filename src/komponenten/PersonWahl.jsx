@@ -1,22 +1,19 @@
-import { useState } from "react";
 import { farben } from "../konfiguration.js";
 
-/* Auswahl der aufnehmenden Person - ein Buchstabe, nicht mehr freier Text.
+/* Auswahl der aufnehmenden Person - ein Buchstabe, durchgeklickt.
 
-   Das freie Feld hat sich als Falle erwiesen: "c" und "C" galten der
-   Datenbank als zwei verschiedene Personen, und ein vertippter Name legte
-   eine eigene Spur an, die in der Uebersicht doppelt erschien. Mit einer
-   Auswahl ist beides ausgeschlossen - es gibt nur noch 26 moegliche Werte,
-   alle in Grossbuchstaben.
+   Freier Text war eine Falle: "c" und "C" galten der Datenbank als zwei
+   verschiedene Personen, und ein vertippter Name legte eine eigene Spur an.
+   Eine Reihe von 26 Knoepfen loeste das, brauchte aber die halbe
+   Kopfzeile - im Gelaende zaehlt jede Zeile, die nicht gescrollt werden
+   muss. Jetzt steht der Buchstabe zwischen zwei Pfeilen und braucht so viel
+   Platz wie ein Eingabefeld.
 
-   Sichtbar sind A bis G; mehr Personen als das hat ein Trupp selten. Der
-   Rest laesst sich aufklappen, damit die Reihe im Gelaende nicht zur
-   Buchstabentafel wird. Sieben und nicht acht, damit der Aufklapp-Knopf
-   noch in dieselbe Zeile passt und nicht als breiter Balken darunter
-   haengt. */
+   Die Reihe laeuft im Kreis: von Z geht es auf A und von A zurueck auf Z.
+   Wer B braucht, tippt einmal; wer Y braucht, tippt zweimal rueckwaerts
+   statt vierundzwanzigmal vorwaerts. */
 
 const ALLE = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"];
-const SICHTBAR = 7;
 
 // Aus einem gespeicherten Wert einen gueltigen Buchstaben machen - oder
 // nichts. "c" wird zu "C", " b " zu "B", "ABCCCCC" zu nichts.
@@ -26,83 +23,58 @@ export function alsBuchstabe(wert) {
 }
 
 export default function PersonWahl({ wert, setWert, warnen }) {
-  const [alleZeigen, setAlleZeigen] = useState(() => {
-    const b = alsBuchstabe(wert);
-    return b !== "" && ALLE.indexOf(b) >= SICHTBAR;
-  });
-
-  const buchstaben = alleZeigen ? ALLE : ALLE.slice(0, SICHTBAR);
-
-  const waehlen = (b) => {
-    if (b === wert) return;
-    /* Beim Wechsel bleiben die bisherigen Zaehlungen unter dem alten
-       Buchstaben stehen - wer das nicht weiss, zaehlt sie unbemerkt doppelt.
-       Gewarnt wird nur, wenn heute schon etwas gezaehlt wurde; sonst waere
-       die Rueckfrage nur im Weg. */
-    const hinweis = wert ? warnen?.(wert, b) : "";
+  const weiter = (richtung) => {
+    // Ohne Auswahl faengt jede Richtung bei A an.
+    const ziel = wert
+      ? ALLE[(ALLE.indexOf(wert) + richtung + ALLE.length) % ALLE.length]
+      : "A";
+    if (ziel === wert) return;
+    const hinweis = wert ? warnen?.(wert, ziel) : "";
     if (hinweis && !window.confirm(hinweis)) return;
-    setWert(b);
+    setWert(ziel);
+  };
+
+  const pfeil = {
+    background: "none",
+    border: "none",
+    color: farben.text,
+    fontSize: 24,
+    lineHeight: 1,
+    cursor: "pointer",
+    padding: "0 14px",
+    WebkitTapHighlightColor: "transparent",
   };
 
   return (
-    <div style={{ marginBottom: 10 }}>
-      <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6, marginBottom: 6 }}>
-        PERSON
-      </div>
-
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-        {buchstaben.map((b) => {
-          const gewaehlt = wert === b;
-          return (
-            <button
-              key={b}
-              onClick={() => waehlen(b)}
-              aria-label={`Person ${b}`}
-              style={{
-                flex: "1 1 auto",
-                minWidth: 38,
-                background: gewaehlt ? farben.unverb : "transparent",
-                border: `1px solid ${gewaehlt ? farben.unverb : farben.line}`,
-                color: gewaehlt ? farben.bg : farben.text,
-                borderRadius: 10,
-                padding: "12px 0",
-                fontSize: 17,
-                fontWeight: gewaehlt ? 700 : 400,
-                cursor: "pointer",
-                WebkitTapHighlightColor: "transparent",
-              }}
-            >
-              {b}
-            </button>
-          );
-        })}
-
-        {!alleZeigen && (
-          <button
-            onClick={() => setAlleZeigen(true)}
-            aria-label="Weitere Buchstaben"
-            style={{
-              flex: "1 1 auto",
-              minWidth: 38,
-              background: "transparent",
-              border: `1px dashed ${farben.line}`,
-              color: farben.muted,
-              borderRadius: 10,
-              padding: "12px 0",
-              fontSize: 15,
-              cursor: "pointer",
-            }}
-          >
-            …
-          </button>
-        )}
-      </div>
-
-      {!wert && (
-        <div style={{ fontSize: 10, color: farben.muted, marginTop: 5 }}>
-          Buchstaben wählen – ohne Person wird nichts abgeglichen.
+    <div>
+      <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>PERSON</div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderBottom: `1px solid ${farben.line}`,
+          padding: "2px 0",
+        }}
+      >
+        <button onClick={() => weiter(-1)} aria-label="Person zurück" style={pfeil}>
+          ‹
+        </button>
+        <div
+          aria-label="Gewählte Person"
+          style={{
+            fontSize: 20,
+            fontWeight: 700,
+            color: wert ? farben.text : farben.muted,
+            fontVariantNumeric: "tabular-nums",
+          }}
+        >
+          {wert || "–"}
         </div>
-      )}
+        <button onClick={() => weiter(1)} aria-label="Person weiter" style={pfeil}>
+          ›
+        </button>
+      </div>
     </div>
   );
 }

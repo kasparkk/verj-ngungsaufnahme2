@@ -510,6 +510,38 @@ export default function Verjuengung() {
     0,
   );
 
+  /* Rueckfrage beim Wechsel der Person.
+
+     Was dabei tatsaechlich passiert, ist unangenehmer als es aussieht: Die
+     Zaehlungen liegen auf dem Geraet am Tag, nicht an der Person. Nach dem
+     Wechsel schickt der Abgleich denselben Tag noch einmal hoch, jetzt unter
+     dem neuen Buchstaben - die Aufnahme steht dann doppelt in der Datenbank,
+     und die alte Eintragung verschwindet nicht von selbst. Genau so ist eine
+     Aufnahme schon einmal unter zwei Namen gelandet.
+
+     Gefragt wird einmal je Aufnahmetag. Beim Durchklicken bei jedem
+     Buchstaben erneut zu fragen, waere nur noch im Weg - die Frage ist
+     nach dem ersten Mal beantwortet, und es geht dabei immer um dieselben
+     Zahlen desselben Tages. */
+  const gewarnt = useRef("");
+
+  const personWarnung = (alt, neu) => {
+    if (gezaehltHeute === 0) return "";
+    if (gewarnt.current === datum) return "";
+    return (
+      `An diesem Tag wurden ${gezaehltHeute} Pflanzen unter ${alt} gezählt.\n\n` +
+      `Beim Wechsel werden sie zusätzlich unter ${neu} eingetragen – sie stehen ` +
+      `dann doppelt, unter ${alt} und unter ${neu}. Die alte Eintragung ` +
+      `verschwindet nicht von selbst.\n\n` +
+      `Wirklich zu ${neu} wechseln?`
+    );
+  };
+
+  const personWechseln = (buchstabe) => {
+    if (gezaehltHeute > 0 && trupp) gewarnt.current = datum;
+    setTrupp(buchstabe);
+  };
+
   const syncText = () => {
     if (!kopf.trupp.trim()) return "Person eintragen – dann wird automatisch abgeglichen";
     if (sendet) return "Gleicht ab ...";
@@ -537,27 +569,26 @@ export default function Verjuengung() {
         margin: "0 auto",
       }}
     >
-      <PersonWahl
-        wert={kopf.trupp}
-        setWert={setTrupp}
-        warnen={(alt, neu) =>
-          gezaehltHeute > 0
-            ? `An diesem Tag wurden ${gezaehltHeute} Pflanzen unter ${alt} gezählt.\n\n` +
-              `Sie bleiben bei ${alt} stehen. Ab jetzt zählt ${neu} weiter.\n\n` +
-              `Wirklich zu ${neu} wechseln?`
-            : ""
-        }
-      />
-
-      <div style={{ marginBottom: 10 }}>
-        <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>DATUM</div>
-        <input
-          type="date"
-          style={feldStil}
-          value={kopf.datum}
-          onChange={(e) => datumWechseln(e.target.value)}
-        />
+      <div style={{ display: "flex", gap: 12, marginBottom: 10 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <PersonWahl wert={kopf.trupp} setWert={personWechseln} warnen={personWarnung} />
+        </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>DATUM</div>
+          <input
+            type="date"
+            style={feldStil}
+            value={kopf.datum}
+            onChange={(e) => datumWechseln(e.target.value)}
+          />
+        </div>
       </div>
+
+      {!kopf.trupp && (
+        <div style={{ fontSize: 10, color: farben.muted, marginTop: -4, marginBottom: 10 }}>
+          Person wählen – ohne Person wird nichts abgeglichen.
+        </div>
+      )}
 
       <button
         onClick={ergebnisOeffnen}
