@@ -10,6 +10,7 @@ import {
 } from "./berechnung.js";
 import { nachUtm33, ausUtm33, entfernung, peilung, himmelsrichtung } from "../utm33.js";
 import { Abschnitt, Feld, TextFeld, AuswahlFeld, KnopfWahl, JaNein, beschriftung } from "./Felder.jsx";
+import KoordinatenKopieren from "../komponenten/KoordinatenKopieren.jsx";
 
 const nk = (wert, stellen = 1) =>
   Number(wert).toLocaleString("de-DE", {
@@ -236,9 +237,11 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
           </button>
 
           {utm && (
-            <div style={{ fontSize: 11, color: farben.muted, marginTop: 6, fontVariantNumeric: "tabular-nums" }}>
-              ETRS89 / UTM 33N: X {nk(utm.x, 2)} · Y {nk(utm.y, 2)}
-              {punkt.quelle === "stab" ? " · vom Messstab" : punkt.quelle === "geraet" ? " · vom Handy" : ""}
+            <div style={{ marginTop: 4 }}>
+              <KoordinatenKopieren breite={punkt.lat} laenge={punkt.lon} />
+              <div style={{ fontSize: 10, color: farben.muted }}>
+                {punkt.quelle === "stab" ? "vom Messstab" : punkt.quelle === "geraet" ? "vom Handy" : ""}
+              </div>
             </div>
           )}
 

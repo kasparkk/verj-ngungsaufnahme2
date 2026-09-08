@@ -5,6 +5,7 @@ import { normDatum } from "./datum.js";
 import { baueTabelle, baueZeilen } from "./tabelle.js";
 import { baueXlsx } from "./xlsx.js";
 import PersonWahl, { alsBuchstabe } from "./komponenten/PersonWahl.jsx";
+import KoordinatenKopieren from "./komponenten/KoordinatenKopieren.jsx";
 import { zeilenHochladen, ergebnisAllePersonen, ergebnisEinePerson, istSchlafend, RUHE_HINWEIS } from "./datenbank.js";
 import ZaehlBox from "./komponenten/ZaehlBox.jsx";
 import UebersichtTabelle from "./komponenten/UebersichtTabelle.jsx";
@@ -820,6 +821,11 @@ export default function Verjuengung() {
                 ? `📍 ${aktuellerKreis.lat.toFixed(5)}, ${aktuellerKreis.lon.toFixed(5)}`
                 : "📍 Standort erfassen"}
           </button>
+          <KoordinatenKopieren
+            breite={aktuellerKreis?.lat ?? null}
+            laenge={aktuellerKreis?.lon ?? null}
+            klein
+          />
         </div>
 
         {aktiv === kreise.length - 1 ? (
