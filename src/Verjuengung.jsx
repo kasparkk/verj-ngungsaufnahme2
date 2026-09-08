@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { farben, BAUMART_VORSCHLAEGE, leererKreis } from "./konfiguration.js";
-import { ladeAlles, speichereAlles, heute, startBaumarten, leererTag } from "./speicher.js";
+import { ladeAlles, speichereAlles, heute, startBaumarten, leeresBlatt, blattSchluessel } from "./speicher.js";
 import { normDatum } from "./datum.js";
 import { baueTabelle, baueZeilen } from "./tabelle.js";
 import { baueXlsx } from "./xlsx.js";
@@ -27,7 +27,11 @@ export default function Verjuengung() {
   const [aktiv, setAktiv] = useState(0);
 
   // Die uebrigen Aufnahmetage, nach Datum abgelegt.
-  const [andereTage, setAndereTage] = useState({});
+  const [andereBlaetter, setAndereBlaetter] = useState({});
+  /* Das Gebietsfeld ist freier Text. Wuerde jedes getippte Zeichen ein Blatt
+     wechseln, entstuenden beim Eintippen von "4138 b1" acht Blaetter. Das
+     Feld haelt deshalb einen Entwurf; uebernommen wird beim Verlassen. */
+  const [abteilungEntwurf, setAbteilungEntwurf] = useState("");
   const [geladen, setGeladen] = useState(false);
 
   // Fuer den restlichen Ablauf weiterhin als ein Block.
@@ -67,13 +71,15 @@ export default function Verjuengung() {
     setRadius(stand.radius);
     setDatum(stand.datum);
 
-    const { [stand.datum]: heutiger, ...uebrige } = stand.tage;
-    const tag = heutiger || leererTag();
-    setAbteilung(tag.abteilung ?? "");
-    setArten(tag.arten?.length ? tag.arten : startBaumarten());
-    setKreise(tag.kreise?.length ? tag.kreise : [leererKreis(1)]);
-    setAktiv(tag.aktiv ?? 0);
-    setAndereTage(uebrige);
+    const schluessel = blattSchluessel(stand.datum, stand.abteilung);
+    const { [schluessel]: offenes, ...uebrige } = stand.blaetter;
+    const blatt = offenes || leeresBlatt();
+    setAbteilung(stand.abteilung ?? "");
+    setAbteilungEntwurf(stand.abteilung ?? "");
+    setArten(blatt.arten?.length ? blatt.arten : startBaumarten());
+    setKreise(blatt.kreise?.length ? blatt.kreise : [leererKreis(1)]);
+    setAktiv(blatt.aktiv ?? 0);
+    setAndereBlaetter(uebrige);
 
     setGeladen(true);
   }, []);
@@ -86,46 +92,62 @@ export default function Verjuengung() {
         trupp,
         radius,
         datum,
-        tage: { ...andereTage, [datum]: { abteilung, arten, kreise, aktiv } },
+        abteilung,
+        blaetter: {
+          ...andereBlaetter,
+          [blattSchluessel(datum, abteilung)]: { arten, kreise, aktiv },
+        },
       });
     } catch {
       setHinweis("Speichern fehlgeschlagen");
     }
-  }, [trupp, radius, datum, abteilung, arten, kreise, aktiv, andereTage, geladen]);
+  }, [trupp, radius, datum, abteilung, arten, kreise, aktiv, andereBlaetter, geladen]);
 
-  /* Datum umstellen heisst: Blatt wechseln. Die bisherige Zaehlung wird unter
-     ihrem Tag abgelegt, und der neue Tag wird hervorgeholt - oder faengt leer
-     an. Die Baumartenliste und die Abteilung werden dabei uebernommen, weil
-     man sie sonst jeden Morgen neu eintippen muesste. */
-  const datumWechseln = (neuesDatum) => {
-    /* Ein leeres Feld ist kein Aufnahmetag. Beim Bearbeiten des Datums meldet
-       der Browser zwischendurch "" - wuerde das als eigener Tag durchgehen,
-       landete die laufende Zaehlung unter einem leeren Schluessel und der
-       eigentliche Tag faenge beim naechsten Umstellen leer an. Die Zahlen
-       waeren dann scheinbar weg. */
-    if (!neuesDatum || neuesDatum === datum) return;
+  /* Blatt wechseln - ausgeloest vom Datum oder vom Gebiet.
 
-    setAndereTage((alle) => {
-      const { [neuesDatum]: _weg, ...rest } = alle;
-      return { ...rest, [datum]: { abteilung, arten, kreise, aktiv } };
+     Ein Blatt gehoert zu einem Tag IN einem Gebiet. Die bisherige Zaehlung
+     wird unter ihrem Schluessel abgelegt und das Zielblatt hervorgeholt -
+     oder faengt leer an. Die Baumartenliste bleibt stehen, weil man sie
+     sonst jedes Mal neu zusammenstellen muesste. */
+  const blattWechseln = (neuesDatum, neueAbteilung) => {
+    const zielDatum = neuesDatum ?? datum;
+    const zielAbteilung = (neueAbteilung ?? abteilung).trim();
+    const von = blattSchluessel(datum, abteilung);
+    const nach = blattSchluessel(zielDatum, zielAbteilung);
+    if (von === nach) return;
+
+    setAndereBlaetter((alle) => {
+      const { [nach]: _weg, ...rest } = alle;
+      return { ...rest, [von]: { arten, kreise, aktiv } };
     });
 
-    const zielTag = andereTage[neuesDatum];
-    if (zielTag) {
-      setAbteilung(zielTag.abteilung ?? "");
-      setArten(zielTag.arten?.length ? zielTag.arten : startBaumarten());
-      setKreise(zielTag.kreise?.length ? zielTag.kreise : [leererKreis(1)]);
-      setAktiv(zielTag.aktiv ?? 0);
+    const ziel = andereBlaetter[nach];
+    if (ziel) {
+      setArten(ziel.arten?.length ? ziel.arten : startBaumarten());
+      setKreise(ziel.kreise?.length ? ziel.kreise : [leererKreis(1)]);
+      setAktiv(ziel.aktiv ?? 0);
     } else {
       setKreise([leererKreis(1)]);
       setAktiv(0);
     }
 
-    datumRef.current = neuesDatum; // sofort, damit laufende Ortungen es sehen
-    setDatum(neuesDatum);
+    datumRef.current = zielDatum; // sofort, damit laufende Ortungen es sehen
+    setDatum(zielDatum);
+    setAbteilung(zielAbteilung);
+    setAbteilungEntwurf(zielAbteilung);
     setGpsLaeuft(false);
     setSyncStatus("");
     setSyncGrund("");
+  };
+
+  /* Ein leeres Feld ist kein Aufnahmetag. Beim Bearbeiten des Datums meldet
+     der Browser zwischendurch "" - wuerde das als eigenes Blatt durchgehen,
+     landete die laufende Zaehlung unter einem leeren Schluessel und der
+     eigentliche Tag faenge beim naechsten Umstellen leer an. Die Zahlen
+     waeren dann scheinbar weg. */
+  const datumWechseln = (neuesDatum) => {
+    if (!neuesDatum || neuesDatum === datum) return;
+    blattWechseln(neuesDatum, null);
   };
 
   /* Automatischer Abgleich: kurz nach der letzten Aenderung, damit nicht bei
@@ -537,6 +559,35 @@ export default function Verjuengung() {
     );
   };
 
+  /* Gebiet uebernehmen - erst beim Verlassen des Feldes.
+
+     Steht auf dem Blatt schon eine Zaehlung, wird gefragt: Ein anderes
+     Gebiet bekommt ein eigenes, leeres Blatt, und die bisherigen Zahlen
+     bleiben bei ihrem. Verloren geht dabei nichts - zurueckstellen holt sie
+     wieder hervor. Wer sich nur vertippt hat, soll das nicht ungewollt
+     ausloesen und kann abbrechen. */
+  const abteilungUebernehmen = () => {
+    const ziel = abteilungEntwurf.trim();
+    if (ziel === abteilung.trim()) {
+      setAbteilungEntwurf(abteilung);
+      return;
+    }
+    if (gezaehltHeute > 0) {
+      const bisher = abteilung.trim() || "ohne Gebiet";
+      const weiter = window.confirm(
+        `Auf diesem Blatt sind ${gezaehltHeute} Pflanzen gezählt – ${bisher}, ${datum}.\n\n` +
+          `„${ziel}" bekommt ein eigenes, leeres Blatt. Die Zahlen bleiben bei ` +
+          `${bisher} und gehen nicht verloren; zurückstellen holt sie wieder.\n\n` +
+          `Zu „${ziel}" wechseln?`,
+      );
+      if (!weiter) {
+        setAbteilungEntwurf(abteilung);
+        return;
+      }
+    }
+    blattWechseln(null, ziel);
+  };
+
   const personWechseln = (buchstabe) => {
     if (gezaehltHeute > 0 && trupp) gewarnt.current = datum;
     setTrupp(buchstabe);
@@ -612,8 +663,10 @@ export default function Verjuengung() {
           <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>ABTEILUNG</div>
           <input
             style={feldStil}
-            value={kopf.abteilung}
-            onChange={(e) => setAbteilung(e.target.value)}
+            value={abteilungEntwurf}
+            onChange={(e) => setAbteilungEntwurf(e.target.value)}
+            onBlur={abteilungUebernehmen}
+            onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
             placeholder="4138 b1"
           />
         </div>

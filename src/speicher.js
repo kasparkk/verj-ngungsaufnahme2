@@ -1,16 +1,20 @@
 import { SPEICHER_SCHLUESSEL, START_BAUMARTEN, leererKreis } from "./konfiguration.js";
 import { normDatum } from "./datum.js";
 
-/* Die Aufnahme liegt auf dem Geraet, getrennt nach Aufnahmetag.
+/* Die Aufnahme liegt auf dem Geraet, getrennt nach Aufnahmetag UND Gebiet.
 
-   Frueher wurde nur EINE Aufnahme gespeichert. Wer das Datum umstellte, hatte
-   die Zaehlung des Vortages weiter vor sich und haette sie unter dem neuen
-   Datum noch einmal hochgeladen. Jetzt gehoert jede Zaehlung zu ihrem Tag:
-   neues Datum heisst leeres Blatt, zurueck auf einen frueheren Tag holt
-   dessen Zahlen wieder hervor.
+   Zuerst wurde nur eine einzige Aufnahme gespeichert; wer das Datum
+   umstellte, schleppte die Zaehlung des Vortages mit. Dann bekam jeder Tag
+   sein eigenes Blatt. Das reichte aber nicht: Wer an einem Tag zwei
+   Abteilungen aufnimmt, hatte die Zahlen der ersten weiter vor sich, und
+   beim Abgleich wanderte die ganze Tagesaufnahme in die zweite Abteilung.
 
-   Person und Probekreisflaeche bleiben geraeteweit - die aendern sich nicht
-   von Tag zu Tag. */
+   Ein Blatt gehoert deshalb jetzt zu einem Tag IN einem Gebiet. Gebiet
+   umstellen heisst - wie Datum umstellen - neues Blatt; zurueckstellen holt
+   das alte wieder hervor.
+
+   Person und Probekreisflaeche bleiben geraeteweit, die aendern sich nicht
+   von Blatt zu Blatt. */
 
 export const heute = () => {
   const jetzt = new Date();
@@ -20,15 +24,26 @@ export const heute = () => {
 
 export const startBaumarten = () => START_BAUMARTEN.map((name, i) => ({ id: `a${i}`, name }));
 
-export const leererTag = (arten) => ({
-  abteilung: "",
+/* Der Schluessel eines Blattes. Das Gebiet wird getrimmt, damit "4138 b1"
+   und "4138 b1 " nicht zwei Blaetter ergeben; der senkrechte Strich trennt,
+   und weil ein Datum immer zehn Zeichen hat, ist die Trennung eindeutig. */
+export const blattSchluessel = (datum, abteilung) =>
+  `${datum}|${String(abteilung ?? "").trim()}`;
+
+export const leeresBlatt = (arten) => ({
   arten: arten?.length ? arten : startBaumarten(),
   kreise: [leererKreis(1)],
   aktiv: 0,
 });
 
+const blattAus = (roh, arten) => ({
+  arten: roh?.arten?.length ? roh.arten : arten?.length ? arten : startBaumarten(),
+  kreise: roh?.kreise?.length ? roh.kreise : [leererKreis(1)],
+  aktiv: typeof roh?.aktiv === "number" ? roh.aktiv : 0,
+});
+
 export function ladeAlles() {
-  const standard = { trupp: "", radius: "100", datum: heute(), tage: {} };
+  const standard = { trupp: "", radius: "100", datum: heute(), abteilung: "", blaetter: {} };
 
   let roh;
   try {
@@ -46,33 +61,47 @@ export function ladeAlles() {
     return standard;
   }
 
-  if (daten?.version === 2 && daten.tage) {
+  // Aktueller Stand: Blaetter nach Tag und Gebiet.
+  if (daten?.version === 3 && daten.blaetter) {
     return {
       trupp: daten.trupp ?? "",
       radius: daten.radius ?? "100",
       datum: daten.datum || heute(),
-      tage: daten.tage,
+      abteilung: daten.abteilung ?? "",
+      blaetter: daten.blaetter,
     };
   }
 
-  // Alter Stand (eine einzelne Aufnahme) - unter seinem Datum einsortieren.
+  /* Stand mit Blaettern je Tag: das Gebiet lag im Blatt und wird jetzt Teil
+     des Schluessels. Kein Datenverlust - jedes Blatt behaelt sein Gebiet. */
+  if (daten?.version === 2 && daten.tage) {
+    const datum = daten.datum || heute();
+    const blaetter = {};
+    for (const [tag, inhalt] of Object.entries(daten.tage)) {
+      blaetter[blattSchluessel(tag, inhalt?.abteilung)] = blattAus(inhalt);
+    }
+    return {
+      trupp: daten.trupp ?? "",
+      radius: daten.radius ?? "100",
+      datum,
+      abteilung: (daten.tage[datum]?.abteilung ?? "").trim(),
+      blaetter,
+    };
+  }
+
+  // Aeltester Stand: eine einzelne Aufnahme ohne Blaetter.
   const kopf = daten?.kopf ?? {};
   const datum = normDatum(String(kopf.datum ?? "").trim()) || heute();
+  const abteilung = String(kopf.abteilung ?? "").trim();
   return {
     trupp: kopf.trupp ?? "",
     radius: kopf.radius ?? "100",
     datum,
-    tage: {
-      [datum]: {
-        abteilung: kopf.abteilung ?? "",
-        arten: daten?.arten?.length ? daten.arten : startBaumarten(),
-        kreise: daten?.kreise?.length ? daten.kreise : [leererKreis(1)],
-        aktiv: typeof daten?.aktiv === "number" ? daten.aktiv : 0,
-      },
-    },
+    abteilung,
+    blaetter: { [blattSchluessel(datum, abteilung)]: blattAus(daten) },
   };
 }
 
 export function speichereAlles(stand) {
-  localStorage.setItem(SPEICHER_SCHLUESSEL, JSON.stringify({ version: 2, ...stand }));
+  localStorage.setItem(SPEICHER_SCHLUESSEL, JSON.stringify({ version: 3, ...stand }));
 }
