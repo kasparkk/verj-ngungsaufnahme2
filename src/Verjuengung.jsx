@@ -75,7 +75,7 @@ export default function Verjuengung() {
     setRadius(stand.radius);
     setDatum(stand.datum);
 
-    const schluessel = blattSchluessel(stand.datum, stand.abteilung);
+    const schluessel = blattSchluessel(stand.trupp, stand.datum, stand.abteilung);
     const { [schluessel]: offenes, ...uebrige } = stand.blaetter;
     const blatt = offenes || leeresBlatt();
     setAbteilung(stand.abteilung ?? "");
@@ -100,7 +100,7 @@ export default function Verjuengung() {
         abteilung,
         blaetter: {
           ...andereBlaetter,
-          [blattSchluessel(datum, abteilung)]: { arten, kreise, aktiv, gesendet },
+          [blattSchluessel(trupp, datum, abteilung)]: { arten, kreise, aktiv, gesendet },
         },
       });
     } catch {
@@ -114,11 +114,12 @@ export default function Verjuengung() {
      wird unter ihrem Schluessel abgelegt und das Zielblatt hervorgeholt -
      oder faengt leer an. Die Baumartenliste bleibt stehen, weil man sie
      sonst jedes Mal neu zusammenstellen muesste. */
-  const blattWechseln = (neuesDatum, neueAbteilung) => {
+  const blattWechseln = (neuesDatum, neueAbteilung, neuerTrupp) => {
     const zielDatum = neuesDatum ?? datum;
     const zielAbteilung = (neueAbteilung ?? abteilung).trim();
-    const von = blattSchluessel(datum, abteilung);
-    const nach = blattSchluessel(zielDatum, zielAbteilung);
+    const zielTrupp = neuerTrupp ?? trupp;
+    const von = blattSchluessel(trupp, datum, abteilung);
+    const nach = blattSchluessel(zielTrupp, zielDatum, zielAbteilung);
     if (von === nach) return;
 
     setAndereBlaetter((alle) => {
@@ -142,6 +143,7 @@ export default function Verjuengung() {
     setDatum(zielDatum);
     setAbteilung(zielAbteilung);
     setAbteilungEntwurf(zielAbteilung);
+    setTrupp(zielTrupp);
     setGpsLaeuft(false);
     setSyncStatus("");
     setSyncGrund("");
@@ -154,7 +156,7 @@ export default function Verjuengung() {
      waeren dann scheinbar weg. */
   const datumWechseln = (neuesDatum) => {
     if (!neuesDatum || neuesDatum === datum) return;
-    blattWechseln(neuesDatum, null);
+    blattWechseln(neuesDatum, null, null);
   };
 
   /* Automatischer Abgleich: kurz nach der letzten Aenderung, damit nicht bei
@@ -581,29 +583,38 @@ export default function Verjuengung() {
 
   /* Rueckfrage beim Wechsel der Person.
 
-     Was dabei tatsaechlich passiert, ist unangenehmer als es aussieht: Die
-     Zaehlungen liegen auf dem Geraet am Tag, nicht an der Person. Nach dem
-     Wechsel schickt der Abgleich denselben Tag noch einmal hoch, jetzt unter
-     dem neuen Buchstaben - die Aufnahme steht dann doppelt in der Datenbank,
-     und die alte Eintragung verschwindet nicht von selbst. Genau so ist eine
-     Aufnahme schon einmal unter zwei Namen gelandet.
+     Ein Blatt gehoert zu einer Person an einem Tag in einem Gebiet. Der
+     Buchstabe wechselt also das Blatt, genau wie Datum und Gebiet: Der neue
+     faengt leer an, die bisherigen Zahlen bleiben beim alten und werden
+     nicht noch einmal unter dem neuen eingetragen.
 
-     Gefragt wird einmal je Aufnahmetag. Beim Durchklicken bei jedem
-     Buchstaben erneut zu fragen, waere nur noch im Weg - die Frage ist
-     nach dem ersten Mal beantwortet, und es geht dabei immer um dieselben
-     Zahlen desselben Tages. */
+     Gefragt wird einmal je Blatt. Beim Durchklicken bei jedem Buchstaben
+     erneut zu fragen, waere nur noch im Weg. */
   const gewarnt = useRef("");
 
   const personWarnung = (alt, neu) => {
     if (gezaehltHeute === 0) return "";
-    if (gewarnt.current === datum) return "";
+    if (gewarnt.current === blattSchluessel(alt, datum, abteilung)) return "";
     return (
-      `An diesem Tag wurden ${gezaehltHeute} Pflanzen unter ${alt} gezählt.\n\n` +
-      `Beim Wechsel werden sie zusätzlich unter ${neu} eingetragen – sie stehen ` +
-      `dann doppelt, unter ${alt} und unter ${neu}. Die alte Eintragung ` +
-      `verschwindet nicht von selbst.\n\n` +
-      `Wirklich zu ${neu} wechseln?`
+      `Auf diesem Blatt sind ${gezaehltHeute} Pflanzen gezählt – ${alt}, ${datum}` +
+      `${abteilung.trim() ? `, ${abteilung.trim()}` : ""}.\n\n` +
+      `${neu} fängt mit einem leeren Blatt an. Die Zahlen bleiben bei ${alt} ` +
+      `und gehen nicht verloren; zurückstellen holt sie wieder.\n\n` +
+      `Zu ${neu} wechseln?`
     );
+  };
+
+  const personWechseln = (buchstabe) => {
+    if (gezaehltHeute > 0 && trupp) {
+      gewarnt.current = blattSchluessel(trupp, datum, abteilung);
+    }
+    if (!trupp) {
+      // Noch keine Person gewaehlt: das offene Blatt bekommt einfach ihren
+      // Buchstaben, statt ein zweites danebenzustellen.
+      setTrupp(buchstabe);
+      return;
+    }
+    blattWechseln(null, null, buchstabe);
   };
 
   /* Gebiet uebernehmen - erst beim Verlassen des Feldes.
@@ -632,12 +643,7 @@ export default function Verjuengung() {
         return;
       }
     }
-    blattWechseln(null, ziel);
-  };
-
-  const personWechseln = (buchstabe) => {
-    if (gezaehltHeute > 0 && trupp) gewarnt.current = datum;
-    setTrupp(buchstabe);
+    blattWechseln(null, ziel, null);
   };
 
   const syncText = () => {

@@ -1,20 +1,24 @@
 import { SPEICHER_SCHLUESSEL, START_BAUMARTEN, leererKreis } from "./konfiguration.js";
 import { normDatum } from "./datum.js";
 
-/* Die Aufnahme liegt auf dem Geraet, getrennt nach Aufnahmetag UND Gebiet.
+/* Die Aufnahme liegt auf dem Geraet, getrennt nach Person, Tag und Gebiet.
 
    Zuerst wurde nur eine einzige Aufnahme gespeichert; wer das Datum
    umstellte, schleppte die Zaehlung des Vortages mit. Dann bekam jeder Tag
-   sein eigenes Blatt. Das reichte aber nicht: Wer an einem Tag zwei
-   Abteilungen aufnimmt, hatte die Zahlen der ersten weiter vor sich, und
-   beim Abgleich wanderte die ganze Tagesaufnahme in die zweite Abteilung.
+   sein eigenes Blatt. Das reichte nicht: Wer an einem Tag zwei Abteilungen
+   aufnahm, hatte die Zahlen der ersten weiter vor sich, und beim Abgleich
+   wanderte die ganze Tagesaufnahme in die zweite Abteilung. Dasselbe galt
+   fuer die Person - wer den Buchstaben wechselte, trug seine Zahlen unter
+   dem neuen noch einmal ein.
 
-   Ein Blatt gehoert deshalb jetzt zu einem Tag IN einem Gebiet. Gebiet
-   umstellen heisst - wie Datum umstellen - neues Blatt; zurueckstellen holt
-   das alte wieder hervor.
+   Ein Blatt ist deshalb genau das, was eine Aufnahme ausmacht: eine Person,
+   an einem Tag, in einem Gebiet. Wird eines der drei umgestellt, gibt es ein
+   neues Blatt; zurueckstellen holt das alte wieder hervor. Nur die
+   Probekreisflaeche bleibt geraeteweit, die aendert sich nicht von Blatt zu
+   Blatt.
 
-   Person und Probekreisflaeche bleiben geraeteweit, die aendern sich nicht
-   von Blatt zu Blatt. */
+   Die Fassung 3 des Speichers ist nie ausgeliefert worden, deshalb gibt es
+   keinen Zwischenschritt: alte Staende wandern direkt hierher. */
 
 export const heute = () => {
   const jetzt = new Date();
@@ -24,11 +28,13 @@ export const heute = () => {
 
 export const startBaumarten = () => START_BAUMARTEN.map((name, i) => ({ id: `a${i}`, name }));
 
-/* Der Schluessel eines Blattes. Das Gebiet wird getrimmt, damit "4138 b1"
-   und "4138 b1 " nicht zwei Blaetter ergeben; der senkrechte Strich trennt,
-   und weil ein Datum immer zehn Zeichen hat, ist die Trennung eindeutig. */
-export const blattSchluessel = (datum, abteilung) =>
-  `${datum}|${String(abteilung ?? "").trim()}`;
+/* Der Schluessel eines Blattes: Person, Tag, Gebiet. Person und Gebiet
+   werden getrimmt, damit "4138 b1" und "4138 b1 " nicht zwei Blaetter
+   ergeben. Der senkrechte Strich trennt; er kommt in einem Buchstaben nicht
+   vor und ein Datum hat immer zehn Zeichen, die Trennung ist also
+   eindeutig. */
+export const blattSchluessel = (trupp, datum, abteilung) =>
+  `${String(trupp ?? "").trim()}|${datum}|${String(abteilung ?? "").trim()}`;
 
 export const leeresBlatt = (arten) => ({
   arten: arten?.length ? arten : startBaumarten(),
@@ -79,12 +85,14 @@ export function ladeAlles() {
      des Schluessels. Kein Datenverlust - jedes Blatt behaelt sein Gebiet. */
   if (daten?.version === 2 && daten.tage) {
     const datum = daten.datum || heute();
+    const trupp = daten.trupp ?? "";
     const blaetter = {};
     for (const [tag, inhalt] of Object.entries(daten.tage)) {
-      blaetter[blattSchluessel(tag, inhalt?.abteilung)] = blattAus(inhalt);
+      // Die Person lag geraeteweit - diese Zaehlungen sind ihre.
+      blaetter[blattSchluessel(trupp, tag, inhalt?.abteilung)] = blattAus(inhalt);
     }
     return {
-      trupp: daten.trupp ?? "",
+      trupp,
       radius: daten.radius ?? "100",
       datum,
       abteilung: (daten.tage[datum]?.abteilung ?? "").trim(),
@@ -96,12 +104,13 @@ export function ladeAlles() {
   const kopf = daten?.kopf ?? {};
   const datum = normDatum(String(kopf.datum ?? "").trim()) || heute();
   const abteilung = String(kopf.abteilung ?? "").trim();
+  const trupp = kopf.trupp ?? "";
   return {
-    trupp: kopf.trupp ?? "",
+    trupp,
     radius: kopf.radius ?? "100",
     datum,
     abteilung,
-    blaetter: { [blattSchluessel(datum, abteilung)]: blattAus(daten) },
+    blaetter: { [blattSchluessel(trupp, datum, abteilung)]: blattAus(daten) },
   };
 }
 
