@@ -31,7 +31,10 @@ export const RUHE_HINWEIS =
    der automatische Abgleich beliebig oft laufen. */
 export async function zeilenHochladen(zeilen) {
   const antwort = await fetch(
-    `${SUPABASE_URL}/rest/v1/verjuengung?on_conflict=trupp,aufnahmedatum,kreis,baumart`,
+    /* Das Gebiet gehoert in den Schluessel. Ohne es galten zwei Abteilungen mit
+   derselben Kreisnummer am selben Tag als dieselbe Zeile - die zweite
+   ueberschrieb die erste stillschweigend. */
+    `${SUPABASE_URL}/rest/v1/verjuengung?on_conflict=trupp,aufnahmedatum,abteilung,kreis,baumart`,
     {
       method: "POST",
       headers: {

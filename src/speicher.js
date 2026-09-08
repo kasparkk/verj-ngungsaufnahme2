@@ -1,16 +1,24 @@
 import { SPEICHER_SCHLUESSEL, START_BAUMARTEN, leererKreis } from "./konfiguration.js";
 import { normDatum } from "./datum.js";
 
-/* Die Aufnahme liegt auf dem Geraet, getrennt nach Aufnahmetag.
+/* Die Aufnahme liegt auf dem Geraet, getrennt nach Person, Tag und Gebiet.
 
-   Frueher wurde nur EINE Aufnahme gespeichert. Wer das Datum umstellte, hatte
-   die Zaehlung des Vortages weiter vor sich und haette sie unter dem neuen
-   Datum noch einmal hochgeladen. Jetzt gehoert jede Zaehlung zu ihrem Tag:
-   neues Datum heisst leeres Blatt, zurueck auf einen frueheren Tag holt
-   dessen Zahlen wieder hervor.
+   Zuerst wurde nur eine einzige Aufnahme gespeichert; wer das Datum
+   umstellte, schleppte die Zaehlung des Vortages mit. Dann bekam jeder Tag
+   sein eigenes Blatt. Das reichte nicht: Wer an einem Tag zwei Abteilungen
+   aufnahm, hatte die Zahlen der ersten weiter vor sich, und beim Abgleich
+   wanderte die ganze Tagesaufnahme in die zweite Abteilung. Dasselbe galt
+   fuer die Person - wer den Buchstaben wechselte, trug seine Zahlen unter
+   dem neuen noch einmal ein.
 
-   Person und Probekreisflaeche bleiben geraeteweit - die aendern sich nicht
-   von Tag zu Tag. */
+   Ein Blatt ist deshalb genau das, was eine Aufnahme ausmacht: eine Person,
+   an einem Tag, in einem Gebiet. Wird eines der drei umgestellt, gibt es ein
+   neues Blatt; zurueckstellen holt das alte wieder hervor. Nur die
+   Probekreisflaeche bleibt geraeteweit, die aendert sich nicht von Blatt zu
+   Blatt.
+
+   Die Fassung 3 des Speichers ist nie ausgeliefert worden, deshalb gibt es
+   keinen Zwischenschritt: alte Staende wandern direkt hierher. */
 
 export const heute = () => {
   const jetzt = new Date();
@@ -20,15 +28,31 @@ export const heute = () => {
 
 export const startBaumarten = () => START_BAUMARTEN.map((name, i) => ({ id: `a${i}`, name }));
 
-export const leererTag = (arten) => ({
-  abteilung: "",
+/* Der Schluessel eines Blattes: Person, Tag, Gebiet. Person und Gebiet
+   werden getrimmt, damit "4138 b1" und "4138 b1 " nicht zwei Blaetter
+   ergeben. Der senkrechte Strich trennt; er kommt in einem Buchstaben nicht
+   vor und ein Datum hat immer zehn Zeichen, die Trennung ist also
+   eindeutig. */
+export const blattSchluessel = (trupp, datum, abteilung) =>
+  `${String(trupp ?? "").trim()}|${datum}|${String(abteilung ?? "").trim()}`;
+
+export const leeresBlatt = (arten) => ({
   arten: arten?.length ? arten : startBaumarten(),
   kreise: [leererKreis(1)],
   aktiv: 0,
+  // Schon hochgeladene Kombinationen aus Kreis und Baumart - siehe Abgleich.
+  gesendet: [],
+});
+
+const blattAus = (roh, arten) => ({
+  arten: roh?.arten?.length ? roh.arten : arten?.length ? arten : startBaumarten(),
+  kreise: roh?.kreise?.length ? roh.kreise : [leererKreis(1)],
+  aktiv: typeof roh?.aktiv === "number" ? roh.aktiv : 0,
+  gesendet: Array.isArray(roh?.gesendet) ? roh.gesendet : [],
 });
 
 export function ladeAlles() {
-  const standard = { trupp: "", radius: "100", datum: heute(), tage: {} };
+  const standard = { trupp: "", radius: "100", datum: heute(), abteilung: "", blaetter: {} };
 
   let roh;
   try {
@@ -46,33 +70,50 @@ export function ladeAlles() {
     return standard;
   }
 
-  if (daten?.version === 2 && daten.tage) {
+  // Aktueller Stand: Blaetter nach Tag und Gebiet.
+  if (daten?.version === 3 && daten.blaetter) {
     return {
       trupp: daten.trupp ?? "",
       radius: daten.radius ?? "100",
       datum: daten.datum || heute(),
-      tage: daten.tage,
+      abteilung: daten.abteilung ?? "",
+      blaetter: daten.blaetter,
     };
   }
 
-  // Alter Stand (eine einzelne Aufnahme) - unter seinem Datum einsortieren.
+  /* Stand mit Blaettern je Tag: das Gebiet lag im Blatt und wird jetzt Teil
+     des Schluessels. Kein Datenverlust - jedes Blatt behaelt sein Gebiet. */
+  if (daten?.version === 2 && daten.tage) {
+    const datum = daten.datum || heute();
+    const trupp = daten.trupp ?? "";
+    const blaetter = {};
+    for (const [tag, inhalt] of Object.entries(daten.tage)) {
+      // Die Person lag geraeteweit - diese Zaehlungen sind ihre.
+      blaetter[blattSchluessel(trupp, tag, inhalt?.abteilung)] = blattAus(inhalt);
+    }
+    return {
+      trupp,
+      radius: daten.radius ?? "100",
+      datum,
+      abteilung: (daten.tage[datum]?.abteilung ?? "").trim(),
+      blaetter,
+    };
+  }
+
+  // Aeltester Stand: eine einzelne Aufnahme ohne Blaetter.
   const kopf = daten?.kopf ?? {};
   const datum = normDatum(String(kopf.datum ?? "").trim()) || heute();
+  const abteilung = String(kopf.abteilung ?? "").trim();
+  const trupp = kopf.trupp ?? "";
   return {
-    trupp: kopf.trupp ?? "",
+    trupp,
     radius: kopf.radius ?? "100",
     datum,
-    tage: {
-      [datum]: {
-        abteilung: kopf.abteilung ?? "",
-        arten: daten?.arten?.length ? daten.arten : startBaumarten(),
-        kreise: daten?.kreise?.length ? daten.kreise : [leererKreis(1)],
-        aktiv: typeof daten?.aktiv === "number" ? daten.aktiv : 0,
-      },
-    },
+    abteilung,
+    blaetter: { [blattSchluessel(trupp, datum, abteilung)]: blattAus(daten) },
   };
 }
 
 export function speichereAlles(stand) {
-  localStorage.setItem(SPEICHER_SCHLUESSEL, JSON.stringify({ version: 2, ...stand }));
+  localStorage.setItem(SPEICHER_SCHLUESSEL, JSON.stringify({ version: 3, ...stand }));
 }
