@@ -12,6 +12,7 @@
 
 import { baueXlsxMehrblatt } from "./xlsx.js";
 import { nachUtm33 } from "./utm33.js";
+import { utmPaar, gradPaar } from "./koordinaten.js";
 import { normDatum } from "./datum.js";
 
 const rund = (wert, stellen) => {
@@ -116,7 +117,7 @@ export function baueErgebnisDatei(auswertung, zeilen, kopf) {
   const blattZaehlungen = [
     ["Person", "Abteilung", "Datum", "Probekreis", "Kreisflaeche_m2", "Baumart",
      "verbissen", "unverbissen", "gesamt", "Verbiss_Prozent",
-     "Breite", "Laenge", "Genauigkeit_m", "X_UTM33", "Y_UTM33"],
+     "Breite", "Laenge", "Genauigkeit_m", "X_UTM33", "Y_UTM33", "UTM_33N", "Grad"],
     ...zeilen.map((z) => {
       const utm = z.lat != null && z.lon != null ? nachUtm33(Number(z.lat), Number(z.lon)) : null;
       const verbissen = Number(z.verbissen) || 0;
@@ -138,6 +139,8 @@ export function baueErgebnisDatei(auswertung, zeilen, kopf) {
         z.genauigkeit_m == null ? "" : rund(z.genauigkeit_m, 1),
         utm ? utm.x : "",
         utm ? utm.y : "",
+        utmPaar(z.lat, z.lon),
+        gradPaar(z.lat, z.lon),
       ];
     }),
   ];
@@ -145,7 +148,7 @@ export function baueErgebnisDatei(auswertung, zeilen, kopf) {
   const blattKreise = [
     ["Person", "Abteilung", "Datum", "Probekreis", "Kreisflaeche_m2", "Baumarten",
      "verbissen", "unverbissen", "gesamt", "Verbiss_Prozent",
-     "Breite", "Laenge", "Genauigkeit_m", "X_UTM33", "Y_UTM33", "Karte"],
+     "Breite", "Laenge", "Genauigkeit_m", "X_UTM33", "Y_UTM33", "UTM_33N", "Grad", "Karte"],
     ...probekreise(zeilen).map((k) => {
       const utm = k.lat != null ? nachUtm33(k.lat, k.lon) : null;
       return [
@@ -166,6 +169,8 @@ export function baueErgebnisDatei(auswertung, zeilen, kopf) {
         k.genauigkeit == null ? "" : rund(k.genauigkeit, 1),
         utm ? utm.x : "",
         utm ? utm.y : "",
+        utmPaar(k.lat, k.lon),
+        gradPaar(k.lat, k.lon),
         // Antippbar in Excel: fuehrt direkt auf den Punkt in der Karte.
         k.lat == null ? "" : `https://www.google.com/maps?q=${rund(k.lat, 7)},${rund(k.lon, 7)}`,
       ];

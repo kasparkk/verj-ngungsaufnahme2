@@ -1,3 +1,5 @@
+import { utmPaar, gradPaar } from "./koordinaten.js";
+
 /* Baut die Aufnahme als Tabelle: eine Zeile je Probekreis, je Baumart zwei
    Spalten (verbissen / unverbissen). Kreise ohne jede Zahl bleiben weg. */
 
@@ -13,6 +15,8 @@ export function baueZeilen(kopf, arten, kreise) {
     "Lat",
     "Lon",
     "Genauigkeit_m",
+    "UTM_33N",
+    "Grad",
   ];
   arten.forEach((art) => kopfzeile.push(`${art.name} verbissen`, `${art.name} unverbissen`));
 
@@ -34,6 +38,8 @@ export function baueZeilen(kopf, arten, kreise) {
       kreis.lat ?? "",
       kreis.lon ?? "",
       kreis.acc != null ? Math.round(kreis.acc) : "",
+      utmPaar(kreis.lat, kreis.lon),
+      gradPaar(kreis.lat, kreis.lon),
     ];
     arten.forEach((art) => {
       const zahl = kreis.counts[art.id] || { v: 0, u: 0 };

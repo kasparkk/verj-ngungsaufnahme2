@@ -9,6 +9,7 @@
 
 import { artNach } from "./stammdaten.js";
 import { nachUtm33 } from "../utm33.js";
+import { utmPaar, gradPaar } from "../koordinaten.js";
 import {
   probekreisflaeche,
   zielProfil,
@@ -35,7 +36,7 @@ export const MASTER_SPALTEN = [
   "Verbissziel ZB2", "Referenzbaum Baumart", "Referenzbaum BHD (cm)",
   "Referenzbaum Winkel (gon)", "Referenzbaum Abstand (m)",
   // Ab hier ueber die Excel-Maske hinaus:
-  "Breite (WGS84)", "Länge (WGS84)", "GNSS-Genauigkeit (m)", "Quelle Ist-Koordinate",
+  "Breite (WGS84)", "Länge (WGS84)", "GNSS-Genauigkeit (m)", "UTM 33N", "Grad", "Quelle Ist-Koordinate",
   "Soll-X", "Soll-Y", "Punkt verlegt", "Punkt abgeschlossen",
 ];
 
@@ -99,6 +100,8 @@ export function masterZeilen(punkte) {
       breite != null ? Math.round(breite * 1e7) / 1e7 : "",
       laenge != null ? Math.round(laenge * 1e7) / 1e7 : "",
       p.genauigkeit != null ? Math.round(p.genauigkeit * 100) / 100 : "",
+      utmPaar(breite, laenge),
+      gradPaar(breite, laenge),
       { geraet: "Handy-GNSS", stab: "Messstab" }[p.quelle] ?? "",
       soll ? soll.x : "",
       soll ? soll.y : "",
