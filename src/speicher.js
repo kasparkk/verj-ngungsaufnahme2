@@ -34,12 +34,15 @@ export const leeresBlatt = (arten) => ({
   arten: arten?.length ? arten : startBaumarten(),
   kreise: [leererKreis(1)],
   aktiv: 0,
+  // Schon hochgeladene Kombinationen aus Kreis und Baumart - siehe Abgleich.
+  gesendet: [],
 });
 
 const blattAus = (roh, arten) => ({
   arten: roh?.arten?.length ? roh.arten : arten?.length ? arten : startBaumarten(),
   kreise: roh?.kreise?.length ? roh.kreise : [leererKreis(1)],
   aktiv: typeof roh?.aktiv === "number" ? roh.aktiv : 0,
+  gesendet: Array.isArray(roh?.gesendet) ? roh.gesendet : [],
 });
 
 export function ladeAlles() {

@@ -28,6 +28,10 @@ export default function Verjuengung() {
 
   // Die uebrigen Aufnahmetage, nach Datum abgelegt.
   const [andereBlaetter, setAndereBlaetter] = useState({});
+  /* Welche Kombinationen aus Probekreis und Baumart dieses Blatt schon
+     hochgeladen hat. Nur damit laesst sich eine Korrektur nach unten
+     uebermitteln - siehe beim Abgleich. */
+  const [gesendet, setGesendet] = useState([]);
   /* Das Gebietsfeld ist freier Text. Wuerde jedes getippte Zeichen ein Blatt
      wechseln, entstuenden beim Eintippen von "4138 b1" acht Blaetter. Das
      Feld haelt deshalb einen Entwurf; uebernommen wird beim Verlassen. */
@@ -79,6 +83,7 @@ export default function Verjuengung() {
     setArten(blatt.arten?.length ? blatt.arten : startBaumarten());
     setKreise(blatt.kreise?.length ? blatt.kreise : [leererKreis(1)]);
     setAktiv(blatt.aktiv ?? 0);
+    setGesendet(blatt.gesendet ?? []);
     setAndereBlaetter(uebrige);
 
     setGeladen(true);
@@ -95,13 +100,13 @@ export default function Verjuengung() {
         abteilung,
         blaetter: {
           ...andereBlaetter,
-          [blattSchluessel(datum, abteilung)]: { arten, kreise, aktiv },
+          [blattSchluessel(datum, abteilung)]: { arten, kreise, aktiv, gesendet },
         },
       });
     } catch {
       setHinweis("Speichern fehlgeschlagen");
     }
-  }, [trupp, radius, datum, abteilung, arten, kreise, aktiv, andereBlaetter, geladen]);
+  }, [trupp, radius, datum, abteilung, arten, kreise, aktiv, gesendet, andereBlaetter, geladen]);
 
   /* Blatt wechseln - ausgeloest vom Datum oder vom Gebiet.
 
@@ -118,7 +123,7 @@ export default function Verjuengung() {
 
     setAndereBlaetter((alle) => {
       const { [nach]: _weg, ...rest } = alle;
-      return { ...rest, [von]: { arten, kreise, aktiv } };
+      return { ...rest, [von]: { arten, kreise, aktiv, gesendet } };
     });
 
     const ziel = andereBlaetter[nach];
@@ -126,9 +131,11 @@ export default function Verjuengung() {
       setArten(ziel.arten?.length ? ziel.arten : startBaumarten());
       setKreise(ziel.kreise?.length ? ziel.kreise : [leererKreis(1)]);
       setAktiv(ziel.aktiv ?? 0);
+      setGesendet(ziel.gesendet ?? []);
     } else {
       setKreise([leererKreis(1)]);
       setAktiv(0);
+      setGesendet([]);
     }
 
     datumRef.current = zielDatum; // sofort, damit laufende Ortungen es sehen
@@ -207,7 +214,41 @@ export default function Verjuengung() {
       })
     );
 
-    const zeilen = [...jeZeile.values()];
+    /* Korrekturen nach unten.
+
+       Eine Zaehlbox auf 0 wird oben uebersprungen - sonst ginge fuer jede
+       nicht angetippte Baumart in jedem Kreis eine Nullzeile hoch. Damit kam
+       aber auch eine Berichtigung nie an: Wer sich verzaehlt und auf 0
+       zurueckstellt, aendert nur sein Geraet, in der Datenbank blieb die alte
+       Zahl stehen. Dasselbe galt fuer eine geloeschte Baumart oder einen
+       geloeschten Probekreis.
+
+       Das Blatt merkt sich deshalb, welche Kombinationen es schon einmal
+       hochgeladen hat. Steht dort jetzt nichts mehr, geht ausdruecklich eine
+       0 hoch - fachlich auch das richtige: "nachgesehen, nichts da" ist etwas
+       anderes als "nicht nachgesehen". Danach wird der Eintrag vergessen,
+       damit nicht dauerhaft Nullen mitlaufen. */
+    const nullZeilen = gesendet
+      .filter((e) => !jeZeile.has(`${e.kreis}|${e.baumart.trim().toLowerCase()}`))
+      .map((e) => {
+        const kreis = kreise.find((k) => k.nr === e.kreis);
+        const zeile = {
+          trupp: kopf.trupp.trim(),
+          abteilung: kopf.abteilung.trim() || null,
+          kreisflaeche: flaeche,
+          kreis: e.kreis,
+          baumart: e.baumart,
+          verbissen: 0,
+          unverbissen: 0,
+          lat: kreis?.lat ?? null,
+          lon: kreis?.lon ?? null,
+          genauigkeit_m: kreis?.acc ?? null,
+        };
+        if (datum) zeile.aufnahmedatum = datum;
+        return zeile;
+      });
+
+    const zeilen = [...jeZeile.values(), ...nullZeilen];
 
     if (!zeilen.length) {
       setSyncStatus("");
@@ -221,6 +262,12 @@ export default function Verjuengung() {
       if (ergebnis.ok) {
         setSyncStatus("ok");
         setSyncGrund("");
+        /* Gemerkt wird nur, was jetzt Zahlen hat. Die eben verschickten
+           Nullen fallen damit heraus - sie sind angekommen und muessen nicht
+           weiter mitgeschleppt werden. */
+        setGesendet(
+          [...jeZeile.values()].map((z) => ({ kreis: z.kreis, baumart: z.baumart })),
+        );
       } else if (istSchlafend(ergebnis.status)) {
         // Schlafende Datenbank ist kein Fehler, nur Warten - und der
         // Wiederholungsversuch laeuft ohnehin schon von selbst.
