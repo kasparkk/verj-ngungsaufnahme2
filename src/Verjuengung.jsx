@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { farben, BAUMART_VORSCHLAEGE, leererKreis } from "./konfiguration.js";
 import { ladeAlles, speichereAlles, heute, startBaumarten, leeresBlatt, blattSchluessel } from "./speicher.js";
-import { normDatum } from "./datum.js";
+import { normDatum, zeigeDatum } from "./datum.js";
 import { baueTabelle, baueZeilen } from "./tabelle.js";
 import { baueXlsx } from "./xlsx.js";
 import PersonWahl, { alsBuchstabe } from "./komponenten/PersonWahl.jsx";
@@ -89,6 +89,33 @@ export default function Verjuengung() {
 
     setGeladen(true);
   }, []);
+
+  /* Nachfrage beim Oeffnen, wenn das Aufnahmedatum aus einem frueheren Tag
+     stammt.
+
+     Das Datum bleibt gespeichert, damit eine angefangene Aufnahme beim
+     naechsten Oeffnen weitergeht. Wer die App aber Tage spaeter wieder
+     aufmacht und losmisst, zaehlt sonst unbemerkt in das alte Blatt - genau
+     so sind einmal sieben Probekreise im Blatt vom Vormonat gelandet.
+
+     Gefragt wird einmal je Oeffnen, und nur wenn das Datum in der
+     Vergangenheit liegt. Alte Zettel nachtragen bleibt damit moeglich: ein
+     Tippen auf Abbrechen, und der alte Tag steht weiter. */
+  useEffect(() => {
+    if (!geladen) return;
+    const heutiger = heute();
+    if (!datum || datum >= heutiger) return;
+    const weiter = window.confirm(
+      `Das Aufnahmedatum steht auf ${zeigeDatum(datum)} – heute ist der ` +
+        `${zeigeDatum(heutiger)}.\n\n` +
+        `Auf heute umstellen? Der ${zeigeDatum(datum)} bleibt mit allem, was ` +
+        `darauf gezählt ist, erhalten.\n\n` +
+        `Abbrechen heißt: auf dem ${zeigeDatum(datum)} weiterzählen.`,
+    );
+    if (weiter) datumWechseln(heutiger);
+    // Nur beim Oeffnen - waehrend der Aufnahme soll nichts dazwischenfunken.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [geladen]);
 
   // Nach jeder Aenderung sofort lokal sichern (auch ohne Netz).
   useEffect(() => {
@@ -582,6 +609,12 @@ export default function Verjuengung() {
     0,
   );
 
+  /* Liegt das Blatt auf einem anderen Tag als heute? Ein Datum in der
+     Zukunft zaehlt genauso - auch das ist ein Vertipper und faellt sonst
+     nicht auf. */
+  const heuteIst = heute();
+  const fremderTag = Boolean(datum) && datum !== heuteIst;
+
   /* Rueckfrage beim Wechsel der Person.
 
      Ein Blatt gehoert zu einer Person an einem Tag in einem Gebiet. Der
@@ -682,12 +715,52 @@ export default function Verjuengung() {
           <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>DATUM</div>
           <input
             type="date"
-            style={feldStil}
+            style={
+              fremderTag
+                ? { ...feldStil, color: farben.verb, borderBottom: `1px solid ${farben.verb}` }
+                : feldStil
+            }
             value={kopf.datum}
             onChange={(e) => datumWechseln(e.target.value)}
           />
         </div>
       </div>
+
+      {/* Steht das Blatt auf einem anderen Tag, muss das die ganze Zeit zu
+          sehen sein - nicht nur beim Oeffnen. */}
+      {fremderTag && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            border: `1px solid ${farben.verb}`,
+            borderRadius: 10,
+            padding: "8px 10px",
+            marginBottom: 12,
+          }}
+        >
+          <div style={{ flex: 1, fontSize: 12, color: farben.verb, lineHeight: 1.4 }}>
+            Aufnahmedatum {zeigeDatum(kopf.datum)} – heute ist der {zeigeDatum(heuteIst)}.
+            {gezaehltHeute > 0 && ` Auf diesem Blatt stehen ${gezaehltHeute} Pflanzen.`}
+          </div>
+          <button
+            onClick={() => datumWechseln(heuteIst)}
+            style={{
+              background: "transparent",
+              border: `1px solid ${farben.verb}`,
+              color: farben.verb,
+              borderRadius: 8,
+              padding: "6px 10px",
+              fontSize: 12,
+              whiteSpace: "nowrap",
+              cursor: "pointer",
+            }}
+          >
+            Auf heute
+          </button>
+        </div>
+      )}
 
       {!kopf.trupp && (
         <div style={{ fontSize: 10, color: farben.muted, marginTop: -4, marginBottom: 10 }}>

@@ -18,3 +18,12 @@ export function normDatum(wert) {
   const [, tag, monat, jahr] = treffer;
   return `${jahr}-${monat.padStart(2, "0")}-${tag.padStart(2, "0")}`;
 }
+
+/* Deutsche Schreibweise, nur fuer die Anzeige. Ein Datum, das der Mensch
+   im Vorbeigehen erkennt - "28.08.2026" faellt auf, "2026-08-28" nicht. */
+export function zeigeDatum(wert) {
+  const iso = normDatum(String(wert ?? "").trim());
+  if (!iso) return String(wert ?? "");
+  const [jahr, monat, tag] = iso.split("-");
+  return `${tag}.${monat}.${jahr}`;
+}
