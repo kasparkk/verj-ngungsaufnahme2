@@ -683,6 +683,26 @@ export default function Verjuengung() {
   /* Liegt das Blatt auf einem anderen Tag als heute? Ein Datum in der
      Zukunft zaehlt genauso - auch das ist ein Vertipper und faellt sonst
      nicht auf. */
+  /* Ueber Mitternacht hinweg.
+
+     Der Tag wird beim Oeffnen gesetzt, nicht waehrend die App laeuft. Eine
+     App vom Startbildschirm wird aber selten beendet - sie liegt ueber
+     Nacht im Hintergrund. Am naechsten Morgen stimmt der Tag im Feld nicht
+     mehr, und ohne Anlass zeichnet React nichts neu: der Streifen bliebe
+     unsichtbar, bis die erste Pflanze gezaehlt ist - und die waere dann
+     schon im Blatt von gestern.
+
+     Umgestellt wird bewusst NICHT von selbst. Wer um 23:55 mitten in einem
+     Probekreis steht, soll um 00:05 nicht unversehens in einem anderen
+     Blatt weiterzaehlen. Nachsehen und hinweisen, entscheiden laesst der
+     Mensch. */
+  const [, neuZeichnen] = useState(0);
+  useEffect(() => {
+    const nachsehen = () => neuZeichnen((n) => n + 1);
+    document.addEventListener("visibilitychange", nachsehen);
+    return () => document.removeEventListener("visibilitychange", nachsehen);
+  }, []);
+
   const heuteIst = heute();
   const fremderTag = Boolean(datum) && datum !== heuteIst;
 
