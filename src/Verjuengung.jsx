@@ -75,9 +75,22 @@ export default function Verjuengung() {
        unter einem falschen Namen weiterzaehlen. */
     setTrupp(alsBuchstabe(stand.trupp));
     setRadius(stand.radius);
-    setDatum(stand.datum);
 
-    const schluessel = blattSchluessel(stand.trupp, stand.datum, stand.abteilung);
+    /* Der Tag faengt beim Oeffnen immer bei heute an.
+
+       Frueher stand hier der zuletzt benutzte Tag, damit eine angefangene
+       Aufnahme weiterlaeuft. Wer die App Tage spaeter wieder aufmachte und
+       lostzaehlte, zaehlte damit unbemerkt in ein altes Blatt - so sind
+       einmal sieben Probekreise vom 07.09. im Blatt vom 28.08. gelandet.
+
+       Heute ist der einzige Tag, an dem man im Bestand stehen kann. Wer
+       einen alten Zettel nachtraegt, stellt das Datum von Hand zurueck und
+       bekommt sein Blatt samt allem, was darauf steht, wieder hervor -
+       verloren geht nichts, es faengt nur nicht mehr von selbst dort an. */
+    const tag = heute();
+    setDatum(tag);
+
+    const schluessel = blattSchluessel(stand.trupp, tag, stand.abteilung);
     const { [schluessel]: offenes, ...uebrige } = stand.blaetter;
     const blatt = offenes || leeresBlatt();
     setAbteilung(stand.abteilung ?? "");
@@ -90,36 +103,6 @@ export default function Verjuengung() {
 
     setGeladen(true);
   }, []);
-
-  /* Nachfrage beim Oeffnen, wenn das Aufnahmedatum aus einem frueheren Tag
-     stammt.
-
-     Das Datum bleibt gespeichert, damit eine angefangene Aufnahme beim
-     naechsten Oeffnen weitergeht. Wer die App aber Tage spaeter wieder
-     aufmacht und losmisst, zaehlt sonst unbemerkt in das alte Blatt - genau
-     so sind einmal sieben Probekreise im Blatt vom Vormonat gelandet.
-
-     Gefragt wird einmal je Oeffnen, und nur wenn das Datum in der
-     Vergangenheit liegt. Alte Zettel nachtragen bleibt damit moeglich: ein
-     Tippen auf Abbrechen, und der alte Tag steht weiter. */
-  useEffect(() => {
-    if (!geladen) return;
-    const heutiger = heute();
-    if (!datum || datum >= heutiger) return;
-    /* Kurz halten. Ein Dialog beim Oeffnen wird ueberflogen, nicht
-       gelesen - die ausfuehrliche Fassung steht im Streifen, der stehen
-       bleibt, solange der Tag nicht stimmt. */
-    const weiter = window.confirm(
-      `Das Aufnahmedatum steht auf ${zeigeDatum(datum)} – heute ist der ` +
-        `${zeigeDatum(heutiger)}.\n\n` +
-        `Auf heute umstellen? Der ${zeigeDatum(datum)} bleibt mit allem, was ` +
-        `darauf gezählt ist, erhalten.\n\n` +
-        `Abbrechen heißt: auf dem ${zeigeDatum(datum)} weiterzählen.`,
-    );
-    if (weiter) datumWechseln(heutiger);
-    // Nur beim Oeffnen - waehrend der Aufnahme soll nichts dazwischenfunken.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [geladen]);
 
   // Nach jeder Aenderung sofort lokal sichern (auch ohne Netz).
   useEffect(() => {
