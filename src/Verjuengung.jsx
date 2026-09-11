@@ -722,7 +722,7 @@ export default function Verjuengung() {
             type="date"
             style={
               fremderTag
-                ? { ...feldStil, color: farben.verb, borderBottom: `1px solid ${farben.verb}` }
+                ? { ...feldStil, color: farben.warn, borderBottom: `1px solid ${farben.warn}` }
                 : feldStil
             }
             value={kopf.datum}
@@ -736,45 +736,52 @@ export default function Verjuengung() {
       {fremderTag && (
         <div
           style={{
+            /* Untereinander statt nebeneinander: neben dem Text blieb dem
+               Knopf so wenig Platz, dass die Zeilen mitten im Wort
+               umbrachen. Ueber die volle Breite ist er ausserdem mit dem
+               Daumen leichter zu treffen. */
             display: "flex",
-            alignItems: "center",
-            // Auf schmalen Geraeten rutscht der Knopf unter den Text,
-            // statt sich mitten hineinzuquetschen.
-            flexWrap: "wrap",
+            flexDirection: "column",
+            alignItems: "stretch",
             gap: 8,
-            border: `1px solid ${farben.verb}`,
+            border: `1px solid ${farben.warn}`,
             borderRadius: 10,
             padding: "8px 10px",
             marginBottom: 12,
           }}
         >
-          {/* Zuerst die Folge, dann die Fakten - wer nur die erste Zeile
-              liest, hat das Wesentliche. */}
-          <div style={{ flex: "1 1 190px", fontSize: 12, color: farben.verb, lineHeight: 1.45 }}>
-            <div style={{ fontWeight: 700 }}>
-              Eingetragen wird auf den {zeigeDatum(kopf.datum)}
+          {/* Eine Frage statt zweier Tatsachen: Ob der Tag stimmt, weiss nur
+              der Mensch davor - und darunter steht, was er dann tut. */}
+          <div style={{ fontSize: 12, color: farben.warn, lineHeight: 1.5 }}>
+            <div style={{ fontWeight: 700, fontSize: 13 }}>
+              Zählst du für den {zeigeDatum(kopf.datum)}?
             </div>
             <div style={{ opacity: 0.85 }}>
-              Heute ist {wochentag(heuteIst)}, der {zeigeDatum(heuteIst)}
-              {gezaehltHeute > 0 && ` · ${gezaehltHeute} Pflanzen auf diesem Blatt`}
+              Heute ist {wochentag(heuteIst)}, der {zeigeDatum(heuteIst)}.
+            </div>
+            {gezaehltHeute > 0 && (
+              <div style={{ opacity: 0.85 }}>
+                {gezaehltHeute} Pflanzen stehen schon auf diesem Blatt.
+              </div>
+            )}
+            <div style={{ opacity: 0.85, marginTop: 4 }}>
+              Wenn du für heute zählst, tippe auf „Auf heute umstellen".
             </div>
           </div>
           <button
             onClick={() => datumWechseln(heuteIst)}
             style={{
               background: "transparent",
-              border: `1px solid ${farben.verb}`,
-              color: farben.verb,
+              border: `1px solid ${farben.warn}`,
+              color: farben.warn,
               borderRadius: 8,
-              padding: "6px 12px",
-              fontSize: 12,
-              whiteSpace: "nowrap",
-              flex: "0 0 auto",
-              marginLeft: "auto",
+              padding: "10px 12px",
+              fontSize: 13,
+              width: "100%",
               cursor: "pointer",
             }}
           >
-            Auf heute
+            Auf heute umstellen
           </button>
         </div>
       )}

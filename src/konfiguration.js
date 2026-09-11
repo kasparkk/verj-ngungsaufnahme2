@@ -7,6 +7,10 @@ export const farben = {
   text: "#F2F0E6",
   muted: "#8A9280",
   verb: "#E2574C",
+  /* Bernstein fuer Hinweise. Bewusst nicht das Verbiss-Rot: einen alten
+     Zettel nachzutragen ist richtig und soll nicht wie ein Fehler
+     aussehen - auffallen muss es trotzdem. */
+  warn: "#E8B44A",
   unverb: "#A8C24A",
 };
 
