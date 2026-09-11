@@ -39,10 +39,46 @@
         // Lief hier schon eine Fassung? Dann ist ein Wechsel ein echtes Update.
         var hatteController = !!navigator.serviceWorker.controller;
         var laedtNeu = false;
+        var registrierung = null;
+        var zuletztGefragt = 0;
+
+        /* Nachsehen, ob eine neue Fassung bereitliegt.
+
+           Das Registrieren beim Laden allein reicht nicht: Eine vom
+           Startbildschirm gestartete App wird selten wirklich beendet, sie
+           wandert nur in den Hintergrund. Ohne Seitenladen fragt niemand
+           nach - man laeuft dann tagelang auf einer alten Fassung, ohne es
+           zu merken.
+
+           Gefragt wird deshalb, sobald die App wieder nach vorne kommt oder
+           Netz zurueckkehrt - beides sind natuerliche Momente zum Neuladen,
+           anders als mitten im Zaehlen. Hoechstens einmal pro Minute, damit
+           das Hin und Her zwischen Apps keine Anfragenflut ausloest. */
+        function nachsehen() {
+          if (!registrierung) return;
+          var jetzt = Date.now();
+          if (jetzt - zuletztGefragt < 60000) return;
+          zuletztGefragt = jetzt;
+          registrierung.update().catch(function () {});
+        }
 
         window.addEventListener("load", function () {
-          navigator.serviceWorker.register("/sw.js").catch(function () {});
+          /* updateViaCache "none": sw.js selbst nie aus dem Browsercache
+             beantworten. Netlify schickt zwar must-revalidate, aber das
+             haengt am Server - hier steht es unabhaengig davon fest. */
+          navigator.serviceWorker
+            .register("/sw.js", { updateViaCache: "none" })
+            .then(function (r) {
+              registrierung = r;
+              zuletztGefragt = Date.now();
+            })
+            .catch(function () {});
         });
+
+        document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState === "visible") nachsehen();
+        });
+        window.addEventListener("online", nachsehen);
 
         /* Uebernimmt eine neue Fassung, wird die Seite einmal neu geladen.
            Sonst laeuft die alte Oberflaeche weiter, bis die App vollstaendig
