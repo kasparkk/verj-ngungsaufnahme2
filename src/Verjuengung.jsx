@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { farben, BAUMART_VORSCHLAEGE, leererKreis } from "./konfiguration.js";
 import { ladeAlles, speichereAlles, heute, startBaumarten, leeresBlatt, blattSchluessel } from "./speicher.js";
-import { normDatum, zeigeDatum } from "./datum.js";
+import { normDatum, zeigeDatum, wochentag } from "./datum.js";
 import { baueTabelle, baueZeilen } from "./tabelle.js";
 import { baueXlsx } from "./xlsx.js";
 import PersonWahl, { alsBuchstabe } from "./komponenten/PersonWahl.jsx";
@@ -105,12 +105,17 @@ export default function Verjuengung() {
     if (!geladen) return;
     const heutiger = heute();
     if (!datum || datum >= heutiger) return;
+    /* Der Text sagt zuerst, was ohne Zutun passiert, und ordnet dann den
+       beiden Knoepfen zu, was sie tun. "OK" und "Abbrechen" allein muss
+       man sonst erraten - und raet im Zweifel falsch. */
     const weiter = window.confirm(
-      `Das Aufnahmedatum steht auf ${zeigeDatum(datum)} – heute ist der ` +
-        `${zeigeDatum(heutiger)}.\n\n` +
-        `Auf heute umstellen? Der ${zeigeDatum(datum)} bleibt mit allem, was ` +
-        `darauf gezählt ist, erhalten.\n\n` +
-        `Abbrechen heißt: auf dem ${zeigeDatum(datum)} weiterzählen.`,
+      `Eingetragen wird gerade auf den ${zeigeDatum(datum)}.\n` +
+        `Heute ist ${wochentag(heutiger)}, der ${zeigeDatum(heutiger)}.\n\n` +
+        `OK  =  auf heute umstellen\n\n` +
+        `Abbrechen  =  weiter auf den ${zeigeDatum(datum)} eintragen\n` +
+        `(richtig, wenn du einen alten Zettel nachträgst)\n\n` +
+        `Der ${zeigeDatum(datum)} bleibt in jedem Fall erhalten, mit allem, ` +
+        `was darauf steht.`,
     );
     if (weiter) datumWechseln(heutiger);
     // Nur beim Oeffnen - waehrend der Aufnahme soll nichts dazwischenfunken.
@@ -733,16 +738,26 @@ export default function Verjuengung() {
           style={{
             display: "flex",
             alignItems: "center",
-            gap: 10,
+            // Auf schmalen Geraeten rutscht der Knopf unter den Text,
+            // statt sich mitten hineinzuquetschen.
+            flexWrap: "wrap",
+            gap: 8,
             border: `1px solid ${farben.verb}`,
             borderRadius: 10,
             padding: "8px 10px",
             marginBottom: 12,
           }}
         >
-          <div style={{ flex: 1, fontSize: 12, color: farben.verb, lineHeight: 1.4 }}>
-            Aufnahmedatum {zeigeDatum(kopf.datum)} – heute ist der {zeigeDatum(heuteIst)}.
-            {gezaehltHeute > 0 && ` Auf diesem Blatt stehen ${gezaehltHeute} Pflanzen.`}
+          {/* Zuerst die Folge, dann die Fakten - wer nur die erste Zeile
+              liest, hat das Wesentliche. */}
+          <div style={{ flex: "1 1 190px", fontSize: 12, color: farben.verb, lineHeight: 1.45 }}>
+            <div style={{ fontWeight: 700 }}>
+              Eingetragen wird auf den {zeigeDatum(kopf.datum)}
+            </div>
+            <div style={{ opacity: 0.85 }}>
+              Heute ist {wochentag(heuteIst)}, der {zeigeDatum(heuteIst)}
+              {gezaehltHeute > 0 && ` · ${gezaehltHeute} Pflanzen auf diesem Blatt`}
+            </div>
           </div>
           <button
             onClick={() => datumWechseln(heuteIst)}
@@ -751,9 +766,11 @@ export default function Verjuengung() {
               border: `1px solid ${farben.verb}`,
               color: farben.verb,
               borderRadius: 8,
-              padding: "6px 10px",
+              padding: "6px 12px",
               fontSize: 12,
               whiteSpace: "nowrap",
+              flex: "0 0 auto",
+              marginLeft: "auto",
               cursor: "pointer",
             }}
           >

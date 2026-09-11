@@ -27,3 +27,16 @@ export function zeigeDatum(wert) {
   const [jahr, monat, tag] = iso.split("-");
   return `${tag}.${monat}.${jahr}`;
 }
+
+/* Wochentag zum Datum, ausgeschrieben.
+
+   "Heute ist der 11.09.2026" sagt wenig - "heute ist Freitag, der
+   11.09.2026" verankert es. Bewusst mit Einzelwerten gebaut statt aus der
+   Zeichenkette: new Date("2026-09-11") legt die Zeit auf Mitternacht UTC,
+   was je nach Zeitzone auf dem Vortag landen kann. */
+export function wochentag(wert) {
+  const iso = normDatum(String(wert ?? "").trim());
+  if (!iso) return "";
+  const [jahr, monat, tag] = iso.split("-").map(Number);
+  return new Date(jahr, monat - 1, tag).toLocaleDateString("de-DE", { weekday: "long" });
+}
