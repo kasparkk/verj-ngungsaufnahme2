@@ -53,6 +53,7 @@ export default function Verjuengung() {
   const [uebersichtOffen, setUebersichtOffen] = useState(false);
   const [standorteOffen, setStandorteOffen] = useState(false);
   const [gpsLaeuft, setGpsLaeuft] = useState(false);
+  const [holtBlatt, setHoltBlatt] = useState(false);
 
   // "" = noch nichts zu senden, sonst sync | ok | err | offline
   const [syncStatus, setSyncStatus] = useState("");
@@ -425,6 +426,90 @@ export default function Verjuengung() {
     const nr = Math.min(...kreise.map((k) => k.nr)) - 1;
     setKreise((alle) => [leererKreis(nr), ...alle]);
     setAktiv(0);
+  };
+
+  /* Eine Zaehlung aus der Datenbank zurueck in die Zaehlboxen holen.
+
+     Bisher floss alles nur nach oben: was hochgeladen war, liess sich auf
+     einem anderen Geraet zwar ansehen, aber nicht mehr anfassen. Wer ein
+     neues Handy hat, den Speicher geleert hat oder eine alte Zahl
+     richtigstellen will, stand vor leeren Boxen.
+
+     Geholt wird genau das Blatt im Kopf - Person, Gebiet, Tag. Angeboten
+     nur, solange hier nichts gezaehlt ist: ein Blatt mit Zahlen zu
+     ueberschreiben waere der eine Handgriff, der wirklich etwas kaputt
+     macht.
+
+     Wichtig ist die Zeile mit setGesendet: die geholten Kombinationen
+     gelten als schon hochgeladen. Ohne sie kaeme eine Korrektur auf 0
+     hinterher nicht in der Datenbank an - sie wird ja nur fuer Zeilen
+     verschickt, von denen die App weiss, dass sie dort stehen. */
+  const blattZurueckholen = async () => {
+    const person = kopf.trupp.trim();
+    const gebiet = kopf.abteilung.trim();
+    const tag = normDatum(kopf.datum.trim());
+    if (!person || !tag) {
+      setHinweis("Dafür braucht es Person und Datum");
+      return;
+    }
+
+    setHoltBlatt(true);
+    try {
+      const { zeilen } = await ergebnisEinePerson(person, gebiet, tag);
+      if (!zeilen.length) {
+        setHinweis(
+          `${person}${gebiet ? ` · ${gebiet}` : ""} · ${zeigeDatum(tag)}: ` +
+            `nichts in der Datenbank`,
+        );
+        return;
+      }
+
+      /* Die Baumartenliste bleibt stehen und waechst nur nach unten. Sonst
+         verschwaenden die gewohnten Arten, sobald ein Blatt sie nicht
+         enthaelt. */
+      const listeArten = [...arten];
+      const artId = (name) => {
+        const sauber = String(name ?? "").trim();
+        const treffer = listeArten.find(
+          (a) => a.name.trim().toLowerCase() === sauber.toLowerCase(),
+        );
+        if (treffer) return treffer.id;
+        const neu = { id: `db${listeArten.length}-${Date.now()}`, name: sauber };
+        listeArten.push(neu);
+        return neu.id;
+      };
+
+      const jeKreis = new Map();
+      zeilen.forEach((z) => {
+        const kreis =
+          jeKreis.get(z.kreis) || { nr: z.kreis, counts: {}, lat: null, lon: null, acc: null };
+        kreis.counts[artId(z.baumart)] = { v: z.verbissen ?? 0, u: z.unverbissen ?? 0 };
+        if (z.lat != null && z.lon != null) {
+          kreis.lat = Number(z.lat);
+          kreis.lon = Number(z.lon);
+          kreis.acc = z.genauigkeit_m == null ? null : Number(z.genauigkeit_m);
+        }
+        jeKreis.set(z.kreis, kreis);
+      });
+
+      const geholteKreise = [...jeKreis.values()].sort((a, b) => a.nr - b.nr);
+      const flaeche = Number(zeilen[0].kreisflaeche);
+
+      setArten(listeArten);
+      setKreise(geholteKreise);
+      setAktiv(geholteKreise.length - 1);
+      setGesendet(zeilen.map((z) => ({ kreis: z.kreis, baumart: z.baumart })));
+      if (flaeche) setRadius(String(flaeche));
+
+      const pflanzen = zeilen.reduce((s, z) => s + (z.verbissen ?? 0) + (z.unverbissen ?? 0), 0);
+      setHinweis(
+        `${geholteKreise.length} Probekreise mit ${pflanzen} Pflanzen geholt`,
+      );
+    } catch (fehler) {
+      setHinweis(fehler?.message || "Abruf fehlgeschlagen");
+    } finally {
+      setHoltBlatt(false);
+    }
   };
 
   const artHinzufuegen = (name) => {
@@ -955,6 +1040,28 @@ export default function Verjuengung() {
           </button>
         )}
       </div>
+
+      {/* Nur bei leerem Blatt: ein Blatt mit Zahlen zu ueberschreiben waere
+          der eine Handgriff, der wirklich etwas kaputt macht. */}
+      {gezaehltHeute === 0 && kopf.trupp.trim() && (
+        <button
+          onClick={blattZurueckholen}
+          disabled={holtBlatt}
+          style={{
+            width: "100%",
+            background: "transparent",
+            border: `1px solid ${farben.line}`,
+            color: farben.muted,
+            borderRadius: 10,
+            padding: "8px 0",
+            fontSize: 13,
+            marginBottom: 14,
+            cursor: holtBlatt ? "default" : "pointer",
+          }}
+        >
+          {holtBlatt ? "Holt ..." : "Zählung aus der Datenbank holen"}
+        </button>
+      )}
 
       <button
         onClick={() => setUebersichtOffen(!uebersichtOffen)}
