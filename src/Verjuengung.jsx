@@ -54,6 +54,9 @@ export default function Verjuengung() {
   const [standorteOffen, setStandorteOffen] = useState(false);
   const [gpsLaeuft, setGpsLaeuft] = useState(false);
   const [holtBlatt, setHoltBlatt] = useState(false);
+  // Tage, an denen fuer diese Person in diesem Gebiet etwas in der
+  // Datenbank steht - zum Antippen, siehe blattZurueckholen.
+  const [angeboteneTage, setAngeboteneTage] = useState([]);
 
   // "" = noch nichts zu senden, sonst sync | ok | err | offline
   const [syncStatus, setSyncStatus] = useState("");
@@ -418,76 +421,128 @@ export default function Verjuengung() {
      neues Handy hat, den Speicher geleert hat oder eine alte Zahl
      richtigstellen will, stand vor leeren Boxen.
 
-     Geholt wird genau das Blatt im Kopf - Person, Gebiet, Tag. Angeboten
-     nur, solange hier nichts gezaehlt ist: ein Blatt mit Zahlen zu
-     ueberschreiben waere der eine Handgriff, der wirklich etwas kaputt
-     macht.
+     Gefragt wird nach Person und Gebiet, nicht nach dem Tag. Der Tag faengt
+     seit neuestem immer bei heute an, und fuer heute steht meist noch
+     nichts drin - ein Knopf, der dann "nichts gefunden" sagt und einen mit
+     der Frage sitzen laesst, welcher Tag es denn war, ist keine Hilfe.
+     Steht fuer den offenen Tag etwas da, kommt es sofort; sonst werden die
+     Tage angeboten, an denen es etwas gibt.
 
-     Wichtig ist die Zeile mit setGesendet: die geholten Kombinationen
-     gelten als schon hochgeladen. Ohne sie kaeme eine Korrektur auf 0
-     hinterher nicht in der Datenbank an - sie wird ja nur fuer Zeilen
-     verschickt, von denen die App weiss, dass sie dort stehen. */
+     Angeboten wird das alles nur bei leerem Blatt. Ein Blatt mit Zahlen zu
+     ueberschreiben waere der eine Handgriff, der wirklich etwas kaputt
+     macht. */
+  const zeilenUebernehmen = (zeilen) => {
+    /* Die Baumartenliste bleibt stehen und waechst nur nach unten. Sonst
+       verschwaenden die gewohnten Arten, sobald ein Blatt sie nicht
+       enthaelt. */
+    const listeArten = [...arten];
+    const artId = (name) => {
+      const sauber = String(name ?? "").trim();
+      const treffer = listeArten.find((a) => a.name.trim().toLowerCase() === sauber.toLowerCase());
+      if (treffer) return treffer.id;
+      const neu = { id: `db${listeArten.length}-${Date.now()}`, name: sauber };
+      listeArten.push(neu);
+      return neu.id;
+    };
+
+    const jeKreis = new Map();
+    zeilen.forEach((z) => {
+      const kreis =
+        jeKreis.get(z.kreis) || { nr: z.kreis, counts: {}, lat: null, lon: null, acc: null };
+      kreis.counts[artId(z.baumart)] = {
+        v: Number(z.verbissen) || 0,
+        u: Number(z.unverbissen) || 0,
+      };
+      if (z.lat != null && z.lon != null) {
+        kreis.lat = Number(z.lat);
+        kreis.lon = Number(z.lon);
+        kreis.acc = z.genauigkeit_m == null ? null : Number(z.genauigkeit_m);
+      }
+      jeKreis.set(z.kreis, kreis);
+    });
+
+    const geholteKreise = [...jeKreis.values()].sort((a, b) => a.nr - b.nr);
+    const flaeche = Number(zeilen[0].kreisflaeche);
+
+    setArten(listeArten);
+    setKreise(geholteKreise);
+    setAktiv(geholteKreise.length - 1);
+    /* Die geholten Kombinationen gelten als schon hochgeladen. Ohne das
+       kaeme eine Korrektur auf 0 hinterher nicht in der Datenbank an - sie
+       wird nur fuer Zeilen verschickt, von denen die App weiss, dass sie
+       dort stehen. */
+    setGesendet(zeilen.map((z) => ({ kreis: z.kreis, baumart: z.baumart })));
+    if (flaeche) setRadius(String(flaeche));
+
+    const pflanzen = zeilen.reduce(
+      (summe, z) => summe + (Number(z.verbissen) || 0) + (Number(z.unverbissen) || 0),
+      0,
+    );
+    setHinweis(`${geholteKreise.length} Probekreise mit ${pflanzen} Pflanzen geholt`);
+  };
+
   const blattZurueckholen = async () => {
     const person = kopf.trupp.trim();
     const gebiet = kopf.abteilung.trim();
     const tag = normDatum(kopf.datum.trim());
-    if (!person || !tag) {
-      setHinweis("Dafür braucht es Person und Datum");
+    if (!person) {
+      setHinweis("Dafür braucht es eine Person");
       return;
     }
 
     setHoltBlatt(true);
+    setAngeboteneTage([]);
     try {
-      const { zeilen } = await ergebnisEinePerson(person, gebiet, tag);
+      // Ohne Tag gefragt - welcher es war, soll die App ja gerade sagen.
+      const { zeilen } = await ergebnisEinePerson(person, gebiet, null);
+
+      const fuerDenTag = zeilen.filter((z) => z.aufnahmedatum === tag);
+      if (fuerDenTag.length) {
+        zeilenUebernehmen(fuerDenTag);
+        return;
+      }
+
       if (!zeilen.length) {
         setHinweis(
-          `${person}${gebiet ? ` · ${gebiet}` : ""} · ${zeigeDatum(tag)}: ` +
-            `nichts in der Datenbank`,
+          `${person}${gebiet ? ` · ${gebiet}` : " · ohne Gebiet"}: nichts in der Datenbank`,
         );
         return;
       }
 
-      /* Die Baumartenliste bleibt stehen und waechst nur nach unten. Sonst
-         verschwaenden die gewohnten Arten, sobald ein Blatt sie nicht
-         enthaelt. */
-      const listeArten = [...arten];
-      const artId = (name) => {
-        const sauber = String(name ?? "").trim();
-        const treffer = listeArten.find(
-          (a) => a.name.trim().toLowerCase() === sauber.toLowerCase(),
-        );
-        if (treffer) return treffer.id;
-        const neu = { id: `db${listeArten.length}-${Date.now()}`, name: sauber };
-        listeArten.push(neu);
-        return neu.id;
-      };
-
-      const jeKreis = new Map();
+      const jeTag = new Map();
       zeilen.forEach((z) => {
-        const kreis =
-          jeKreis.get(z.kreis) || { nr: z.kreis, counts: {}, lat: null, lon: null, acc: null };
-        kreis.counts[artId(z.baumart)] = { v: z.verbissen ?? 0, u: z.unverbissen ?? 0 };
-        if (z.lat != null && z.lon != null) {
-          kreis.lat = Number(z.lat);
-          kreis.lon = Number(z.lon);
-          kreis.acc = z.genauigkeit_m == null ? null : Number(z.genauigkeit_m);
-        }
-        jeKreis.set(z.kreis, kreis);
+        const eintrag =
+          jeTag.get(z.aufnahmedatum) || { datum: z.aufnahmedatum, kreise: new Set(), pflanzen: 0 };
+        eintrag.kreise.add(z.kreis);
+        eintrag.pflanzen += (Number(z.verbissen) || 0) + (Number(z.unverbissen) || 0);
+        jeTag.set(z.aufnahmedatum, eintrag);
       });
-
-      const geholteKreise = [...jeKreis.values()].sort((a, b) => a.nr - b.nr);
-      const flaeche = Number(zeilen[0].kreisflaeche);
-
-      setArten(listeArten);
-      setKreise(geholteKreise);
-      setAktiv(geholteKreise.length - 1);
-      setGesendet(zeilen.map((z) => ({ kreis: z.kreis, baumart: z.baumart })));
-      if (flaeche) setRadius(String(flaeche));
-
-      const pflanzen = zeilen.reduce((s, z) => s + (z.verbissen ?? 0) + (z.unverbissen ?? 0), 0);
-      setHinweis(
-        `${geholteKreise.length} Probekreise mit ${pflanzen} Pflanzen geholt`,
+      setAngeboteneTage(
+        [...jeTag.values()]
+          .map((e) => ({ datum: e.datum, kreise: e.kreise.size, pflanzen: e.pflanzen }))
+          .sort((a, b) => b.datum.localeCompare(a.datum)),
       );
+      setHinweis("");
+    } catch (fehler) {
+      setHinweis(fehler?.message || "Abruf fehlgeschlagen");
+    } finally {
+      setHoltBlatt(false);
+    }
+  };
+
+  /* Einen angebotenen Tag antippen: Datum umstellen und gleich holen. */
+  const tagHolen = async (zielDatum) => {
+    setAngeboteneTage([]);
+    blattWechseln(zielDatum, null, null);
+    setHoltBlatt(true);
+    try {
+      const { zeilen } = await ergebnisEinePerson(
+        kopf.trupp.trim(),
+        kopf.abteilung.trim(),
+        zielDatum,
+      );
+      if (zeilen.length) zeilenUebernehmen(zeilen);
+      else setHinweis("Für diesen Tag steht doch nichts da");
     } catch (fehler) {
       setHinweis(fehler?.message || "Abruf fehlgeschlagen");
     } finally {
@@ -1064,6 +1119,44 @@ export default function Verjuengung() {
         >
           {holtBlatt ? "Holt ..." : "Zählung aus der Datenbank holen"}
         </button>
+      )}
+
+      {/* Die Tage, an denen fuer diese Person in diesem Gebiet etwas
+          dasteht. Antippen stellt das Datum um und holt gleich. */}
+      {angeboteneTage.length > 0 && (
+        <div style={{ marginTop: -6, marginBottom: 14 }}>
+          <div style={{ fontSize: 11, color: farben.muted, marginBottom: 6 }}>
+            Für {kopf.trupp.trim()}
+            {kopf.abteilung.trim() ? ` · ${kopf.abteilung.trim()}` : ""} steht etwas an diesen
+            Tagen – antippen zum Holen:
+          </div>
+          {angeboteneTage.map((tag) => (
+            <button
+              key={tag.datum}
+              onClick={() => tagHolen(tag.datum)}
+              style={{
+                width: "100%",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+                gap: 10,
+                background: farben.surface,
+                border: `1px solid ${farben.line}`,
+                color: farben.text,
+                borderRadius: 10,
+                padding: "10px 12px",
+                fontSize: 13,
+                marginBottom: 6,
+                cursor: "pointer",
+              }}
+            >
+              <span>{zeigeDatum(tag.datum)}</span>
+              <span style={{ fontSize: 11, color: farben.muted }}>
+                {tag.kreise} Probekreise · {tag.pflanzen} Pflanzen
+              </span>
+            </button>
+          ))}
+        </div>
       )}
 
       <button
