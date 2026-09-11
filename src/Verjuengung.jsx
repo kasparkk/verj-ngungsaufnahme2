@@ -105,17 +105,15 @@ export default function Verjuengung() {
     if (!geladen) return;
     const heutiger = heute();
     if (!datum || datum >= heutiger) return;
-    /* Der Text sagt zuerst, was ohne Zutun passiert, und ordnet dann den
-       beiden Knoepfen zu, was sie tun. "OK" und "Abbrechen" allein muss
-       man sonst erraten - und raet im Zweifel falsch. */
+    /* Kurz halten. Ein Dialog beim Oeffnen wird ueberflogen, nicht
+       gelesen - die ausfuehrliche Fassung steht im Streifen, der stehen
+       bleibt, solange der Tag nicht stimmt. */
     const weiter = window.confirm(
-      `Eingetragen wird gerade auf den ${zeigeDatum(datum)}.\n` +
-        `Heute ist ${wochentag(heutiger)}, der ${zeigeDatum(heutiger)}.\n\n` +
-        `OK  =  auf heute umstellen\n\n` +
-        `Abbrechen  =  weiter auf den ${zeigeDatum(datum)} eintragen\n` +
-        `(richtig, wenn du einen alten Zettel nachträgst)\n\n` +
-        `Der ${zeigeDatum(datum)} bleibt in jedem Fall erhalten, mit allem, ` +
-        `was darauf steht.`,
+      `Das Aufnahmedatum steht auf ${zeigeDatum(datum)} – heute ist der ` +
+        `${zeigeDatum(heutiger)}.\n\n` +
+        `Auf heute umstellen? Der ${zeigeDatum(datum)} bleibt mit allem, was ` +
+        `darauf gezählt ist, erhalten.\n\n` +
+        `Abbrechen heißt: auf dem ${zeigeDatum(datum)} weiterzählen.`,
     );
     if (weiter) datumWechseln(heutiger);
     // Nur beim Oeffnen - waehrend der Aufnahme soll nichts dazwischenfunken.
