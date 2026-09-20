@@ -4,17 +4,25 @@
 # keine Anfrage bekommen hat. Aufgeweckt werden muss sie dann von Hand im
 # Supabase-Konto - das ist im Gelaende der denkbar unpassendste Zeitpunkt.
 #
-# Zweimal die Woche hat NICHT gereicht: am 20.09.2026 wurde das Projekt um
-# 03:42 UTC pausiert, obwohl der letzte erfolgreiche Lauf erst zweieinhalb
-# Tage zurueck lag (17.09. 10:43 UTC) und 17 Stunden vorher noch eine
-# erfolgreiche Anfrage durchging. Die tatsaechliche Schwelle ist also
-# kuerzer als die angenommene Woche - wie kurz, sagt Supabase nicht.
+# Am 20.09.2026 ist das Projekt trotzdem pausiert worden, obwohl zweimal
+# die Woche ein Lauf durchlief. Der Grund war vermutlich nicht die
+# Haeufigkeit, sondern die Art der Anfrage: Der Ablauf hat nur GELESEN.
 #
-# Deshalb jetzt alle sechs Stunden. Ein Lauf dauert acht Sekunden; vier am
-# Tag sind rund zwei Minuten Rechenzeit im Monat und damit weit unter dem
-# kostenlosen Kontingent. Wenn es trotzdem wieder pausiert, liegt es nicht
-# an der Haeufigkeit der Anfragen, und dann hilft nur ein bezahlter Tarif
-# oder ein anderer Ort fuer die Daten.
+# Supabase nennt als Schwelle "1 week of inactivity". Gerechnet ab dem
+# letzten SCHREIBZUGRIFF der App (11.09. 14:36 UTC) waren es bis zur
+# Pause (20.09. 03:42 UTC) acht Tage - das passt. Gerechnet ab dem
+# letzten Lesezugriff waren es siebzehn Stunden - das passt auf nichts.
+# Reines Lesen scheint die Uhr also nicht zurueckzusetzen.
+#
+# Deshalb SCHREIBT der Ablauf jetzt: ein Zeitstempel in die Tabelle
+# "wachhalten", die genau eine Zeile hat und keine Nutzdaten. Und das
+# alle sechs Stunden statt zweimal die Woche, damit ein ausgefallener
+# Lauf nichts ausmacht. Vier Laeufe am Tag sind rund zwei Minuten
+# Rechenzeit im Monat, weit unter dem kostenlosen Kontingent.
+#
+# Ob die Annahme stimmt, zeigt sich erst in der Woche nach dem
+# 27.09.2026. Pausiert es dann wieder, liegt es nicht am Wachhalten, und
+# es hilft nur ein bezahlter Tarif oder ein anderer Ort fuer die Daten.
 #
 # Der Schluessel steht offen im Text und ist kein Versehen: es ist derselbe
 # oeffentliche Schluessel, der ohnehin in der ausgelieferten App steht. Er
@@ -35,19 +43,22 @@ jobs:
   anfragen:
     runs-on: ubuntu-latest
     steps:
-      - name: Eine Zeile abrufen
+      - name: Zeitstempel schreiben
         run: |
-          URL="https://xrrcuapiugwgqxxatkiq.supabase.co/rest/v1/verjuengung?select=trupp&limit=1"
+          URL="https://xrrcuapiugwgqxxatkiq.supabase.co/rest/v1/wachhalten?id=eq.1"
           KEY="sb_publishable_kcP8-40mEnwPGuFwVGigKA_b5swelLm"
 
           # Drei Versuche: eine einzelne Stoerung soll nicht gleich als
           # Fehlschlag gemeldet werden.
           for versuch in 1 2 3; do
-            code=$(curl -s -o antwort.txt -w '%{http_code}' \
-              -H "apikey: $KEY" -H "Authorization: Bearer $KEY" "$URL")
+            code=$(curl -s -o antwort.txt -w '%{http_code}' -X PATCH "$URL" \
+              -H "apikey: $KEY" -H "Authorization: Bearer $KEY" \
+              -H "Content-Type: application/json" \
+              -H "Prefer: return=representation" \
+              -d '{"zuletzt":"now()","woher":"GitHub"}')
             echo "Versuch $versuch: HTTP $code"
             if [ "$code" = "200" ]; then
-              echo "Datenbank ist wach."
+              echo "Geschrieben: $(cat antwort.txt)"
               exit 0
             fi
             sleep 30
