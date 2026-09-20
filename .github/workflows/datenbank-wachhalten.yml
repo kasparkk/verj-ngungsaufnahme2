@@ -1,10 +1,20 @@
 # Haelt die Supabase-Datenbank wach.
 #
-# Der kostenlose Tarif legt eine Datenbank schlafen, wenn sie etwa eine Woche
-# lang keine Anfrage bekommen hat. Aufgeweckt werden muss sie dann von Hand im
+# Der kostenlose Tarif legt eine Datenbank schlafen, wenn sie eine Weile
+# keine Anfrage bekommen hat. Aufgeweckt werden muss sie dann von Hand im
 # Supabase-Konto - das ist im Gelaende der denkbar unpassendste Zeitpunkt.
-# Deshalb ruft dieser Ablauf zweimal die Woche eine einzelne Zeile ab. Das
-# zaehlt als Nutzung, und die Woche laeuft nie voll.
+#
+# Zweimal die Woche hat NICHT gereicht: am 20.09.2026 wurde das Projekt um
+# 03:42 UTC pausiert, obwohl der letzte erfolgreiche Lauf erst zweieinhalb
+# Tage zurueck lag (17.09. 10:43 UTC) und 17 Stunden vorher noch eine
+# erfolgreiche Anfrage durchging. Die tatsaechliche Schwelle ist also
+# kuerzer als die angenommene Woche - wie kurz, sagt Supabase nicht.
+#
+# Deshalb jetzt alle sechs Stunden. Ein Lauf dauert acht Sekunden; vier am
+# Tag sind rund zwei Minuten Rechenzeit im Monat und damit weit unter dem
+# kostenlosen Kontingent. Wenn es trotzdem wieder pausiert, liegt es nicht
+# an der Haeufigkeit der Anfragen, und dann hilft nur ein bezahlter Tarif
+# oder ein anderer Ort fuer die Daten.
 #
 # Der Schluessel steht offen im Text und ist kein Versehen: es ist derselbe
 # oeffentliche Schluessel, der ohnehin in der ausgelieferten App steht. Er
@@ -14,9 +24,10 @@ name: Datenbank wachhalten
 
 on:
   schedule:
-    # Montag und Donnerstag um 06:00 UTC - groesster Abstand vier Tage,
-    # also deutlich unter der Woche, nach der Supabase pausiert.
-    - cron: "0 6 * * 1,4"
+    # Alle sechs Stunden. GitHub verschiebt Zeitplaene auf den freien
+    # Laeufern gern um eine Stunde und laesst unter Last auch mal einen
+    # aus - bei vier Terminen am Tag faellt das nicht ins Gewicht.
+    - cron: "0 */6 * * *"
   # Zum Ausprobieren auch von Hand ausloesbar (Actions -> Run workflow).
   workflow_dispatch:
 
