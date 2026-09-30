@@ -4,6 +4,7 @@ import { baueXlsx } from "./xlsx.js";
 import Kopf from "./monitoring/Kopf.jsx";
 import Pflanzen from "./monitoring/Pflanzen.jsx";
 import Auswertung from "./monitoring/Auswertung.jsx";
+import Karte from "./monitoring/Karte.jsx";
 import { laden, speichern, neuerPunkt, naechsteNummer, VORLAGE_FELDER } from "./monitoring/speicher.js";
 import { masterZeilen, baueCsv, baueGeoJson } from "./monitoring/export.js";
 import { sollpunkteLesen } from "./monitoring/einlesen.js";
@@ -14,13 +15,14 @@ import { istVerbissen } from "./monitoring/berechnung.js";
 
    In der Excel-Fassung ist eine Datei ein Aufnahmepunkt. Hier liegen alle
    Punkte einer Untersuchungsflaeche nebeneinander: oben die Punktleiste,
-   darunter derselbe Bogen wie in der Datei - Kopf, Pflanzen, Auswertung.
+   darunter derselbe Bogen wie in der Datei plus die Lagekarte.
    Ein abgeschlossener Punkt wird gruen. */
 
 const REITER = [
   { id: "kopf", text: "Kopf" },
   { id: "pflanzen", text: "Pflanzen" },
   { id: "auswertung", text: "Auswertung" },
+  { id: "karte", text: "Karte" },
 ];
 
 export default function Monitoring() {
@@ -314,6 +316,7 @@ export default function Monitoring() {
       {reiter === "kopf" && <Kopf punkt={punkt} aendere={aendere} setHinweis={setHinweis} />}
       {reiter === "pflanzen" && <Pflanzen punkt={punkt} aendere={aendere} setHinweis={setHinweis} />}
       {reiter === "auswertung" && <Auswertung punkt={punkt} aendere={aendere} />}
+      {reiter === "karte" && <Karte punkt={punkt} />}
 
       {/* Ausgabe */}
       <div style={{ display: "flex", gap: 8, marginTop: 26 }}>
