@@ -11,6 +11,7 @@ import ZaehlBox from "./komponenten/ZaehlBox.jsx";
 import UebersichtTabelle from "./komponenten/UebersichtTabelle.jsx";
 import StandortKarte from "./komponenten/StandortKarte.jsx";
 import ErgebnisAnsicht from "./komponenten/ErgebnisAnsicht.jsx";
+import { ladeKartenStandorte, speichereKartenStandort } from "./kartenStandorte.js";
 
 // Wartezeit nach der letzten Aenderung, bevor automatisch abgeglichen wird.
 const SYNC_VERZOEGERUNG = 1500;
@@ -52,6 +53,10 @@ export default function Verjuengung() {
   const [csvText, setCsvText] = useState(null);
   const [uebersichtOffen, setUebersichtOffen] = useState(false);
   const [standorteOffen, setStandorteOffen] = useState(false);
+  const [kartenHinweis, setKartenHinweis] = useState("");
+  const kartenKontext = blattSchluessel(trupp, datum, abteilung);
+  const kartenKontextRef = useRef(kartenKontext);
+  kartenKontextRef.current = kartenKontext;
   const [gpsLaeuft, setGpsLaeuft] = useState(false);
   const [holtBlatt, setHoltBlatt] = useState(false);
   // Tage, an denen fuer diese Person in diesem Gebiet etwas in der
@@ -340,6 +345,40 @@ export default function Verjuengung() {
   }, [hinweis]);
 
   const aktuellerKreis = kreise[aktiv];
+  useEffect(() => {
+    if (!geladen || !standorteOffen || !trupp) return;
+    let beendet = false;
+    const fuerBlatt = kartenKontext;
+    setKartenHinweis("Gespeicherte Kartenpositionen laden …");
+    ladeKartenStandorte({ trupp, datum, abteilung }).then((standorte) => {
+      if (beendet || kartenKontextRef.current !== fuerBlatt) return;
+      setKreise((alle) => alle.map((kreis) => {
+        const standort = standorte.find((eintrag) => eintrag.nr === kreis.nr);
+        if (!standort) return kreis;
+        const standortZeit = Date.parse(standort.aktualisiert);
+        if ((kreis.standortZeit || 0) >= standortZeit) return kreis;
+        return { ...kreis, lat: standort.lat, lon: standort.lon, acc: null, quelle: "karte", standortZeit };
+      }));
+      setKartenHinweis("");
+    }).catch(() => {
+      if (!beendet) setKartenHinweis("Gespeicherte Kartenpositionen nicht erreichbar. Bereits vorhandene Punkte bleiben sichtbar.");
+    });
+    return () => { beendet = true; };
+  }, [geladen, standorteOffen, kartenKontext, trupp, datum, abteilung]);
+
+  const uebernehmeKartenStandort = async (nr, punkt) => {
+    if (!trupp) throw new Error("Bitte zuerst eine Person wählen.");
+    const fuerBlatt = kartenKontext;
+    const standort = await speichereKartenStandort({ trupp, datum, abteilung }, nr, punkt);
+    if (kartenKontextRef.current !== fuerBlatt) return;
+    setKreise((alle) => alle.map((kreis) => kreis.nr === nr ? {
+      ...kreis, lat: standort.lat, lon: standort.lon, acc: null,
+      quelle: "karte", standortZeit: Date.parse(standort.aktualisiert),
+    } : kreis));
+    setKartenHinweis("");
+    setHinweis(`Kartenposition für Probekreis ${nr} gespeichert`);
+  };
+
   const wert = (artId, feld) => aktuellerKreis?.counts?.[artId]?.[feld] ?? 0;
 
   // Alle drei Zaehl-Aenderungen wirken nur auf den gerade offenen Kreis.
@@ -383,6 +422,8 @@ export default function Verjuengung() {
                   lat: pos.coords.latitude,
                   lon: pos.coords.longitude,
                   acc: pos.coords.accuracy,
+                  quelle: "geraet",
+                  standortZeit: Date.now(),
                 }
               : kreis
           )
@@ -1064,6 +1105,7 @@ export default function Verjuengung() {
             laenge={aktuellerKreis?.lon ?? null}
             klein
           />
+          {aktuellerKreis?.quelle === "karte" && <div style={{ color: farben.warn, fontSize: 10 }}>Manuell auf Karte gewählt</div>}
         </div>
 
         {aktiv === kreise.length - 1 ? (
@@ -1195,7 +1237,18 @@ export default function Verjuengung() {
         {standorteOffen ? "Standorte ausblenden" : "Standorte anzeigen"}
       </button>
 
-      {standorteOffen && <StandortKarte kreise={kreise} />}
+      {standorteOffen && <>
+        {kartenHinweis && <p role="status" style={{ fontSize: 12, color: farben.muted }}>{kartenHinweis}</p>}
+        <StandortKarte
+          key={kartenKontext}
+          kreise={kreise} aktivNr={aktuellerKreis?.nr} gesperrt={!trupp}
+          onAktiv={(nr) => {
+            const index = kreise.findIndex((kreis) => kreis.nr === nr);
+            if (index >= 0) setAktiv(index);
+          }}
+          onUebernehmen={uebernehmeKartenStandort}
+        />
+      </>}
 
       {arten.map((art) => (
         <div key={art.id} style={{ marginBottom: 14 }}>

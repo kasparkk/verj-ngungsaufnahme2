@@ -1,0 +1,121 @@
+{
+  "version": "8",
+  "dialect": "postgres",
+  "id": "a09841d7-bca6-4fc1-9bd7-9257e4e0b425",
+  "prevIds": [
+    "00000000-0000-0000-0000-000000000000"
+  ],
+  "ddl": [
+    {
+      "isRlsEnabled": false,
+      "name": "karten_standorte",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "trupp",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "karten_standorte"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "aufnahmedatum",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "karten_standorte"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "abteilung",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "karten_standorte"
+    },
+    {
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "kreis",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "karten_standorte"
+    },
+    {
+      "type": "double precision",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lat",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "karten_standorte"
+    },
+    {
+      "type": "double precision",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "lon",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "karten_standorte"
+    },
+    {
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "now()",
+      "generated": null,
+      "identity": null,
+      "name": "aktualisiert",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "karten_standorte"
+    },
+    {
+      "columns": [
+        "trupp",
+        "aufnahmedatum",
+        "abteilung",
+        "kreis"
+      ],
+      "nameExplicit": false,
+      "name": "karten_standorte_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "karten_standorte"
+    }
+  ],
+  "renames": []
+}

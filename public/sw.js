@@ -8,7 +8,7 @@
    das alte JS-Bundle verwies - man war dauerhaft eine Version hinterher und
    sah Aenderungen erst beim uebernaechsten Start. Die JS-Dateien tragen einen
    Hash im Namen und koennen deshalb gefahrlos aus dem Cache kommen. */
-const CACHE = "verjuengung-v26";
+const CACHE = "verjuengung-v27";
 
 self.addEventListener("install", () => {
   self.skipWaiting();
@@ -29,6 +29,7 @@ self.addEventListener("fetch", (e) => {
   // Fremde Hosts (Supabase) und alles ausser GET: direkt ans Netz.
   if (url.origin !== self.location.origin) return;
   if (e.request.method !== "GET") return;
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/.netlify/functions/")) return;
 
   const istSeite =
     e.request.mode === "navigate" || url.pathname === "/" || url.pathname.endsWith(".html");

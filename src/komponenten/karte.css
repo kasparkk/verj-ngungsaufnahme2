@@ -1,0 +1,36 @@
+.standort-karte {
+  background: #1e241a;
+  border: 1px solid #3a4434;
+  border-radius: 12px;
+  overflow: hidden;
+  color: #f2f0e6;
+  margin-bottom: 14px;
+}
+.karten-kopf { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px; }
+.karten-kopf strong { font-size: 15px; }
+.karten-eyebrow { color: #a8c24a; font-size: 9px; letter-spacing: 1.8px; margin-bottom: 4px; }
+.karten-status { color: #bbc4ad; border: 1px solid #3a4434; border-radius: 20px; padding: 5px 8px; font-size: 10px; white-space: nowrap; }
+.karten-rahmen { position: relative; isolation: isolate; background: #dfe4d5; }
+.karten-flaeche { height: 330px; width: 100%; z-index: 0; }
+.karten-flaeche:focus-visible { outline: 3px solid #a8c24a; outline-offset: -3px; }
+.karten-punkt { border-radius: 50%; background: #25331b; color: #f2f0e6; border: 2px solid #f2f0e6; box-shadow: 0 2px 8px #12160f66; display: grid; place-items: center; font-size: 13px; font-weight: 700; }
+.karten-punkt-aktiv { background: #a8c24a; color: #12160f; border-color: #25331b; }
+.karten-entwurf { border: 2px dashed #25331b; border-radius: 50%; background: #e8b44a; color: #12160f; display: grid; place-items: center; font-size: 25px; font-weight: 700; }
+.karten-laden { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 1; background: #1e241a; color: #f2f0e6; padding: 8px 12px; border-radius: 8px; font-size: 12px; white-space: nowrap; pointer-events: none; }
+.standort-karte button { background: transparent; color: #f2f0e6; border: 1px solid #59634e; border-radius: 8px; padding: 11px 13px; min-height: 44px; font-size: 12px; cursor: pointer; }
+.standort-karte button:hover:not(:disabled) { background: #2a3225; }
+.standort-karte button:focus-visible { outline: 2px solid #e8b44a; outline-offset: 3px; }
+.standort-karte button:disabled { opacity: .5; cursor: default; }
+.standort-karte .karten-primaer { background: #a8c24a; color: #12160f; border-color: #a8c24a; font-weight: 700; }
+.standort-karte .karten-primaer:hover:not(:disabled) { background: #bdd565; }
+.karten-werkzeuge { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 14px; }
+.karten-auswahl { border-top: 1px solid #3a4434; padding: 14px; font-size: 13px; }
+.karten-auswahl p { font-size: 12px; line-height: 1.6; color: #bbc4ad; }
+.karten-auswahl .karten-werkzeuge { padding: 12px 0 0; }
+.karten-koordinate { margin-top: 12px; font-size: 11px; font-variant-numeric: tabular-nums; color: #e8b44a; }
+.karten-hinweis, .karten-fehler { padding: 10px 14px; margin: 0; font-size: 12px; line-height: 1.5; }
+.karten-hinweis { color: #e8b44a; }
+.karten-hinweis button { margin: 8px 0 0 8px; }
+.karten-fehler { color: #ffb0a8; }
+.karten-fuss { font-size: 10px; color: #bbc4ad; line-height: 1.6; margin: 0; padding: 0 14px 14px; }
+@media (max-width: 380px) { .karten-kopf { align-items: flex-start; } .karten-status { white-space: normal; text-align: center; } .karten-werkzeuge button { flex: 1; } }
