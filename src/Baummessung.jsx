@@ -5,6 +5,8 @@ import { laden, speichern, leererStand } from "./baum/speicher.js";
 import { baueXlsx } from "./xlsx.js";
 import Winkelzaehlprobe from "./baum/Winkelzaehlprobe.jsx";
 import Einzelbaeume from "./baum/Einzelbaeume.jsx";
+import KoordinatenKopieren from "./komponenten/KoordinatenKopieren.jsx";
+import { baueGeoJsonMessung, geoDateiname } from "./baum/geo.js";
 
 /* Rahmen der Baummessung mit zwei Verfahren:
 
@@ -19,6 +21,7 @@ export default function Baummessung() {
   const [geladen, setGeladen] = useState(false);
   const [hinweis, setHinweis] = useState("");
   const [formzahlenOffen, setFormzahlenOffen] = useState(false);
+  const [gpsLaeuft, setGpsLaeuft] = useState(false);
 
   useEffect(() => {
     setStand(laden());
@@ -45,6 +48,97 @@ export default function Baummessung() {
     setStand((alt) => ({ ...alt, wzp: typeof wie === "function" ? wie(alt.wzp) : wie }));
   const setBaeume = (wie) =>
     setStand((alt) => ({ ...alt, baeume: typeof wie === "function" ? wie(alt.baeume) : wie }));
+
+  /* Standort der Messung - nur auf Antippen. Von selbst zu orten waere hier
+     falsch: wer die Formzahlen anschaut oder eine alte Messung noch einmal
+     oeffnet, will keine neue Koordinate darueberschreiben. */
+  const holeStandort = () => {
+    if (!navigator.geolocation) {
+      setHinweis("Kein GPS auf diesem Gerät");
+      return;
+    }
+    setGpsLaeuft(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGpsLaeuft(false);
+        setStand((alt) => ({
+          ...alt,
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+          genauigkeit: pos.coords.accuracy,
+        }));
+      },
+      () => {
+        setGpsLaeuft(false);
+        setHinweis("Standort nicht verfügbar");
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+    );
+  };
+
+  /* Erst der Weg ueber das Teilen-Menue, sonst herunterladen - fuer beide
+     Ausgaben derselbe. */
+  const weitergeben = async (blob, name, titel, erfolg) => {
+    try {
+      const datei = new File([blob], name, { type: blob.type });
+      if (navigator.canShare?.({ files: [datei] })) {
+        await navigator.share({ files: [datei], title: titel });
+        return;
+      }
+    } catch (fehler) {
+      if (fehler?.name === "AbortError") return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setHinweis(erfolg ?? `${name} gespeichert`);
+  };
+
+  /* Die Messung als Punkt fuer ein Kartenprogramm. Ohne Ortung gibt es
+     nichts zu zeigen - dann ein Hinweis statt einer leeren Datei. */
+  const geodaten = async () => {
+    if (stand.lat == null || stand.lon == null) {
+      setHinweis("Erst den Standort erfassen – ohne Punkt keine Karte");
+      return;
+    }
+
+    let auswertung;
+    if (stand.modus === "wzp") {
+      const erg = wzpAuswerten(stand.wzp.arten, stand.wzp.zaehlfaktor, stand.formzahlen, stand.alter);
+      if (!erg.jeArt.some((a) => a.anzahl > 0)) {
+        setHinweis("Noch nichts gezählt");
+        return;
+      }
+      auswertung = { ...erg, zaehlfaktor: zahl(stand.wzp.zaehlfaktor) || 4 };
+    } else {
+      if (!stand.baeume.length) {
+        setHinweis("Noch keine Bäume eingetragen");
+        return;
+      }
+      const flaeche = zahl(stand.flaeche) || 0;
+      const gGesamt = stand.baeume.reduce((s, b) => s + grundflaeche(b.bhd), 0);
+      const vGesamt = stand.baeume.reduce((s, b) => s + volumen(b.bhd, b.hoehe, b.formzahl), 0);
+      auswertung = {
+        baeume: stand.baeume,
+        flaeche: flaeche || null,
+        gGesamt,
+        vGesamt,
+        gHa: flaeche ? (gGesamt * 10000) / flaeche : null,
+        vHa: flaeche ? (vGesamt * 10000) / flaeche : null,
+        nHa: flaeche ? (stand.baeume.length * 10000) / flaeche : null,
+      };
+    }
+
+    const geo = baueGeoJsonMessung(stand, auswertung);
+    const blob = new Blob([JSON.stringify(geo, null, 2)], { type: "application/geo+json" });
+    await weitergeben(blob, geoDateiname(stand), "Baummessung", "Standort gespeichert");
+  };
 
   const excelDatei = async () => {
     let zeilen;
@@ -101,27 +195,7 @@ export default function Baummessung() {
     }
 
     const name = `Baummessung_${stand.ort || "Aufnahme"}.xlsx`;
-    const blob = baueXlsx(zeilen, "Baummessung");
-
-    try {
-      const datei = new File([blob], name, { type: blob.type });
-      if (navigator.canShare?.({ files: [datei] })) {
-        await navigator.share({ files: [datei], title: "Baummessung" });
-        return;
-      }
-    } catch (fehler) {
-      if (fehler?.name === "AbortError") return;
-    }
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-    setHinweis("Excel-Datei gespeichert");
+    await weitergeben(baueXlsx(zeilen, "Baummessung"), name, "Baummessung", "Excel-Datei gespeichert");
   };
 
   const feldStil = {
@@ -177,6 +251,40 @@ export default function Baummessung() {
           />
         </div>
       </div>
+
+      {/* Standort des Standpunktes bzw. der Flaeche. Oben beim Ort, weil er
+          wie der Ort zum Bestand gehoert und nicht zum Verfahren. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+        <button
+          onClick={holeStandort}
+          disabled={gpsLaeuft}
+          style={{
+            background: "transparent",
+            border: `1px solid ${farben.line}`,
+            color: stand.lat == null ? farben.muted : farben.text,
+            borderRadius: 10,
+            padding: "7px 10px",
+            fontSize: 12,
+            cursor: gpsLaeuft ? "default" : "pointer",
+          }}
+        >
+          {gpsLaeuft
+            ? "📍 …"
+            : stand.lat == null
+              ? "📍 Standort erfassen"
+              : `📍 ${stand.lat.toFixed(5)}, ${stand.lon.toFixed(5)}`}
+        </button>
+        {stand.genauigkeit != null && (
+          <span style={{ fontSize: 11, color: farben.muted }}>
+            ±{Math.round(stand.genauigkeit)} m
+          </span>
+        )}
+      </div>
+      {stand.lat != null && (
+        <div style={{ marginBottom: 10 }}>
+          <KoordinatenKopieren breite={stand.lat} laenge={stand.lon} />
+        </div>
+      )}
 
       {stand.modus === "wzp" && (
         <div style={{ fontSize: 10, color: farben.muted, marginTop: -8, marginBottom: 14 }}>
@@ -269,21 +377,38 @@ export default function Baummessung() {
           margin: "0 auto",
         }}
       >
-        <button
-          onClick={excelDatei}
-          style={{
-            width: "100%",
-            background: "none",
-            border: `1px solid ${farben.line}`,
-            color: farben.text,
-            borderRadius: 12,
-            padding: "14px 0",
-            fontSize: 14,
-            cursor: "pointer",
-          }}
-        >
-          Excel
-        </button>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={excelDatei}
+            style={{
+              flex: 1,
+              background: "none",
+              border: `1px solid ${farben.line}`,
+              color: farben.text,
+              borderRadius: 12,
+              padding: "14px 0",
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            Excel
+          </button>
+          <button
+            onClick={geodaten}
+            style={{
+              flex: 1,
+              background: "none",
+              border: `1px solid ${farben.line}`,
+              color: farben.text,
+              borderRadius: 12,
+              padding: "14px 0",
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            Karte
+          </button>
+        </div>
       </div>
     </div>
   );

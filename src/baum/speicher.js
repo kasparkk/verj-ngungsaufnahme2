@@ -24,6 +24,13 @@ export const leererStand = () => ({
   modus: "wzp",
   ort: "",
   alter: "",
+  /* Standort der Messung. Eine Winkelzaehlprobe wird an EINEM Standpunkt
+     gemacht, eine Einzelbaumflaeche hat EINE Mitte - deshalb gehoert die
+     Koordinate zum Bestand und nicht zum Verfahren, genau wie Ort und
+     Formzahlen. Bleibt leer, bis jemand den Knopf antippt. */
+  lat: null,
+  lon: null,
+  genauigkeit: null,
   formzahlen: Object.fromEntries(BAUMARTEN.map((a) => [a.name, String(a.formzahl)])),
   // Winkelzaehlprobe
   wzp: { zaehlfaktor: 4, arten: WZP_START.map(leereArt) },
@@ -48,6 +55,10 @@ export function laden() {
       modus: daten.modus === "einzel" ? "einzel" : "wzp",
       ort: daten.ort ?? "",
       alter: daten.alter ?? "",
+      // Aeltere Staende kannten den Standort noch nicht.
+      lat: typeof daten.lat === "number" ? daten.lat : null,
+      lon: typeof daten.lon === "number" ? daten.lon : null,
+      genauigkeit: typeof daten.genauigkeit === "number" ? daten.genauigkeit : null,
       // Fehlende Arten aus den Voreinstellungen ergaenzen.
       formzahlen: { ...standard.formzahlen, ...(daten.formzahlen ?? {}) },
       wzp: {
