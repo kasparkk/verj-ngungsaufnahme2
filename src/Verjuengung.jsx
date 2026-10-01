@@ -7,6 +7,7 @@ import { baueXlsx } from "./xlsx.js";
 import PersonWahl, { alsBuchstabe } from "./komponenten/PersonWahl.jsx";
 import KoordinatenKopieren from "./komponenten/KoordinatenKopieren.jsx";
 import { zeilenHochladen, ergebnisAllePersonen, ergebnisEinePerson, istSchlafend, RUHE_HINWEIS } from "./datenbank.js";
+import { baueGeoJsonKreise, geoDateiname } from "./ergebnisExport.js";
 import ZaehlBox from "./komponenten/ZaehlBox.jsx";
 import UebersichtTabelle from "./komponenten/UebersichtTabelle.jsx";
 import StandortKarte from "./komponenten/StandortKarte.jsx";
@@ -620,6 +621,84 @@ export default function Verjuengung() {
       setCsvText(baueTabelle(kopf, arten, kreise, ";"));
       setHinweis("Datei hier nicht möglich – Text unten markieren und kopieren");
     }
+  };
+
+  /* Die eigenen Probekreise als GeoJSON - dasselbe Format wie in der
+     gemeinsamen Auswertung, nur aus dem Blatt auf diesem Geraet statt aus
+     der Datenbank. Nuetzlich, bevor etwas hochgeladen ist: direkt nach der
+     Aufnahme im Bestand, ohne Netz.
+
+     Die oertlichen Kreise tragen ihre Genauigkeit unter "acc", die
+     Datenbankzeilen unter "genauigkeit" - hier wird umgeschrieben, damit
+     beide Wege denselben Erzeuger benutzen und dieselbe Datei herauskommt. */
+  const geodaten = async () => {
+    const flaeche = parseFloat(String(kopf.radius).replace(",", ".")) || 100;
+    const datum = normDatum(kopf.datum.trim());
+
+    const fuerDatei = kreise
+      .filter((kreis) => kreis.lat != null && kreis.lon != null)
+      .map((kreis) => {
+        let verbissen = 0;
+        let unverbissen = 0;
+        let baumarten = 0;
+        arten.forEach((art) => {
+          const zahlen = kreis.counts?.[art.id];
+          if (!zahlen || (!zahlen.v && !zahlen.u)) return;
+          baumarten += 1;
+          verbissen += zahlen.v ?? 0;
+          unverbissen += zahlen.u ?? 0;
+        });
+        return {
+          trupp: kopf.trupp.trim(),
+          abteilung: kopf.abteilung.trim(),
+          datum: datum ?? "",
+          kreis: kreis.nr,
+          flaeche,
+          lat: kreis.lat,
+          lon: kreis.lon,
+          genauigkeit: kreis.acc ?? null,
+          baumarten,
+          verbissen,
+          unverbissen,
+        };
+      });
+
+    if (!fuerDatei.length) {
+      setHinweis(
+        kreise.length === 1
+          ? "Für den Probekreis ist kein Standort erfasst – 📍 antippen"
+          : "Kein Probekreis hat einen Standort – 📍 antippen",
+      );
+      return;
+    }
+
+    const name = geoDateiname(kopf);
+    const text = JSON.stringify(baueGeoJsonKreise(fuerDatei), null, 2);
+    const blob = new Blob([text], { type: "application/geo+json" });
+    const ohne = kreise.length - fuerDatei.length;
+    const meldung =
+      `${fuerDatei.length} Probekreise gespeichert` +
+      (ohne ? ` – ${ohne} ohne Standort weggelassen` : "");
+
+    try {
+      const datei = new File([blob], name, { type: blob.type });
+      if (navigator.canShare?.({ files: [datei] })) {
+        await navigator.share({ files: [datei], title: "Verjüngungsaufnahme" });
+        return;
+      }
+    } catch (fehler) {
+      if (fehler?.name === "AbortError") return;
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    setHinweis(meldung);
   };
 
   const ergebnisLaden = async (nurEigene) => {
@@ -1417,6 +1496,9 @@ export default function Verjuengung() {
           </button>
           <button onClick={excelDatei} style={leisteKnopf}>
             Excel
+          </button>
+          <button onClick={geodaten} style={leisteKnopf}>
+            Geodaten
           </button>
         </div>
       </div>
