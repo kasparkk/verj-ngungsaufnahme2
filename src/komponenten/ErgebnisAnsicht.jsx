@@ -1,6 +1,13 @@
 import { useState } from "react";
 import { farben } from "../konfiguration.js";
-import { baueErgebnisDatei, ergebnisDateiname, probekreise, eingegrenzt } from "../ergebnisExport.js";
+import {
+  baueErgebnisDatei,
+  ergebnisDateiname,
+  probekreise,
+  eingegrenzt,
+  baueGeoJsonKreise,
+  geoDateiname,
+} from "../ergebnisExport.js";
 
 const kopfZelle = {
   padding: "6px 8px",
@@ -40,19 +47,9 @@ export default function ErgebnisAnsicht({
   const mitOrt = kreise.filter((k) => k.lat != null).length;
 
   /* Erst der Weg ueber das Teilen-Menue - damit landet die Datei direkt in
-     Excel, Mail oder der Wolke. Klappt das nicht, wird sie heruntergeladen. */
-  const excel = async () => {
-    if (!fuerDatei.datum) {
-      setMeldung("Kein Aufnahmedatum gesetzt – ohne Datum keine Ausgabe");
-      return;
-    }
-    if (!fuerDatei.zeilen.length) {
-      setMeldung(`Für den ${fuerDatei.datum} gibt es hier keine Einträge`);
-      return;
-    }
-    const name = ergebnisDateiname(kopf);
-    const blob = baueErgebnisDatei(fuerDatei.auswertung, fuerDatei.zeilen, kopf);
-
+     Excel, der Karten-App, Mail oder der Wolke. Klappt das nicht, wird sie
+     heruntergeladen. Beide Ausgaben gehen denselben Weg. */
+  const weitergeben = async (blob, name, erfolg) => {
     try {
       const datei = new File([blob], name, { type: blob.type });
       if (navigator.canShare?.({ files: [datei] })) {
@@ -71,7 +68,48 @@ export default function ErgebnisAnsicht({
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    setMeldung(`${name} gespeichert`);
+    setMeldung(erfolg ?? `${name} gespeichert`);
+  };
+
+  // Beide Ausgaben brauchen dasselbe: einen Tag und etwas darin.
+  const bereit = () => {
+    if (!fuerDatei.datum) {
+      setMeldung("Kein Aufnahmedatum gesetzt – ohne Datum keine Ausgabe");
+      return false;
+    }
+    if (!fuerDatei.zeilen.length) {
+      setMeldung(`Für den ${fuerDatei.datum} gibt es hier keine Einträge`);
+      return false;
+    }
+    return true;
+  };
+
+  const excel = async () => {
+    if (!bereit()) return;
+    const name = ergebnisDateiname(kopf);
+    await weitergeben(baueErgebnisDatei(fuerDatei.auswertung, fuerDatei.zeilen, kopf), name);
+  };
+
+  /* Die Probekreise als GeoJSON - fuer QGIS, das Geoprogramm oder eine
+     Karten-App auf dem Handy. Ohne Ortung kein Punkt: hat kein einziger
+     Kreis eine, kommt keine leere Datei heraus, sondern ein Hinweis. */
+  const geodaten = async () => {
+    if (!bereit()) return;
+    const mitOrtung = kreise.filter((k) => k.lat != null);
+    if (!mitOrtung.length) {
+      setMeldung("Kein Probekreis hat eine Ortung – es gäbe nichts zu zeigen");
+      return;
+    }
+    const name = geoDateiname(kopf);
+    const text = JSON.stringify(baueGeoJsonKreise(kreise), null, 2);
+    const blob = new Blob([text], { type: "application/geo+json" });
+    const ohne = kreise.length - mitOrtung.length;
+    await weitergeben(
+      blob,
+      name,
+      `${mitOrtung.length} Probekreise gespeichert` +
+        (ohne ? ` – ${ohne} ohne Ortung weggelassen` : ""),
+    );
   };
 
   return (
@@ -297,6 +335,21 @@ export default function ErgebnisAnsicht({
           }}
         >
           Excel
+        </button>
+        <button
+          onClick={geodaten}
+          style={{
+            flex: 1,
+            background: "transparent",
+            border: `1px solid ${farben.line}`,
+            color: farben.text,
+            borderRadius: 12,
+            padding: "13px 0",
+            fontSize: 14,
+            cursor: "pointer",
+          }}
+        >
+          Karte
         </button>
         <button
           onClick={() => window.print()}

@@ -189,3 +189,58 @@ export const ergebnisDateiname = (kopf) => {
   const datum = (kopf?.datum || "").trim();
   return `Verjuengung_${teil}${datum ? "_" + datum : ""}.xlsx`;
 };
+
+/* Die Probekreise als GeoJSON.
+
+   Gedacht zum Weiterreichen an ein richtiges Kartenprogramm - QGIS, das
+   Geoprogramm der Landesforst, OsmAnd oder Organic Maps auf dem Handy. Dort
+   gibt es Luftbild, Abteilungsgrenzen und Offline-Karten; eine eingebaute
+   Kachelkarte koennte das nie einholen.
+
+   GeoJSON verlangt WGS84 und die Reihenfolge Laenge, Breite - die haeufigste
+   Fehlerquelle beim Selberbauen, deshalb steht es hier ausdruecklich. Die
+   UTM-Werte stehen zusaetzlich in den Eigenschaften, weil in den Masken der
+   Landesforst damit gearbeitet wird; als Geometrie taugen sie nicht.
+
+   Kreise ohne Ortung fallen weg - ein Punkt ohne Koordinate ist in einer
+   Karte nichts. Wie viele es waren, meldet die Oberflaeche. */
+export function baueGeoJsonKreise(kreise) {
+  const merkmale = kreise
+    .filter((k) => k.lat != null && k.lon != null)
+    .map((k) => {
+      const gesamt = k.verbissen + k.unverbissen;
+      const utm = nachUtm33(k.lat, k.lon);
+      return {
+        type: "Feature",
+        geometry: { type: "Point", coordinates: [k.lon, k.lat] },
+        properties: {
+          person: k.trupp,
+          abteilung: k.abteilung || null,
+          datum: k.datum || null,
+          probekreis: k.kreis,
+          kreisflaeche_m2: k.flaeche,
+          baumarten: k.baumarten,
+          verbissen: k.verbissen,
+          unverbissen: k.unverbissen,
+          gesamt,
+          verbiss_prozent: gesamt ? Math.round((k.verbissen / gesamt) * 1000) / 10 : null,
+          stueck_je_ha: k.flaeche ? Math.round((gesamt * 10000) / k.flaeche) : null,
+          genauigkeit_m: k.genauigkeit,
+          x_utm33: utm ? Math.round(utm.x * 100) / 100 : null,
+          y_utm33: utm ? Math.round(utm.y * 100) / 100 : null,
+        },
+      };
+    });
+
+  return {
+    type: "FeatureCollection",
+    // Ohne crs-Angabe gilt WGS84 - so will es der Standard seit RFC 7946.
+    features: merkmale,
+  };
+}
+
+export const geoDateiname = (kopf) => {
+  const teil = (kopf?.abteilung || "").trim().replace(/[^\wäöüÄÖÜß -]/g, "") || "Aufnahme";
+  const datum = (kopf?.datum || "").trim();
+  return `Verjuengung_${teil}${datum ? "_" + datum : ""}.geojson`;
+};
