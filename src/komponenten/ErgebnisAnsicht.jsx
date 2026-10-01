@@ -349,7 +349,7 @@ export default function ErgebnisAnsicht({
             cursor: "pointer",
           }}
         >
-          Karte
+          Geodaten
         </button>
         <button
           onClick={() => window.print()}

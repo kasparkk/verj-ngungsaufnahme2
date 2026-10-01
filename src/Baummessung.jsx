@@ -406,7 +406,7 @@ export default function Baummessung() {
               cursor: "pointer",
             }}
           >
-            Karte
+            Geodaten
           </button>
         </div>
       </div>
