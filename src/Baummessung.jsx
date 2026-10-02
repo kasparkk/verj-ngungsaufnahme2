@@ -407,6 +407,7 @@ export default function Baummessung() {
             }}
           >
             Geodaten
+            <div style={{ fontSize: 10, opacity: 0.6, marginTop: 1 }}>GeoJSON</div>
           </button>
         </div>
         <div style={{ fontSize: 10, color: farben.muted, marginTop: 8, lineHeight: 1.5 }}>

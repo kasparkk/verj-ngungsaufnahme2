@@ -55,6 +55,15 @@ export default function Verjuengung() {
   const [standorteOffen, setStandorteOffen] = useState(false);
   const [gpsLaeuft, setGpsLaeuft] = useState(false);
   const [holtBlatt, setHoltBlatt] = useState(false);
+  /* Hoehe der festen unteren Leiste. Der Inhalt bekommt genau so viel
+     Polster, sonst verdeckt sie das letzte Bedienelement.
+
+     Fest eingetragene 112 px haben lange gereicht und sind beim Zweizeiler
+     auf dem Geodaten-Knopf gekippt: bei 320 px wuchs die Leiste auf 116 px,
+     weil dort auch der Abgleich-Hinweis umbricht. Gemessen statt geraten
+     haelt auch, wenn spaeter eine Fehlermeldung eine Zeile mehr braucht. */
+  const leisteRef = useRef(null);
+  const [leisteHoehe, setLeisteHoehe] = useState(112);
   // Tage, an denen fuer diese Person in diesem Gebiet etwas in der
   // Datenbank steht - zum Antippen, siehe blattZurueckholen.
   const [angeboteneTage, setAngeboteneTage] = useState([]);
@@ -106,6 +115,16 @@ export default function Verjuengung() {
     setAndereBlaetter(uebrige);
 
     setGeladen(true);
+  }, []);
+
+  useEffect(() => {
+    const leiste = leisteRef.current;
+    if (!leiste || typeof ResizeObserver === "undefined") return;
+    const messen = () => setLeisteHoehe(Math.ceil(leiste.getBoundingClientRect().height));
+    messen();
+    const beobachter = new ResizeObserver(messen);
+    beobachter.observe(leiste);
+    return () => beobachter.disconnect();
   }, []);
 
   // Nach jeder Aenderung sofort lokal sichern (auch ohne Netz).
@@ -927,7 +946,7 @@ export default function Verjuengung() {
       style={{
         color: farben.text,
         fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, sans-serif",
-        padding: "14px 14px 112px",
+        padding: `14px 14px ${leisteHoehe + 16}px`,
         maxWidth: 560,
         margin: "0 auto",
       }}
@@ -1459,6 +1478,7 @@ export default function Verjuengung() {
       )}
 
       <div
+        ref={leisteRef}
         style={{
           position: "fixed",
           left: 0,
@@ -1499,6 +1519,7 @@ export default function Verjuengung() {
           </button>
           <button onClick={geodaten} style={leisteKnopf}>
             Geodaten
+            <div style={{ fontSize: 10, opacity: 0.6, marginTop: 1 }}>GeoJSON</div>
           </button>
         </div>
       </div>

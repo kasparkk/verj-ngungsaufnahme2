@@ -350,6 +350,7 @@ export default function ErgebnisAnsicht({
           }}
         >
           Geodaten
+          <div style={{ fontSize: 10, opacity: 0.6, marginTop: 1 }}>GeoJSON</div>
         </button>
         <button
           onClick={() => window.print()}
