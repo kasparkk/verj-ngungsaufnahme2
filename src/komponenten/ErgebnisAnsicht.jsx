@@ -381,6 +381,9 @@ export default function ErgebnisAnsicht({
             Auswertung (je Baumart, über alle Kreise zusammengefasst).
             {kreise.length > 0 &&
               ` ${mitOrt} von ${kreise.length} Probekreisen haben eine Koordinate.`}
+            {" "}Die Geodaten sind eine GeoJSON-Datei (.geojson) mit einem Punkt je
+            Probekreis – zum Öffnen in QGIS, OsmAnd, Organic Maps oder einem
+            anderen Kartenprogramm.
           </>
         ) : (
           <span style={{ color: farben.verb }}>

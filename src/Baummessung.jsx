@@ -409,6 +409,11 @@ export default function Baummessung() {
             Geodaten
           </button>
         </div>
+        <div style={{ fontSize: 10, color: farben.muted, marginTop: 8, lineHeight: 1.5 }}>
+          Geodaten: eine GeoJSON-Datei (.geojson) mit dem Standpunkt und den
+          Ergebnissen – zum Öffnen in QGIS, OsmAnd, Organic Maps oder einem
+          anderen Kartenprogramm.
+        </div>
       </div>
     </div>
   );
