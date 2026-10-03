@@ -1,15 +1,6 @@
 import { useState } from "react";
 import { farben } from "../konfiguration.js";
-
-/* Standorte der Probekreise.
-
-   Im Vordergrund steht der Weg zur echten Karte: je Kreis ein Knopf, der
-   Google Maps oeffnet - dort gibt es Wege, Hoehenlinien und Navigation.
-
-   Die Lageskizze darunter ist ausklappbar. Sie zeichnet nur die Lage der
-   Kreise zueinander, dafuer ohne Netz: Kartenkacheln kaemen aus dem Internet,
-   und im Bestand ist oft keins da. Praktisch, um die Abdeckung der Flaeche zu
-   sehen oder eine verunglueckte Ortung zu erkennen. */
+import OpenStreetKarte, { gueltigerStandort } from "./OpenStreetKarte.jsx";
 
 const HOEHE = 150;
 const RAND = 18;
@@ -127,31 +118,19 @@ function Lageskizze({ punkte }) {
   );
 }
 
-export default function StandortKarte({ kreise }) {
+export default function StandortKarte({ kreise, aktivNr, onAktiv, onUebernehmen, gesperrt }) {
   const [skizzeOffen, setSkizzeOffen] = useState(false);
-  const punkte = kreise.filter((k) => k.lat != null && k.lon != null);
-
-  if (!punkte.length) {
-    return (
-      <div
-        style={{
-          border: `1px solid ${farben.line}`,
-          borderRadius: 10,
-          padding: "14px",
-          marginBottom: 14,
-          fontSize: 13,
-          color: farben.muted,
-          lineHeight: 1.5,
-        }}
-      >
-        Für diesen Tag ist noch kein Standort erfasst. Beim Probekreis oben auf
-        „📍 Standort erfassen“ tippen.
-      </div>
-    );
-  }
+  const punkte = kreise.filter(gueltigerStandort);
 
   return (
     <div style={{ marginBottom: 14 }}>
+      <OpenStreetKarte
+        punkte={kreise} aktivNr={aktivNr} onAktiv={onAktiv}
+        onUebernehmen={onUebernehmen} gesperrt={gesperrt}
+      />
+      {!punkte.length && <p style={{ color: farben.muted, fontSize: 12, lineHeight: 1.5 }}>
+        Noch kein Standort erfasst. Einen Punkt auf der Karte wählen oder GPS beim Probekreis nutzen.
+      </p>}
       {punkte.map((p, i) => (
         <a
           key={p.nr}
@@ -203,7 +182,7 @@ export default function StandortKarte({ kreise }) {
         </a>
       ))}
 
-      <button
+      {punkte.length > 0 && <button
         onClick={() => setSkizzeOffen(!skizzeOffen)}
         style={{
           width: "100%",
@@ -218,9 +197,9 @@ export default function StandortKarte({ kreise }) {
         }}
       >
         {skizzeOffen ? "Lageskizze ausblenden" : "Lageskizze anzeigen (ohne Netz)"}
-      </button>
+      </button>}
 
-      {skizzeOffen && <Lageskizze punkte={punkte} />}
+      {skizzeOffen && punkte.length > 0 && <Lageskizze punkte={punkte} />}
     </div>
   );
 }
