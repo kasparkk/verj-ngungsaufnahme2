@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { farben } from "../konfiguration.js";
+import Hoehenmesser from "./Hoehenmesser.jsx";
 import { BAUMARTEN, STANDARD_FORMZAHL, zahl, volumen, auswerten } from "./berechnung.js";
 
 const nk = (wert, stellen = 2) =>
@@ -11,6 +12,8 @@ const nk = (wert, stellen = 2) =>
 export default function Einzelbaeume({ flaeche, setFlaeche, formzahlen, baeume, setBaeume, setHinweis }) {
   const [art, setArt] = useState(BAUMARTEN[0].name);
   const [bhd, setBhd] = useState("");
+  // Offen oder nicht; der gemessene Wert landet im Hoehenfeld darunter.
+  const [misst, setMisst] = useState(false);
   const [hoehe, setHoehe] = useState("");
 
   const formzahlVon = (name) => zahl(formzahlen[name]) || STANDARD_FORMZAHL;
@@ -45,6 +48,7 @@ export default function Einzelbaeume({ flaeche, setFlaeche, formzahlen, baeume, 
   const kennzahl = { fontSize: 22, fontWeight: 700, fontVariantNumeric: "tabular-nums" };
 
   return (
+    <>
     <div>
       <div style={{ marginBottom: 14, maxWidth: 140 }}>
         <div style={beschriftung}>FLÄCHE m²</div>
@@ -95,14 +99,31 @@ export default function Einzelbaeume({ flaeche, setFlaeche, formzahlen, baeume, 
           </div>
           <div style={{ flex: 1 }}>
             <div style={beschriftung}>HÖHE m</div>
-            <input
-              style={{ ...feldStil, fontSize: 22, fontWeight: 700 }}
-              value={hoehe}
-              onChange={(e) => setHoehe(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && hinzufuegen()}
-              placeholder="25"
-              inputMode="decimal"
-            />
+            <div style={{ display: "flex", gap: 6, alignItems: "flex-end" }}>
+              <input
+                style={{ ...feldStil, fontSize: 22, fontWeight: 700, flex: 1, minWidth: 0 }}
+                value={hoehe}
+                onChange={(e) => setHoehe(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && hinzufuegen()}
+                placeholder="25"
+                inputMode="decimal"
+              />
+              <button
+                onClick={() => setMisst(true)}
+                aria-label="HÖHE messen"
+                style={{
+                  background: farben.surface,
+                  border: `1px solid ${farben.line}`,
+                  color: farben.text,
+                  borderRadius: 8,
+                  padding: "4px 9px",
+                  fontSize: 15,
+                  cursor: "pointer",
+                }}
+              >
+                📐
+              </button>
+            </div>
           </div>
           <button
             onClick={hinzufuegen}
@@ -201,5 +222,15 @@ export default function Einzelbaeume({ flaeche, setFlaeche, formzahlen, baeume, 
         </div>
       )}
     </div>
+
+      <Hoehenmesser
+        offen={misst}
+        onSchliessen={() => setMisst(false)}
+        onUebernehmen={(wert) => {
+          setHoehe(String(wert));
+          setMisst(false);
+        }}
+      />
+    </>
   );
 }

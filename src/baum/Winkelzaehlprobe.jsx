@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { farben } from "../konfiguration.js";
+import Hoehenmesser from "./Hoehenmesser.jsx";
 import { BAUMARTEN, ZAEHLFAKTOREN, zahl, wzpAuswerten } from "./berechnung.js";
 import { leereArt } from "./speicher.js";
 import ZaehlBox from "../komponenten/ZaehlBox.jsx";
@@ -23,6 +24,7 @@ function WerteFeld({
   onWeg,
   mittelwert,
   mittelText,
+  onMessen,
 }) {
   const feldStil = {
     background: "transparent",
@@ -76,6 +78,23 @@ function WerteFeld({
         >
           +
         </button>
+        {onMessen && (
+          <button
+            onClick={onMessen}
+            aria-label={`${titel} messen`}
+            style={{
+              background: farben.surface,
+              border: `1px solid ${farben.line}`,
+              color: farben.text,
+              borderRadius: 8,
+              padding: "0 10px",
+              fontSize: 15,
+              cursor: "pointer",
+            }}
+          >
+            📐
+          </button>
+        )}
       </div>
 
       {werte.length > 0 && (
@@ -122,6 +141,11 @@ export default function Winkelzaehlprobe({
 }) {
   const [neueHoehe, setNeueHoehe] = useState({});
   const [neuerDm, setNeuerDm] = useState({});
+  /* Fuer welche Baumart der Hoehenmesser offen ist. Der gemessene Wert
+     landet im Entwurfsfeld dieser Art - von dort uebernimmt ihn der
+     gewohnte Weg mit +, statt dass der Messer selbst in die Liste
+     schreibt. Ein Messfehler laesst sich so noch verwerfen. */
+  const [messenFuer, setMessenFuer] = useState(null);
 
   /* Das Alter oben gilt als Vorgabe; je Baumart laesst es sich ueberschreiben. */
   const erg = wzpAuswerten(wzp.arten, wzp.zaehlfaktor, formzahlen, alter);
@@ -206,6 +230,7 @@ export default function Winkelzaehlprobe({
   );
 
   return (
+    <>
     <div>
       {/* Zaehlfaktor */}
       <div style={{ marginBottom: 14 }}>
@@ -367,6 +392,7 @@ export default function Winkelzaehlprobe({
                   }
                   onHinzu={() => hoeheHinzu(a.id)}
                   onWeg={(i) => hoeheWeg(a.id, i)}
+                  onMessen={() => setMessenFuer(a.id)}
                   mittelwert={z.mittelHoehe}
                   mittelText={`Mittel ${nk(z.mittelHoehe, 1)} m`}
                 />
@@ -579,5 +605,15 @@ export default function Winkelzaehlprobe({
         kommt der Mittelstamm dazu und daraus die Stammzahl je Hektar.
       </div>
     </div>
+
+      <Hoehenmesser
+        offen={messenFuer != null}
+        onSchliessen={() => setMessenFuer(null)}
+        onUebernehmen={(hoehe) => {
+          setNeueHoehe((alt) => ({ ...alt, [messenFuer]: String(hoehe) }));
+          setMessenFuer(null);
+        }}
+      />
+    </>
   );
 }
