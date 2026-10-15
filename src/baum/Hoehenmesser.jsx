@@ -31,6 +31,9 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
   const [untenText, setUntenText] = useState("");
   const [obenText, setObenText] = useState("");
   const kamAn = useRef(false);
+  const [kamera, setKamera] = useState("unbekannt"); // unbekannt|laeuft|nein
+  const videoRef = useRef(null);
+  const stromRef = useRef(null);
 
   const lesen = (e) => {
     if (e.beta == null) return;
@@ -62,6 +65,55 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
     return () => {
       window.removeEventListener("deviceorientation", lesen, true);
       clearTimeout(frist);
+    };
+  }, [offen]);
+
+  /* Die Rueckkamera als Sucher.
+
+     Nicht Zierde, sondern noetig: Die Neigung, die der Sensor liefert, ist
+     die der KAMERA-ACHSE - also senkrecht zum Bildschirm. Ohne Bild muss
+     man sich diese Achse vorstellen, und die erste Fassung erklaerte dazu
+     "ueber die Oberkante peilen", was 90 Grad daneben liegt. Mit einem
+     Fadenkreuz im Sucher stimmt Anleitung und Rechnung ueberein: Worauf
+     das Kreuz zeigt, dazu gehoert der angezeigte Winkel.
+
+     Ohne Kamera - am Rechner, abgelehnte Freigabe - bleibt die Zahl allein
+     stehen; gerechnet wird genauso. */
+  useEffect(() => {
+    if (!offen) return;
+    let abgebrochen = false;
+
+    const starten = async () => {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setKamera("nein");
+        return;
+      }
+      try {
+        const strom = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false,
+        });
+        if (abgebrochen) {
+          strom.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        stromRef.current = strom;
+        if (videoRef.current) videoRef.current.srcObject = strom;
+        setKamera("laeuft");
+      } catch {
+        if (!abgebrochen) setKamera("nein");
+      }
+    };
+    starten();
+
+    /* Der Strom MUSS beim Schliessen angehalten werden. Sonst laeuft die
+       Kamera im Hintergrund weiter, das Laempchen bleibt an und der Akku
+       geht im Bestand unnoetig drauf. */
+    return () => {
+      abgebrochen = true;
+      stromRef.current?.getTracks().forEach((t) => t.stop());
+      stromRef.current = null;
+      setKamera("unbekannt");
     };
   }, [offen]);
 
@@ -137,8 +189,8 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
       </div>
 
       <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, margin: "8px 0 16px" }}>
-        Handy senkrecht halten und über die Oberkante peilen: erst den Stammfuß,
-        dann die Spitze. Augenhöhe und Hangneigung fallen dabei von selbst heraus.
+        Das Fadenkreuz auf den Stammfuß richten und antippen, dann auf die
+        Spitze. Augenhöhe und Hangneigung fallen dabei von selbst heraus.
       </div>
 
       <div style={{ marginBottom: 16 }}>
@@ -197,16 +249,73 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
         <>
           <div
             style={{
-              textAlign: "center",
+              position: "relative",
               background: farben.surface,
               borderRadius: 14,
-              padding: "14px 0",
+              overflow: "hidden",
               marginBottom: 12,
+              aspectRatio: kamera === "laeuft" ? "3 / 4" : undefined,
+              maxWidth: "100%",
             }}
           >
-            <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>NEIGUNG</div>
-            <div style={{ fontSize: 40, fontWeight: 800, color: farben.text, lineHeight: 1.1 }}>
-              {winkel == null ? "–" : `${winkel.toFixed(1)}°`}
+            <video
+              ref={videoRef}
+              autoPlay
+              playsInline
+              muted
+              aria-label="Sucher"
+              style={{
+                display: kamera === "laeuft" ? "block" : "none",
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+              }}
+            />
+
+            {/* Fadenkreuz in der Mitte - dort zeigt die Kameraachse hin,
+                und genau dazu gehoert der Winkel darunter. */}
+            {kamera === "laeuft" && (
+              <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "50%",
+                    left: 0,
+                    right: 0,
+                    height: 1,
+                    background: farben.unverb,
+                    opacity: 0.9,
+                  }}
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    top: "42%",
+                    bottom: "42%",
+                    width: 1,
+                    background: farben.unverb,
+                    opacity: 0.9,
+                  }}
+                />
+              </div>
+            )}
+
+            <div
+              style={{
+                position: kamera === "laeuft" ? "absolute" : "static",
+                left: 0,
+                right: 0,
+                bottom: 0,
+                textAlign: "center",
+                padding: "10px 0",
+                background: kamera === "laeuft" ? "rgba(18,22,15,0.72)" : "transparent",
+              }}
+            >
+              <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>NEIGUNG</div>
+              <div style={{ fontSize: 40, fontWeight: 800, color: farben.text, lineHeight: 1.1 }}>
+                {winkel == null ? "–" : `${winkel.toFixed(1)}°`}
+              </div>
             </div>
           </div>
           <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
@@ -304,6 +413,10 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
         Strecke länger als die waagerechte. Die Höhe hängt linear daran: zehn
         Prozent zu weit geschätzt heißt zehn Prozent zu hoch gemessen. Das ist
         der größte Fehler, nicht der Sensor.
+        {kamera === "nein" &&
+          " Ohne Kamerabild gilt: Der Winkel gehört zu der Richtung, in die die" +
+            " Rückkamera zeigt – also senkrecht zur Bildschirmfläche, nicht" +
+            " entlang der Oberkante."}
       </div>
     </div>
   );
