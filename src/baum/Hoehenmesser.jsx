@@ -191,6 +191,13 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
         </button>
       </div>
 
+      {/* Eine Zeile bleibt immer sichtbar. Die ausfuehrliche Anleitung ist
+          zugeklappt - ganz ohne Hinweis dazustehen waere aber der falsche
+          Tausch, wenn jemand den Messer zum ersten Mal oeffnet. */}
+      <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, margin: "8px 0 2px" }}>
+        Fadenkreuz auf den Stammfuß richten und antippen, dann auf die Spitze.
+      </div>
+
       <button
         onClick={() => setAnleitungOffen((o) => !o)}
         style={{
