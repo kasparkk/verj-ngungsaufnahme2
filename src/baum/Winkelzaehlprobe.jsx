@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Handymessung from "./Handymessung.jsx";
 import { farben } from "../konfiguration.js";
 import { BAUMARTEN, ZAEHLFAKTOREN, zahl, wzpAuswerten } from "./berechnung.js";
 import { leereArt } from "./speicher.js";
@@ -386,6 +387,11 @@ export default function Winkelzaehlprobe({
                 />
               </div>
             </div>
+
+            <Handymessung
+              onHoehe={(w) => setNeueHoehe((alt) => ({ ...alt, [a.id]: w }))}
+              onBhd={(w) => setNeuerDm((alt) => ({ ...alt, [a.id]: w }))}
+            />
 
             {z.anzahl > 0 && (
               <>

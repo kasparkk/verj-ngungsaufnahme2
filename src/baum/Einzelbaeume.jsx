@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Handymessung from "./Handymessung.jsx";
 import { farben } from "../konfiguration.js";
 import { BAUMARTEN, STANDARD_FORMZAHL, zahl, volumen, auswerten } from "./berechnung.js";
 
@@ -124,6 +125,8 @@ export default function Einzelbaeume({ flaeche, setFlaeche, formzahlen, baeume, 
           Formzahl {nk(formzahlVon(art), 2)} für {art}
         </div>
       </div>
+
+      <Handymessung onHoehe={setHoehe} onBhd={setBhd} />
 
       {erg.anzahl > 0 && (
         <div style={{ background: farben.surface, borderRadius: 14, padding: "12px 14px", marginBottom: 14 }}>
