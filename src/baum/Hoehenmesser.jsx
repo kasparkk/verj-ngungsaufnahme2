@@ -32,16 +32,8 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
   const [untenText, setUntenText] = useState("");
   const [obenText, setObenText] = useState("");
   const kamAn = useRef(false);
-  /* Die Anleitung steht beim ersten Mal offen und klappt danach zu. Wer
-     das Verfahren einmal kennt, will nur noch messen; wer es nicht kennt,
-     findet sonst nie hin. Gemerkt wird das auf dem Geraet. */
-  const [anleitungOffen, setAnleitungOffen] = useState(() => {
-    try {
-      return localStorage.getItem("baum:hoehe-erklaert") !== "ja";
-    } catch {
-      return true;
-    }
-  });
+  // Die Anleitung steht zugeklappt; wer sie braucht, tippt sie auf.
+  const [anleitungOffen, setAnleitungOffen] = useState(false);
   const [kamera, setKamera] = useState("unbekannt"); // unbekannt|laeuft|nein
   const videoRef = useRef(null);
   const stromRef = useRef(null);
@@ -446,15 +438,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
           Zurücksetzen
         </button>
         <button
-          onClick={() => {
-            if (hoehe == null) return;
-            try {
-              localStorage.setItem("baum:hoehe-erklaert", "ja");
-            } catch {
-              // Nicht merken zu koennen ist kein Grund, nicht zu uebernehmen.
-            }
-            onUebernehmen(Math.round(hoehe * 10) / 10);
-          }}
+          onClick={() => hoehe != null && onUebernehmen(Math.round(hoehe * 10) / 10)}
           disabled={hoehe == null}
           style={{
             ...knopf(false),
