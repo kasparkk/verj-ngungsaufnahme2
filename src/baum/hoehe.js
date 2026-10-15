@@ -58,3 +58,42 @@ export function neigungAusBeta(beta) {
   if (b > 180) b -= 360;
   return b - 90;
 }
+
+/* Geglaetteter Winkel aus den letzten Messwerten.
+
+   Der rohe Sensorwert zappelt: Handzittern, Rauschen im Beschleunigungs-
+   messer, und bei jedem Antippen erwischt man zufaellig irgendeinen Wert
+   aus diesem Zappeln. Ein Grad daneben sind bei 20 m Entfernung schon
+   knapp 90 cm Hoehe - das ist kein Rundungsfehler mehr.
+
+   Genommen wird der MEDIAN, nicht der Mittelwert. Ein einzelner
+   Ausreisser - ein Ruckler, ein Stoss - zieht den Mittelwert mit, den
+   Median nicht. Genau solche einzelnen Aussetzer liefert ein
+   Handy-Sensor aber staendig.
+
+   Das Fenster ist bewusst kurz: Eine halbe Sekunde beruhigt die Anzeige,
+   ohne dass sie beim Schwenken hinterherhinkt. */
+export const GLAETT_FENSTER_MS = 500;
+
+export function geglaettet(werte, jetzt = Date.now(), fenster = GLAETT_FENSTER_MS) {
+  const frisch = (werte ?? [])
+    .filter((w) => w && Number.isFinite(w.wert) && jetzt - w.zeit <= fenster)
+    .map((w) => w.wert)
+    .sort((a, b) => a - b);
+
+  if (!frisch.length) return null;
+  const mitte = Math.floor(frisch.length / 2);
+  return frisch.length % 2 ? frisch[mitte] : (frisch[mitte - 1] + frisch[mitte]) / 2;
+}
+
+/* Wie unruhig liegt das Geraet gerade?
+
+   Die Spanne der frischen Werte. Daraus macht die Oberflaeche einen
+   Hinweis: ruhig halten lohnt sich, und man sieht, wann es so weit ist. */
+export function unruhe(werte, jetzt = Date.now(), fenster = GLAETT_FENSTER_MS) {
+  const frisch = (werte ?? [])
+    .filter((w) => w && Number.isFinite(w.wert) && jetzt - w.zeit <= fenster)
+    .map((w) => w.wert);
+  if (frisch.length < 2) return null;
+  return Math.max(...frisch) - Math.min(...frisch);
+}

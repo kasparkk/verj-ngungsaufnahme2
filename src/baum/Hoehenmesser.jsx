@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { farben } from "../konfiguration.js";
-import { baumHoehe, neigungAusBeta } from "./hoehe.js";
+import { baumHoehe, neigungAusBeta, geglaettet, unruhe } from "./hoehe.js";
 import HoeheSkizze from "./HoeheSkizze.jsx";
 
 /* Hoehenmessung mit dem Neigungssensor des Handys.
@@ -24,7 +24,12 @@ import HoeheSkizze from "./HoeheSkizze.jsx";
    Messgeraets, aber es bleibt benutzbar. */
 export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
   const [entfernung, setEntfernung] = useState("20");
-  const [winkel, setWinkel] = useState(null); // laufende Neigung
+  const [winkel, setWinkel] = useState(null);   // geglaettete Neigung
+  const [zittern, setZittern] = useState(null); // Spanne der letzten Werte
+  /* Die letzten Rohwerte. Als Ref, nicht als Zustand: Der Sensor feuert
+     bis zu sechzigmal je Sekunde - jedes Mal neu zu zeichnen waere
+     Verschwendung, gezeichnet wird nur der geglaettete Wert. */
+  const rohwerte = useRef([]);
   const [unten, setUnten] = useState(null);
   const [oben, setOben] = useState(null);
   const [sensor, setSensor] = useState("unbekannt"); // unbekannt|laeuft|nein|gesperrt
@@ -42,7 +47,16 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
     if (e.beta == null) return;
     kamAn.current = true;
     setSensor("laeuft");
-    setWinkel(neigungAusBeta(e.beta));
+    const roh = neigungAusBeta(e.beta);
+    if (roh == null) return;
+
+    const jetzt = Date.now();
+    // Nur das kurze Fenster behalten - der Rest wird nie wieder gebraucht.
+    rohwerte.current = [...rohwerte.current, { zeit: jetzt, wert: roh }].filter(
+      (w) => jetzt - w.zeit <= 800,
+    );
+    setWinkel(geglaettet(rohwerte.current, jetzt));
+    setZittern(unruhe(rohwerte.current, jetzt));
   };
 
   useEffect(() => {
@@ -117,6 +131,20 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
       stromRef.current?.getTracks().forEach((t) => t.stop());
       stromRef.current = null;
       setKamera("unbekannt");
+      /* Alles zuruecksetzen, was zu DIESEM Baum gehoert.
+
+         Nicht nur Kosmetik: Blieben die Winkel stehen, koennte man beim
+         naechsten Baum nur "Spitze" antippen und bekaeme eine Hoehe, die
+         den Fuss vom vorigen Baum benutzt - ohne dass irgendetwas darauf
+         hinweist. Die Entfernung bleibt dagegen stehen; sie ist gross
+         sichtbar und oft dieselbe. */
+      rohwerte.current = [];
+      setWinkel(null);
+      setZittern(null);
+      setUnten(null);
+      setOben(null);
+      setUntenText("");
+      setObenText("");
     };
   }, [offen]);
 
@@ -386,6 +414,19 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
               <div style={{ fontSize: 40, fontWeight: 800, color: farben.text, lineHeight: 1.1 }}>
                 {winkel == null ? "–" : `${winkel.toFixed(1)}°`}
               </div>
+              {/* Sagt, wann sich das Antippen lohnt. Ohne das taeuscht die
+                  geglaettete Zahl Ruhe vor, die gar nicht da ist. */}
+              {zittern != null && (
+                <div
+                  style={{
+                    fontSize: 11,
+                    marginTop: 2,
+                    color: zittern <= 1 ? farben.unverb : farben.verb,
+                  }}
+                >
+                  {zittern <= 1 ? "ruhig" : `wackelt ±${(zittern / 2).toFixed(1)}° – ruhiger halten`}
+                </div>
+              )}
             </div>
           </div>
           <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
