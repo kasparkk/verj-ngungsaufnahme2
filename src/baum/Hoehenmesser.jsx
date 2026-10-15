@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { farben } from "../konfiguration.js";
 import { baumHoehe, neigungAusBeta, geglaettet, unruhe } from "./hoehe.js";
 import HoeheSkizze from "./HoeheSkizze.jsx";
+import ArEntfernung, { arMoeglich } from "./ArEntfernung.jsx";
 
 /* Hoehenmessung mit dem Neigungssensor des Handys.
 
@@ -30,6 +31,10 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
      bis zu sechzigmal je Sekunde - jedes Mal neu zu zeichnen waere
      Verschwendung, gezeichnet wird nur der geglaettete Wert. */
   const rohwerte = useRef([]);
+  /* AR nur anbieten, wenn das Geraet es wirklich kann. Auf dem iPhone
+     gibt es kein WebXR - dort soll kein Knopf stehen, der nichts tut. */
+  const [arKann, setArKann] = useState(false);
+  const [arOffen, setArOffen] = useState(false);
   const [unten, setUnten] = useState(null);
   const [oben, setOben] = useState(null);
   const [sensor, setSensor] = useState("unbekannt"); // unbekannt|laeuft|nein|gesperrt
@@ -58,6 +63,15 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
     setWinkel(geglaettet(rohwerte.current, jetzt));
     setZittern(unruhe(rohwerte.current, jetzt));
   };
+
+  useEffect(() => {
+    if (!offen) return;
+    let gilt = true;
+    arMoeglich().then((kann) => gilt && setArKann(kann));
+    return () => {
+      gilt = false;
+    };
+  }, [offen]);
 
   useEffect(() => {
     if (!offen) return;
@@ -303,6 +317,24 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
           placeholder="20"
           aria-label="Entfernung"
         />
+        {arKann && (
+          <button
+            onClick={() => setArOffen(true)}
+            style={{
+              width: "100%",
+              background: "transparent",
+              border: `1px solid ${farben.line}`,
+              color: farben.text,
+              borderRadius: 10,
+              padding: "9px 0",
+              fontSize: 13,
+              marginTop: 8,
+              cursor: "pointer",
+            }}
+          >
+            Entfernung mit AR messen
+          </button>
+        )}
       </div>
 
       {sensor === "gesperrt" && (
@@ -529,6 +561,15 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
             " Rückkamera zeigt – also senkrecht zur Bildschirmfläche, nicht" +
             " entlang der Oberkante."}
       </div>
+
+      <ArEntfernung
+        offen={arOffen}
+        onSchliessen={() => setArOffen(false)}
+        onUebernehmen={(meter) => {
+          setEntfernung(String(meter));
+          setArOffen(false);
+        }}
+      />
     </div>
   );
 }

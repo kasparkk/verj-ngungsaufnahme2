@@ -97,3 +97,21 @@ export function unruhe(werte, jetzt = Date.now(), fenster = GLAETT_FENSTER_MS) {
   if (frisch.length < 2) return null;
   return Math.max(...frisch) - Math.min(...frisch);
 }
+
+/* Waagerechte Entfernung zwischen zwei Punkten im Raum.
+
+   WebXR legt die y-Achse nach oben. Fuer die Hoehenmessung zaehlt nur die
+   Grundflaeche: Wie weit steht man vom Stamm weg, am Boden gemessen? Die
+   Hoehendifferenz zwischen Auge und Stammfuss geht ausdruecklich NICHT
+   ein - sonst waere es die Schraegstrecke, und genau die ist der Fehler,
+   den das Verfahren mit den zwei Winkeln vermeidet.
+
+   Damit faellt am Hang auch die Umrechnung weg: Was hier herauskommt, ist
+   schon die waagerechte Strecke. */
+export function waagerechteEntfernung(a, b) {
+  if (!a || !b) return null;
+  const dx = Number(b.x) - Number(a.x);
+  const dz = Number(b.z) - Number(a.z);
+  if (!Number.isFinite(dx) || !Number.isFinite(dz)) return null;
+  return Math.sqrt(dx * dx + dz * dz);
+}
