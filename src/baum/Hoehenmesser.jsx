@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { farben } from "../konfiguration.js";
 import { baumHoehe, neigungAusBeta } from "./hoehe.js";
+import HoeheSkizze from "./HoeheSkizze.jsx";
 
 /* Hoehenmessung mit dem Neigungssensor des Handys.
 
@@ -31,6 +32,16 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
   const [untenText, setUntenText] = useState("");
   const [obenText, setObenText] = useState("");
   const kamAn = useRef(false);
+  /* Die Anleitung steht beim ersten Mal offen und klappt danach zu. Wer
+     das Verfahren einmal kennt, will nur noch messen; wer es nicht kennt,
+     findet sonst nie hin. Gemerkt wird das auf dem Geraet. */
+  const [anleitungOffen, setAnleitungOffen] = useState(() => {
+    try {
+      return localStorage.getItem("baum:hoehe-erklaert") !== "ja";
+    } catch {
+      return true;
+    }
+  });
   const [kamera, setKamera] = useState("unbekannt"); // unbekannt|laeuft|nein
   const videoRef = useRef(null);
   const stromRef = useRef(null);
@@ -188,10 +199,70 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
         </button>
       </div>
 
-      <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, margin: "8px 0 16px" }}>
-        Das Fadenkreuz auf den Stammfuß richten und antippen, dann auf die
-        Spitze. Augenhöhe und Hangneigung fallen dabei von selbst heraus.
-      </div>
+      <button
+        onClick={() => setAnleitungOffen((o) => !o)}
+        style={{
+          width: "100%",
+          textAlign: "left",
+          background: "transparent",
+          border: "none",
+          color: farben.muted,
+          fontSize: 12,
+          padding: "8px 0",
+          cursor: "pointer",
+        }}
+      >
+        {anleitungOffen ? "▾" : "▸"} So geht’s
+      </button>
+
+      {anleitungOffen && (
+        <div
+          style={{
+            background: farben.surface,
+            borderRadius: 14,
+            padding: "12px 12px 14px",
+            marginBottom: 14,
+          }}
+        >
+          <HoeheSkizze />
+          <ol
+            style={{
+              margin: "10px 0 0",
+              paddingLeft: 18,
+              fontSize: 12,
+              color: farben.text,
+              lineHeight: 1.6,
+            }}
+          >
+            <li>
+              So weit vom Baum weg, dass du die Spitze gut siehst – etwa eine
+              Baumlänge. Die Strecke abschreiten oder messen.
+            </li>
+            <li>
+              Entfernung unten eintragen. <b>Waagerecht gemeint:</b> am Hang ist
+              die abgeschrittene Strecke länger als die waagerechte.
+            </li>
+            <li>Fadenkreuz auf den <b>Stammfuß</b> → „Fuß“ antippen.</li>
+            <li>Fadenkreuz auf die <b>Spitze</b> → „Spitze“ antippen.</li>
+            <li>Höhe steht da → „Übernehmen“, dann mit + in die Liste.</li>
+          </ol>
+          <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, marginTop: 10 }}>
+            Warum zwei Winkel: So fallen Augenhöhe und Hangneigung von selbst
+            heraus – du musst weder deine Körpergröße eintragen noch am Hang
+            nachrechnen.
+            <br />
+            <br />
+            <b>Zur Probe:</b> denselben Baum aus zwei verschiedenen Entfernungen
+            messen. Kommt zweimal dasselbe heraus, stimmt die Entfernung. Weichen
+            die Werte ab, lag es daran und nicht am Sensor.
+            <br />
+            <br />
+            Häufigster Fehler im Bestand: ein Seitenast wird für die Spitze
+            gehalten. Bei Laubholz mit breiter Krone lieber einen Schritt zur
+            Seite gehen und noch einmal schauen.
+          </div>
+        </div>
+      )}
 
       <div style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
@@ -375,7 +446,15 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
           Zurücksetzen
         </button>
         <button
-          onClick={() => hoehe != null && onUebernehmen(Math.round(hoehe * 10) / 10)}
+          onClick={() => {
+            if (hoehe == null) return;
+            try {
+              localStorage.setItem("baum:hoehe-erklaert", "ja");
+            } catch {
+              // Nicht merken zu koennen ist kein Grund, nicht zu uebernehmen.
+            }
+            onUebernehmen(Math.round(hoehe * 10) / 10);
+          }}
           disabled={hoehe == null}
           style={{
             ...knopf(false),
