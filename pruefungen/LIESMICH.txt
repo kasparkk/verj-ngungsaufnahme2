@@ -19,6 +19,13 @@ formzahlen.cjs  Formzahlen in der Oberfläche: Grundwert, Höhenstufen,
                 wirklich in die Rechnung geht und das Neuladen übersteht -
                 eine Stufe, die leise nicht greift, sieht aus wie keine.
 
+neigung.cjs     Die Entfernungsschätzung aus dem Neigungswinkel.
+                Gleicher Aufruf wie grenzstamm.cjs.
+                Geprüft wird, dass die Schätzung sich nicht von selbst
+                einträgt, ihre Spanne immer mitbringt und jenseits von
+                8 m gar keine Zahl mehr anbietet - eine Zahl ohne ihre
+                Spanne wäre hier schlimmer als keine.
+
 Warum hier und nicht im Arbeitsverzeichnis: Der Container, in dem
 entwickelt wird, wird gelegentlich neu aufgesetzt. Zweimal sind dabei
 alle Prüfskripte verlorengegangen. Im Repository überleben sie das.

@@ -1,6 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { farben } from "../konfiguration.js";
-import { baumHoehe, neigungAusBeta, geglaettet, unruhe } from "./hoehe.js";
+import {
+  baumHoehe,
+  neigungAusBeta,
+  geglaettet,
+  unruhe,
+  entfernungAusNeigung,
+  NEIGUNG_GRENZE_M,
+} from "./hoehe.js";
+import {
+  handyhoeheLaden,
+  handyhoeheSpeichern,
+  STANDARD_HANDYHOEHE,
+} from "./handyhoehe.js";
 import HoeheSkizze from "./HoeheSkizze.jsx";
 import ArEntfernung, { arMoeglich } from "./ArEntfernung.jsx";
 
@@ -25,6 +37,9 @@ import ArEntfernung, { arMoeglich } from "./ArEntfernung.jsx";
    Messgeraets, aber es bleibt benutzbar. */
 export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
   const [entfernung, setEntfernung] = useState("20");
+  /* Handyhoehe fuer die Schaetzung aus der Neigung. Gehoert zur Person,
+     nicht zur Messung - deshalb aus dem eigenen Speicher. */
+  const [handyhoehe, setHandyhoehe] = useState(STANDARD_HANDYHOEHE);
   const [winkel, setWinkel] = useState(null);   // geglaettete Neigung
   const [zittern, setZittern] = useState(null); // Spanne der letzten Werte
   /* Die letzten Rohwerte. Als Ref, nicht als Zustand: Der Sensor feuert
@@ -63,6 +78,11 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
     setWinkel(geglaettet(rohwerte.current, jetzt));
     setZittern(unruhe(rohwerte.current, jetzt));
   };
+
+  useEffect(() => {
+    if (!offen) return;
+    setHandyhoehe(handyhoeheLaden());
+  }, [offen]);
 
   useEffect(() => {
     if (!offen) return;
@@ -183,6 +203,11 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
   const hoehe = baumHoehe(entfernung.replace(",", "."), u, o);
   const eintippen = vonHand || sensor === "nein";
 
+  /* Vorschlag fuer die Entfernung aus dem Fusswinkel. Erscheint erst, wenn
+     der Fuss angepeilt ist - vorher gibt es nichts zu rechnen. */
+  const schaetzung = entfernungAusNeigung(handyhoehe.replace(",", "."), u);
+  const nk1 = (x) => x.toFixed(1).replace(".", ",");
+
   const feld = {
     background: "transparent",
     border: "none",
@@ -293,6 +318,14 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
             nachrechnen.
             <br />
             <br />
+            <b>Bei kleinen Bäumen</b> – bis etwa {NEIGUNG_GRENZE_M} m Entfernung –
+            kann die App die Entfernung aus dem Fußwinkel schätzen, sobald der Fuß
+            angepeilt ist. Dafür muss die Handyhöhe stimmen und der Boden
+            waagerecht sein. Weiter weg peilt man zu flach: dort macht ein Grad
+            Sensorfehler aus 25 m alles zwischen 20 und 34 m, und die App bietet
+            deshalb gar keine Zahl mehr an.
+            <br />
+            <br />
             <b>Zur Probe:</b> denselben Baum aus zwei verschiedenen Entfernungen
             messen. Kommt zweimal dasselbe heraus, stimmt die Entfernung. Weichen
             die Werte ab, lag es daran und nicht am Sensor.
@@ -334,6 +367,92 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
           >
             Entfernung mit AR messen
           </button>
+        )}
+
+        {/* Schaetzung aus dem Fusswinkel. Steht bewusst UNTER dem Feld und
+            traegt sich nicht von selbst ein: Sie ist ein Vorschlag, und
+            jenseits weniger Meter ein schlechter. */}
+        {schaetzung && (
+          <div
+            style={{
+              background: farben.surface,
+              borderRadius: 12,
+              padding: "10px 12px",
+              marginTop: 10,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 12, marginBottom: 8 }}>
+              <div style={{ width: 92 }}>
+                <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
+                  HANDYHÖHE m
+                </div>
+                <input
+                  style={{ ...feld, fontSize: 16 }}
+                  value={handyhoehe}
+                  onChange={(e) => {
+                    setHandyhoehe(e.target.value);
+                    handyhoeheSpeichern(e.target.value);
+                  }}
+                  inputMode="decimal"
+                  aria-label="Handyhöhe über dem Boden"
+                />
+              </div>
+              <div style={{ flex: 1, fontSize: 11, color: farben.muted, lineHeight: 1.4 }}>
+                über dem Boden, beim Peilen. Einmal messen – 10 cm daneben sind
+                6 % Fehler.
+              </div>
+            </div>
+
+            {schaetzung.brauchbar ? (
+              <>
+                <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
+                  AUS DER NEIGUNG ({nk1(schaetzung.neigung)}° nach unten)
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                  <div style={{ fontSize: 26, fontWeight: 800, color: farben.text }}>
+                    {nk1(schaetzung.d)} m
+                  </div>
+                  <div style={{ fontSize: 12, color: farben.muted }}>
+                    {schaetzung.max == null
+                      ? `mindestens ${nk1(schaetzung.min)} m`
+                      : `${nk1(schaetzung.min)} – ${nk1(schaetzung.max)} m`}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setEntfernung(nk1(schaetzung.d))}
+                  style={{
+                    width: "100%",
+                    background: "transparent",
+                    border: `1px solid ${farben.line}`,
+                    color: farben.text,
+                    borderRadius: 10,
+                    padding: "9px 0",
+                    fontSize: 13,
+                    marginTop: 8,
+                    cursor: "pointer",
+                  }}
+                >
+                  Als Entfernung übernehmen
+                </button>
+                <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, marginTop: 8 }}>
+                  Setzt <b>waagerechten Boden</b> zwischen dir und dem Stammfuß
+                  voraus – am Hang ist diese Rechnung nicht ungenau, sondern
+                  falsch. Dann schreiten oder messen.
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: 11, color: farben.verb, lineHeight: 1.5 }}>
+                Der Fuß liegt nur {nk1(schaetzung.neigung)}° unter waagerecht. So
+                flach lässt sich die Entfernung nicht mehr schätzen
+                {schaetzung.max == null
+                  ? " – nach oben ist alles offen."
+                  : `: ein Grad Sensorfehler macht daraus ${nk1(schaetzung.min)} bis ${nk1(
+                      schaetzung.max,
+                    )} m.`}{" "}
+                Über {NEIGUNG_GRENZE_M} m hilft nur schreiten oder messen.
+              </div>
+            )}
+          </div>
         )}
       </div>
 

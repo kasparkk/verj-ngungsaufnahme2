@@ -7,7 +7,10 @@
 
    Aufruf:  node pruefungen/rechnung.mjs
 */
-import { baumHoehe, neigungAusBeta, geglaettet, unruhe, waagerechteEntfernung } from "../src/baum/hoehe.js";
+import {
+  baumHoehe, neigungAusBeta, geglaettet, unruhe, waagerechteEntfernung,
+  entfernungAusNeigung, NEIGUNG_GRENZE_M,
+} from "../src/baum/hoehe.js";
 import { grenzRadius, zaehltMit, grundflaeche, volumen, formzahlFuer, wzpAuswerten } from "../src/baum/berechnung.js";
 
 let ok = 0;
@@ -67,6 +70,38 @@ pruefe("näher als die Grenze zählt", zaehltMit(30, 4, 7.0), true);
 pruefe("weiter weg zählt nicht", zaehltMit(30, 4, 8.0), false);
 pruefe("genau auf der Grenze zählt mit", zaehltMit(30, 4, 7.5), true);
 pruefe("ohne Entfernung keine Aussage", zaehltMit(30, 4, null), null);
+
+titel("ENTFERNUNG AUS DER NEIGUNG");
+/* Gegenprobe: aus der Entfernung den Winkel rechnen, daraus wieder die
+   Entfernung - es muss dasselbe herauskommen. */
+const winkelFuer = (h, d) => -(Math.atan(h / d) * 180) / Math.PI;
+for (const d of [3, 5, 7.5, 25]) {
+  pruefe(`${d} m hin und zurück`, r(entfernungAusNeigung(1.6, winkelFuer(1.6, d)).d, 3), d);
+}
+pruefe("45° → genau die Handyhöhe", r(entfernungAusNeigung(1.6, -45).d, 4), 1.6);
+pruefe("doppelte Handyhöhe = doppelte Entfernung",
+  r(entfernungAusNeigung(3, -20).d / entfernungAusNeigung(1.5, -20).d, 4), 2);
+
+/* Der Punkt, um den es geht: Nah dran eng, weit weg wertlos. Geht diese
+   Prüfung kaputt, verspricht die App eine Genauigkeit, die es nicht gibt. */
+const spanne = (d) => {
+  const e = entfernungAusNeigung(1.6, winkelFuer(1.6, d));
+  return Math.round(((e.max - e.min) / e.d) * 100);
+};
+pruefe("auf 5 m ist die Spanne 12 % breit", spanne(5), 12);
+pruefe("auf 25 m sind es 59 %", spanne(25), 59);
+pruefe("5 m gilt als brauchbar", entfernungAusNeigung(1.6, winkelFuer(1.6, 5)).brauchbar, true);
+pruefe("25 m nicht mehr", entfernungAusNeigung(1.6, winkelFuer(1.6, 25)).brauchbar, false);
+pruefe(`die Grenze liegt bei ${NEIGUNG_GRENZE_M} m`,
+  entfernungAusNeigung(1.6, winkelFuer(1.6, NEIGUNG_GRENZE_M)).brauchbar, true);
+pruefe("knapp darüber nicht",
+  entfernungAusNeigung(1.6, winkelFuer(1.6, NEIGUNG_GRENZE_M + 0.2)).brauchbar, false);
+
+pruefe("waagerecht gibt es nichts", entfernungAusNeigung(1.6, 0), null);
+pruefe("nach oben gepeilt auch nicht", entfernungAusNeigung(1.6, 12), null);
+pruefe("ohne Handyhöhe nichts", entfernungAusNeigung(0, -20), null);
+pruefe("unsinnige Handyhöhe (4 m) nichts", entfernungAusNeigung(4, -20), null);
+pruefe("sehr flach: nach oben offen", entfernungAusNeigung(1.6, -0.9).max, null);
 
 titel("GRUNDFLÄCHE UND VOLUMEN");
 pruefe("BHD 30 cm → π/4·0,3²", r(grundflaeche(30), 5), r(Math.PI / 4 * 0.09, 5));
