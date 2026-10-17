@@ -138,6 +138,7 @@ export default function Winkelzaehlprobe({
   wzp,
   setWzp,
   formzahlen,
+  formzahlStufen,
   setHinweis,
 }) {
   const [neueHoehe, setNeueHoehe] = useState({});
@@ -149,7 +150,7 @@ export default function Winkelzaehlprobe({
   const [messenFuer, setMessenFuer] = useState(null);
 
   /* Das Alter oben gilt als Vorgabe; je Baumart laesst es sich ueberschreiben. */
-  const erg = wzpAuswerten(wzp.arten, wzp.zaehlfaktor, formzahlen, alter);
+  const erg = wzpAuswerten(wzp.arten, wzp.zaehlfaktor, formzahlen, alter, formzahlStufen);
 
   /* Die drei Werte, die der Ertragstafel-Rechner der Landesforst braucht.
      Vorausfuellen per Link geht dort nicht - der Rechner nimmt keine Werte

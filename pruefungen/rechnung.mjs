@@ -8,7 +8,7 @@
    Aufruf:  node pruefungen/rechnung.mjs
 */
 import { baumHoehe, neigungAusBeta, geglaettet, unruhe, waagerechteEntfernung } from "../src/baum/hoehe.js";
-import { grenzRadius, zaehltMit, grundflaeche, volumen } from "../src/baum/berechnung.js";
+import { grenzRadius, zaehltMit, grundflaeche, volumen, formzahlFuer, wzpAuswerten } from "../src/baum/berechnung.js";
 
 let ok = 0;
 let schlecht = 0;
@@ -71,6 +71,65 @@ pruefe("ohne Entfernung keine Aussage", zaehltMit(30, 4, null), null);
 titel("GRUNDFLÄCHE UND VOLUMEN");
 pruefe("BHD 30 cm → π/4·0,3²", r(grundflaeche(30), 5), r(Math.PI / 4 * 0.09, 5));
 pruefe("Volumen = g · h · f", r(volumen(30, 25, 0.5), 4), r(Math.PI / 4 * 0.09 * 25 * 0.5, 4));
+
+titel("FORMZAHL nachschlagen");
+const fz = { Fichte: "0.5", Buche: "0.52" };
+const st = { Fichte: [{ bis: 15, wert: 0.55 }, { bis: 25, wert: 0.5 }] };
+pruefe("ohne Stufen gilt der Grundwert", formzahlFuer("Fichte", 18, fz, {}), 0.5);
+pruefe("ohne Höhe gilt der Grundwert", formzahlFuer("Fichte", null, fz, st), 0.5);
+pruefe("12 m fällt in die erste Stufe", formzahlFuer("Fichte", 12, fz, st), 0.55);
+pruefe("genau 15 m noch erste Stufe", formzahlFuer("Fichte", 15, fz, st), 0.55);
+pruefe("15,1 m schon zweite", formzahlFuer("Fichte", 15.1, fz, st), 0.5);
+pruefe("über allen Stufen: Grundwert", formzahlFuer("Fichte", 40, fz, st), 0.5);
+pruefe("andere Art hat keine Stufen", formzahlFuer("Buche", 12, fz, st), 0.52);
+pruefe("unbekannte Art → Standard", formzahlFuer("Robinie", 12, fz, st), 0.5);
+pruefe("unsortierte Stufen werden sortiert",
+  formzahlFuer("X", 12, {}, { X: [{ bis: 25, wert: 0.4 }, { bis: 15, wert: 0.6 }] }), 0.6);
+pruefe("leere Zeilen werden übergangen",
+  formzahlFuer("X", 12, { X: "0.5" }, { X: [{ bis: "", wert: "" }, { bis: 15, wert: 0.6 }] }), 0.6);
+pruefe("nur Müll → Grundwert",
+  formzahlFuer("X", 12, { X: "0.5" }, { X: [{ bis: "abc", wert: "x" }] }), 0.5);
+
+pruefe("Komma im Feld wird gelesen",
+  formzahlFuer("X", 12, {}, { X: [{ bis: "15", wert: "0,55" }] }), 0.55);
+
+titel("WINKELZÄHLPROBE mit Höhenstufen");
+const arten = [{ name: "Fichte", anzahl: 10, hoehen: [12, 12], durchmesser: [30] }];
+const ohne = wzpAuswerten(arten, 4, { Fichte: "0.5" }, 60, {});
+const mit = wzpAuswerten(arten, 4, { Fichte: "0.5" }, 60, { Fichte: [{ bis: 15, wert: 0.55 }] });
+pruefe("ohne Stufen: 40 · 12 · 0,50", r(ohne.jeArt[0].vHa, 2), 240);
+pruefe("mit Stufe:   40 · 12 · 0,55", r(mit.jeArt[0].vHa, 2), 264);
+pruefe("Formzahl steht im Ergebnis (Export!)", mit.jeArt[0].formzahl, 0.55);
+pruefe("Grundfläche bleibt unberührt", r(mit.jeArt[0].gHa, 2), 40);
+/* Mittelhoehe 20 m liegt ueber der Stufe bis 15 m - dann gilt der Grundwert,
+   nicht etwa die letzte Stufe. */
+const drueber = wzpAuswerten(
+  [{ name: "Fichte", anzahl: 10, hoehen: [20], durchmesser: [30] }],
+  4, { Fichte: "0.5" }, 60, { Fichte: [{ bis: 15, wert: 0.55 }] },
+);
+pruefe("Mittelhöhe über der letzten Stufe", drueber.jeArt[0].formzahl, 0.5);
+
+titel("SPEICHER – Höhenstufen überleben das Laden");
+let roh = null;
+globalThis.localStorage = { getItem: () => roh, setItem: () => {} };
+const { laden } = await import("../src/baum/speicher.js");
+
+roh = JSON.stringify({ version: 2, modus: "wzp", formzahlen: { Fichte: "0.5" } });
+pruefe("alter Stand ohne Stufen", JSON.stringify(laden().formzahlStufen), "{}");
+
+roh = JSON.stringify({ formzahlStufen: { Fichte: [{ bis: "15", wert: "0,55" }] } });
+pruefe("eingetragene Stufen bleiben als Text",
+  JSON.stringify(laden().formzahlStufen), '{"Fichte":[{"bis":"15","wert":"0,55"}]}');
+
+roh = JSON.stringify({ formzahlStufen: { Fichte: [] } });
+pruefe("leere Liste wird nicht behalten", JSON.stringify(laden().formzahlStufen), "{}");
+
+roh = JSON.stringify({ formzahlStufen: 17 });
+pruefe("Müll statt Stufen wirft nichts um", JSON.stringify(laden().formzahlStufen), "{}");
+
+roh = JSON.stringify({ formzahlStufen: { Fichte: [null, 5, { bis: 15, wert: 0.55 }] } });
+pruefe("kaputte Zeilen fallen heraus",
+  JSON.stringify(laden().formzahlStufen), '{"Fichte":[{"bis":"15","wert":"0.55"}]}');
 
 console.log(`\nERGEBNIS: ${ok} in Ordnung, ${schlecht} Fehler`);
 process.exit(schlecht ? 1 : 0);

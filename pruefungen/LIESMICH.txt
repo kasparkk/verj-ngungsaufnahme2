@@ -7,11 +7,17 @@ rechnung.mjs    Die Formeln der Baummessung, ohne Browser.
                 Hier stehen die Rechnungen, bei denen ein Fehler still
                 durchgeht - eine falsche Höhe sieht aus wie eine richtige.
 
-grenzstamm.js   Die Grenzstammprüfung in der Oberfläche. Braucht
+grenzstamm.cjs  Die Grenzstammprüfung in der Oberfläche. Braucht
                 Playwright und einen laufenden Server auf Port 8919:
                   npm run build
                   npx http-server dist -p 8919 -s &
                   NODE_PATH=<wo playwright liegt> node pruefungen/grenzstamm.cjs
+
+formzahlen.cjs  Formzahlen in der Oberfläche: Grundwert, Höhenstufen,
+                Speicher. Gleicher Aufruf wie grenzstamm.cjs.
+                Geprüft wird vor allem, ob eine eingetragene Stufe
+                wirklich in die Rechnung geht und das Neuladen übersteht -
+                eine Stufe, die leise nicht greift, sieht aus wie keine.
 
 Warum hier und nicht im Arbeitsverzeichnis: Der Container, in dem
 entwickelt wird, wird gelegentlich neu aufgesetzt. Zweimal sind dabei

@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { farben } from "./konfiguration.js";
-import { BAUMARTEN, zahl, grundflaeche, volumen, mittel, wzpAuswerten } from "./baum/berechnung.js";
+import { zahl, grundflaeche, volumen, mittel, wzpAuswerten } from "./baum/berechnung.js";
 import { laden, speichern, leererStand } from "./baum/speicher.js";
 import { baueXlsx } from "./xlsx.js";
 import Winkelzaehlprobe from "./baum/Winkelzaehlprobe.jsx";
 import Einzelbaeume from "./baum/Einzelbaeume.jsx";
+import Formzahlen from "./baum/Formzahlen.jsx";
 import KoordinatenKopieren from "./komponenten/KoordinatenKopieren.jsx";
 import { baueGeoJsonMessung, geoDateiname } from "./baum/geo.js";
 
@@ -23,6 +24,14 @@ export default function Baummessung() {
   const [formzahlenOffen, setFormzahlenOffen] = useState(false);
   const [gpsLaeuft, setGpsLaeuft] = useState(false);
 
+  /* Hoehe der festen Leiste unten, gemessen statt geraten. Geraten war sie
+     zu niedrig (96 statt 132 px), und dann lag der letzte Knopf der Seite
+     unter der Leiste - antippen ging nicht mehr. Mit der Zeile zum
+     Dateiformat ist die Leiste zweizeilig geworden, und sie kann noch
+     wachsen; gemessen haelt das auch dann. */
+  const leisteRef = useRef(null);
+  const [leisteHoehe, setLeisteHoehe] = useState(132);
+
   useEffect(() => {
     setStand(laden());
     setGeladen(true);
@@ -36,6 +45,16 @@ export default function Baummessung() {
       setHinweis("Speichern fehlgeschlagen");
     }
   }, [stand, geladen]);
+
+  useEffect(() => {
+    const leiste = leisteRef.current;
+    if (!leiste || typeof ResizeObserver === "undefined") return;
+    const messen = () => setLeisteHoehe(Math.ceil(leiste.getBoundingClientRect().height));
+    messen();
+    const beobachter = new ResizeObserver(messen);
+    beobachter.observe(leiste);
+    return () => beobachter.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!hinweis) return;
@@ -110,7 +129,7 @@ export default function Baummessung() {
 
     let auswertung;
     if (stand.modus === "wzp") {
-      const erg = wzpAuswerten(stand.wzp.arten, stand.wzp.zaehlfaktor, stand.formzahlen, stand.alter);
+      const erg = wzpAuswerten(stand.wzp.arten, stand.wzp.zaehlfaktor, stand.formzahlen, stand.alter, stand.formzahlStufen);
       if (!erg.jeArt.some((a) => a.anzahl > 0)) {
         setHinweis("Noch nichts gezählt");
         return;
@@ -144,7 +163,7 @@ export default function Baummessung() {
     let zeilen;
 
     if (stand.modus === "wzp") {
-      const erg = wzpAuswerten(stand.wzp.arten, stand.wzp.zaehlfaktor, stand.formzahlen, stand.alter);
+      const erg = wzpAuswerten(stand.wzp.arten, stand.wzp.zaehlfaktor, stand.formzahlen, stand.alter, stand.formzahlStufen);
       const mitZahlen = erg.jeArt.filter((a) => a.anzahl > 0);
       if (!mitZahlen.length) {
         setHinweis("Noch nichts gezählt");
@@ -229,7 +248,14 @@ export default function Baummessung() {
   );
 
   return (
-    <div style={{ color: farben.text, padding: "14px 14px 96px", maxWidth: 560, margin: "0 auto" }}>
+    <div
+      style={{
+        color: farben.text,
+        padding: `14px 14px ${leisteHoehe + 16}px`,
+        maxWidth: 560,
+        margin: "0 auto",
+      }}
+    >
       <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
         <div style={{ flex: 2 }}>
           <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>ORT / BESTAND</div>
@@ -303,6 +329,7 @@ export default function Baummessung() {
           wzp={stand.wzp}
           setWzp={setWzp}
           formzahlen={stand.formzahlen}
+          formzahlStufen={stand.formzahlStufen}
           setHinweis={setHinweis}
         />
       ) : (
@@ -310,6 +337,7 @@ export default function Baummessung() {
           flaeche={stand.flaeche}
           setFlaeche={setzeFeld("flaeche")}
           formzahlen={stand.formzahlen}
+          formzahlStufen={stand.formzahlStufen}
           baeume={stand.baeume}
           setBaeume={setBaeume}
           setHinweis={setHinweis}
@@ -334,30 +362,22 @@ export default function Baummessung() {
       </button>
 
       {formzahlenOffen && (
-        <div style={{ marginTop: 10 }}>
-          <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, marginBottom: 10 }}>
-            Die Formzahl beschreibt, wie stark sich der Stamm nach oben verjüngt. Die Werte sind
-            Richtwerte für Derbholz – je nach Alter, Bonität und Herkunft weichen sie ab. Das
-            Volumen ist damit eine Schätzung, keine Massentafel. Eigene Werte gerne eintragen; sie
-            gelten für beide Verfahren.
-          </div>
-          {BAUMARTEN.map((a) => (
-            <div key={a.name} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-              <div style={{ flex: 1, fontSize: 13 }}>{a.name}</div>
-              <input
-                style={{ ...feldStil, width: 70, textAlign: "right" }}
-                value={stand.formzahlen[a.name] ?? ""}
-                onChange={(e) =>
-                  setStand((alt) => ({
-                    ...alt,
-                    formzahlen: { ...alt.formzahlen, [a.name]: e.target.value },
-                  }))
-                }
-                inputMode="decimal"
-              />
-            </div>
-          ))}
-        </div>
+        <Formzahlen
+          formzahlen={stand.formzahlen}
+          setFormzahlen={(wie) =>
+            setStand((alt) => ({
+              ...alt,
+              formzahlen: typeof wie === "function" ? wie(alt.formzahlen) : wie,
+            }))
+          }
+          stufen={stand.formzahlStufen}
+          setStufen={(wie) =>
+            setStand((alt) => ({
+              ...alt,
+              formzahlStufen: typeof wie === "function" ? wie(alt.formzahlStufen) : wie,
+            }))
+          }
+        />
       )}
 
       {hinweis && (
@@ -365,6 +385,7 @@ export default function Baummessung() {
       )}
 
       <div
+        ref={leisteRef}
         style={{
           position: "fixed",
           left: 0,

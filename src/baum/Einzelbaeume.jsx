@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { farben } from "../konfiguration.js";
 import Hoehenmesser from "./Hoehenmesser.jsx";
-import { BAUMARTEN, STANDARD_FORMZAHL, zahl, volumen, auswerten } from "./berechnung.js";
+import { BAUMARTEN, zahl, volumen, auswerten, formzahlFuer } from "./berechnung.js";
 
 const nk = (wert, stellen = 2) =>
   Number(wert).toLocaleString("de-DE", { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
@@ -9,14 +9,26 @@ const nk = (wert, stellen = 2) =>
 /* Einzelbaeume: jeder Baum wird mit BHD und Hoehe auf einer abgesteckten
    Flaeche erfasst. Aufwendiger als die Winkelzaehlprobe, dafuer hat man die
    Einzelwerte. */
-export default function Einzelbaeume({ flaeche, setFlaeche, formzahlen, baeume, setBaeume, setHinweis }) {
+export default function Einzelbaeume({
+  flaeche,
+  setFlaeche,
+  formzahlen,
+  formzahlStufen,
+  baeume,
+  setBaeume,
+  setHinweis,
+}) {
   const [art, setArt] = useState(BAUMARTEN[0].name);
   const [bhd, setBhd] = useState("");
   // Offen oder nicht; der gemessene Wert landet im Hoehenfeld darunter.
   const [misst, setMisst] = useState(false);
   const [hoehe, setHoehe] = useState("");
 
-  const formzahlVon = (name) => zahl(formzahlen[name]) || STANDARD_FORMZAHL;
+  /* Formzahl des Baums - mit seiner eigenen Hoehe nachgeschlagen, falls fuer
+     die Art Hoehenstufen eingetragen sind. Ohne Stufen kommt der Grundwert
+     heraus, also genau das Bisherige. */
+  const formzahlVon = (name, hoeheM) => formzahlFuer(name, hoeheM, formzahlen, formzahlStufen);
+  const gestaffelt = (formzahlStufen?.[art] ?? []).length > 0;
 
   const hinzufuegen = () => {
     if (zahl(bhd) <= 0) {
@@ -25,7 +37,7 @@ export default function Einzelbaeume({ flaeche, setFlaeche, formzahlen, baeume, 
     }
     setBaeume((alle) => [
       ...alle,
-      { id: `b${Date.now()}`, art, bhd, hoehe, formzahl: String(formzahlVon(art)) },
+      { id: `b${Date.now()}`, art, bhd, hoehe, formzahl: String(formzahlVon(art, hoehe)) },
     ]);
     // Baumart stehen lassen - meist misst man mehrere derselben Art nacheinander.
     setBhd("");
@@ -142,7 +154,11 @@ export default function Einzelbaeume({ flaeche, setFlaeche, formzahlen, baeume, 
           </button>
         </div>
         <div style={{ fontSize: 10, color: farben.muted, marginTop: 8 }}>
-          Formzahl {nk(formzahlVon(art), 2)} für {art}
+          Formzahl {nk(formzahlVon(art, hoehe), 2)} für {art}
+          {gestaffelt &&
+            (zahl(hoehe) > 0
+              ? ` – Höhenstufe bei ${nk(zahl(hoehe), 0)} m`
+              : " – Grundwert, die Höhenstufe greift erst mit eingetragener Höhe")}
         </div>
       </div>
 

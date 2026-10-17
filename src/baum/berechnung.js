@@ -102,13 +102,16 @@ export function mittel(werte) {
   return zahlen.reduce((s, n) => s + n, 0) / zahlen.length;
 }
 
-export function wzpAuswerten(arten, zaehlfaktor, formzahlen, bestandesalter) {
+export function wzpAuswerten(arten, zaehlfaktor, formzahlen, bestandesalter, formzahlStufen) {
   const k = zahl(zaehlfaktor) || 4;
 
   const jeArt = arten.map((a) => {
     const anzahl = Math.max(0, Math.round(zahl(a.anzahl)));
     const mittelHoehe = mittel(a.hoehen);
-    const formzahl = zahl(formzahlen?.[a.name]) || STANDARD_FORMZAHL;
+    /* Formzahl aus den Hoehenstufen, wenn welche eingetragen sind - sonst
+       der Grundwert der Art. Nachgeschlagen wird mit der Mittelhoehe, denn
+       mit ihr wird hier auch gerechnet. */
+    const formzahl = formzahlFuer(a.name, mittelHoehe, formzahlen, formzahlStufen);
     const gHa = anzahl * k;
 
     /* Mittelstamm aus den gemessenen Durchmessern: nicht das schlichte Mittel,
@@ -188,4 +191,41 @@ export function zaehltMit(bhdCm, zaehlfaktor, entfernungM) {
   const e = zahl(entfernungM);
   if (r == null || !(e > 0)) return null;
   return e <= r;
+}
+
+/* Formzahl nachschlagen - je Baumart, wahlweise nach Hoehe gestaffelt.
+
+   Die Formzahl beschreibt, wie stark sich der Stamm nach oben verjuengt.
+   Sie ist nicht konstant: Ein junger, schlanker Baum hat eine andere als
+   ein alter, abholziger derselben Art. Richtige Schaftformfunktionen
+   bilden das ueber Hoehe UND Durchmesser ab; eine Staffelung nach Hoehe
+   kommt dem naeher als eine einzige Zahl je Art.
+
+   AUSDRUECKLICH OHNE MITGELIEFERTE WERTE. Die Stufen sind leer, bis
+   jemand welche eintraegt - aus der Ertragstafel oder der Anweisung, mit
+   der im Betrieb gearbeitet wird. Erfundene Zahlen, die nach Forstwerten
+   aussehen, waeren hier das Schlimmste: Sie verzerrten jeden Vorrat
+   still und waeren von richtigen nicht zu unterscheiden.
+
+   Aufbau einer Stufenliste je Baumart:
+     [{ bis: 15, wert: 0.55 }, { bis: 25, wert: 0.50 }]
+   Gelesen als: bis einschliesslich 15 m gilt 0,55, darueber bis 25 m
+   gilt 0,50, daruber der Grundwert der Art.
+
+   Ohne Stufen oder ohne brauchbare Hoehe gilt der Grundwert - die
+   Rechnung bleibt also genau die bisherige, solange niemand etwas
+   eintraegt. */
+export function formzahlFuer(baumart, hoeheM, formzahlen, stufenJeArt) {
+  const grund = zahl(formzahlen?.[baumart]) || STANDARD_FORMZAHL;
+  const h = zahl(hoeheM);
+  const stufen = stufenJeArt?.[baumart];
+  if (!Array.isArray(stufen) || !stufen.length || !(h > 0)) return grund;
+
+  const brauchbar = stufen
+    .map((s) => ({ bis: zahl(s?.bis), wert: zahl(s?.wert) }))
+    .filter((s) => s.bis > 0 && s.wert > 0)
+    .sort((a, b) => a.bis - b.bis);
+
+  const treffer = brauchbar.find((s) => h <= s.bis);
+  return treffer ? treffer.wert : grund;
 }

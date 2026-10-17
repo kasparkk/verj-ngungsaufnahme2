@@ -32,12 +32,35 @@ export const leererStand = () => ({
   lon: null,
   genauigkeit: null,
   formzahlen: Object.fromEntries(BAUMARTEN.map((a) => [a.name, String(a.formzahl)])),
+  /* Hoehenstufen der Formzahl, je Baumart. Absichtlich leer: Werte dafuer
+     kommen aus der Ertragstafel oder der Anweisung des Betriebs, nicht aus
+     der App. Solange hier nichts steht, gilt der Grundwert oben. */
+  formzahlStufen: {},
   // Winkelzaehlprobe
   wzp: { zaehlfaktor: 4, arten: WZP_START.map(leereArt) },
   // Einzelbaeume
   flaeche: "500",
   baeume: [],
 });
+
+/* Hoehenstufen aus dem Speicher holen.
+
+   Gehalten werden sie als getippter Text, genau wie die Grundwerte: wer
+   "0," eintippt, soll nicht zusehen, wie das Feld dazwischenfunkt.
+   Gerechnet wird erst in formzahlFuer(). Hier wird nur die Form
+   geradegezogen, damit ein kaputter Eintrag die Seite nicht umwirft. */
+function stufenLaden(roh) {
+  if (!roh || typeof roh !== "object") return {};
+  const raus = {};
+  for (const [art, liste] of Object.entries(roh)) {
+    if (!Array.isArray(liste)) continue;
+    const zeilen = liste
+      .filter((s) => s && typeof s === "object")
+      .map((s) => ({ bis: String(s.bis ?? ""), wert: String(s.wert ?? "") }));
+    if (zeilen.length) raus[art] = zeilen;
+  }
+  return raus;
+}
 
 export function laden() {
   let roh;
@@ -61,6 +84,8 @@ export function laden() {
       genauigkeit: typeof daten.genauigkeit === "number" ? daten.genauigkeit : null,
       // Fehlende Arten aus den Voreinstellungen ergaenzen.
       formzahlen: { ...standard.formzahlen, ...(daten.formzahlen ?? {}) },
+      // Aeltere Staende kannten die Hoehenstufen noch nicht.
+      formzahlStufen: stufenLaden(daten.formzahlStufen),
       wzp: {
         zaehlfaktor: daten.wzp?.zaehlfaktor ?? 4,
         // Fehlende Listen ergaenzen - aeltere Staende kannten die Durchmesser noch nicht.
