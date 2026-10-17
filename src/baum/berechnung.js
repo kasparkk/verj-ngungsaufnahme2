@@ -153,3 +153,39 @@ export function wzpAuswerten(arten, zaehlfaktor, formzahlen, bestandesalter) {
     },
   };
 }
+
+/* Grenzradius bei der Winkelzaehlprobe.
+
+   Am Standpunkt zaehlt ein Baum, wenn er in Brusthoehe breiter erscheint
+   als der Spalt am Zaehlstab. Bei Baeumen, die genau an der Grenze
+   stehen, hilft das Auge nicht weiter - dann wird gemessen.
+
+   Ein Baum vertritt die Grundflaeche g = pi*d²/4 auf der Kreisflaeche
+   pi*r². Je Hektar sind das k = 2500 * d² / r². Aufgeloest:
+
+       r = 50 * d / sqrt(k)        (d und r in Metern)
+       r = 0,5 * BHD / sqrt(k)     (BHD in cm, r in m)
+
+   Gegenprobe gegen die gebraeuchlichen Zaehlstaebe: k=1 ergibt ein
+   Spaltverhaeltnis von 1:50, k=4 eines von 1:25 - genau die ueblichen
+   Werte. Die Formel ist damit nicht nur hergeleitet, sondern auch an
+   bekannten Geraeten geprueft.
+
+   Steht der Baum NAEHER als der Grenzradius, zaehlt er. */
+export function grenzRadius(bhdCm, zaehlfaktor) {
+  const d = zahl(bhdCm);
+  const k = zahl(zaehlfaktor);
+  if (!(d > 0) || !(k > 0)) return null;
+  return (0.5 * d) / Math.sqrt(k);
+}
+
+/* Zaehlt der Baum? Rueckgabe null heisst: nicht entscheidbar.
+
+   Genau auf der Grenze zaehlt er mit - so ist die Regel, und ein
+   Unentschieden hilft im Gelaende niemandem. */
+export function zaehltMit(bhdCm, zaehlfaktor, entfernungM) {
+  const r = grenzRadius(bhdCm, zaehlfaktor);
+  const e = zahl(entfernungM);
+  if (r == null || !(e > 0)) return null;
+  return e <= r;
+}

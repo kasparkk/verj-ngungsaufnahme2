@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { farben } from "../konfiguration.js";
 import Hoehenmesser from "./Hoehenmesser.jsx";
+import Grenzstamm from "./Grenzstamm.jsx";
 import { BAUMARTEN, ZAEHLFAKTOREN, zahl, wzpAuswerten } from "./berechnung.js";
 import { leereArt } from "./speicher.js";
 import ZaehlBox from "../komponenten/ZaehlBox.jsx";
@@ -260,6 +261,8 @@ export default function Winkelzaehlprobe({
       </div>
 
       {/* Ergebnis */}
+      <Grenzstamm zaehlfaktor={wzp.zaehlfaktor} />
+
       {erg.gesamt.anzahl > 0 && (
         <div
           style={{

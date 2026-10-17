@@ -1,0 +1,18 @@
+Prüfungen
+=========
+
+rechnung.mjs    Die Formeln der Baummessung, ohne Browser.
+                  node pruefungen/rechnung.mjs
+                Läuft in einer Sekunde und braucht nichts weiter.
+                Hier stehen die Rechnungen, bei denen ein Fehler still
+                durchgeht - eine falsche Höhe sieht aus wie eine richtige.
+
+grenzstamm.js   Die Grenzstammprüfung in der Oberfläche. Braucht
+                Playwright und einen laufenden Server auf Port 8919:
+                  npm run build
+                  npx http-server dist -p 8919 -s &
+                  NODE_PATH=<wo playwright liegt> node pruefungen/grenzstamm.cjs
+
+Warum hier und nicht im Arbeitsverzeichnis: Der Container, in dem
+entwickelt wird, wird gelegentlich neu aufgesetzt. Zweimal sind dabei
+alle Prüfskripte verlorengegangen. Im Repository überleben sie das.
