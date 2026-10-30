@@ -15,6 +15,8 @@ import {
 } from "./handyhoehe.js";
 import HoeheSkizze from "./HoeheSkizze.jsx";
 import ArEntfernung, { arMoeglich } from "./ArEntfernung.jsx";
+import { useT, zahlOrt } from "../sprache.js";
+import Markiert from "../komponenten/Markiert.jsx";
 
 /* Hoehenmessung mit dem Neigungssensor des Handys.
 
@@ -36,6 +38,7 @@ import ArEntfernung, { arMoeglich } from "./ArEntfernung.jsx";
    sich die Winkel eintippen. Dann ist es ein Rechner statt eines
    Messgeraets, aber es bleibt benutzbar. */
 export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
+  const t = useT();
   const [entfernung, setEntfernung] = useState("20");
   /* Handyhoehe fuer die Schaetzung aus der Neigung. Gehoert zur Person,
      nicht zur Messung - deshalb aus dem eigenen Speicher. */
@@ -145,7 +148,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
           audio: false,
         });
         if (abgebrochen) {
-          strom.getTracks().forEach((t) => t.stop());
+          strom.getTracks().forEach((spur) => spur.stop());
           return;
         }
         stromRef.current = strom;
@@ -162,7 +165,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
        geht im Bestand unnoetig drauf. */
     return () => {
       abgebrochen = true;
-      stromRef.current?.getTracks().forEach((t) => t.stop());
+      stromRef.current?.getTracks().forEach((spur) => spur.stop());
       stromRef.current = null;
       setKamera("unbekannt");
       /* Alles zuruecksetzen, was zu DIESEM Baum gehoert.
@@ -206,7 +209,8 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
   /* Vorschlag fuer die Entfernung aus dem Fusswinkel. Erscheint erst, wenn
      der Fuss angepeilt ist - vorher gibt es nichts zu rechnen. */
   const schaetzung = entfernungAusNeigung(handyhoehe.replace(",", "."), u);
-  const nk1 = (x) => x.toFixed(1).replace(".", ",");
+  const nk1 = (x) =>
+    Number(x).toLocaleString(zahlOrt(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
   const feld = {
     background: "transparent",
@@ -242,10 +246,10 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: farben.text }}>Höhe messen</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: farben.text }}>{t("Höhe messen")}</div>
         <button
           onClick={onSchliessen}
-          aria-label="Schließen"
+          aria-label={t("Schließen")}
           style={{
             background: "transparent",
             border: "none",
@@ -262,7 +266,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
           zugeklappt - ganz ohne Hinweis dazustehen waere aber der falsche
           Tausch, wenn jemand den Messer zum ersten Mal oeffnet. */}
       <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, margin: "8px 0 2px" }}>
-        Fadenkreuz auf den Stammfuß richten und antippen, dann auf die Spitze.
+        {t("Fadenkreuz auf den Stammfuß richten und antippen, dann auf die Spitze.")}
       </div>
 
       <button
@@ -278,7 +282,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
           cursor: "pointer",
         }}
       >
-        {anleitungOffen ? "▾" : "▸"} So geht’s
+        {anleitungOffen ? "▾" : "▸"} {t("So geht’s")}
       </button>
 
       {anleitungOffen && (
@@ -301,46 +305,56 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
             }}
           >
             <li>
-              So weit vom Baum weg, dass du die Spitze gut siehst – etwa eine
-              Baumlänge. Die Strecke abschreiten oder messen.
+              {t(
+                "So weit vom Baum weg, dass du die Spitze gut siehst – etwa eine Baumlänge. Die Strecke abschreiten oder messen.",
+              )}
             </li>
             <li>
-              Entfernung unten eintragen. <b>Waagerecht gemeint:</b> am Hang ist
-              die abgeschrittene Strecke länger als die waagerechte.
+              <Markiert
+                text={t(
+                  "Entfernung unten eintragen. *Waagerecht gemeint:* am Hang ist die abgeschrittene Strecke länger als die waagerechte.",
+                )}
+              />
             </li>
-            <li>Fadenkreuz auf den <b>Stammfuß</b> → „Fuß“ antippen.</li>
-            <li>Fadenkreuz auf die <b>Spitze</b> → „Spitze“ antippen.</li>
-            <li>Höhe steht da → „Übernehmen“, dann mit + in die Liste.</li>
+            <li>
+              <Markiert text={t("Fadenkreuz auf den *Stammfuß* → „Fuß“ antippen.")} />
+            </li>
+            <li>
+              <Markiert text={t("Fadenkreuz auf die *Spitze* → „Spitze“ antippen.")} />
+            </li>
+            <li>{t("Höhe steht da → „Übernehmen“, dann mit + in die Liste.")}</li>
           </ol>
           <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, marginTop: 10 }}>
-            Warum zwei Winkel: So fallen Augenhöhe und Hangneigung von selbst
-            heraus – du musst weder deine Körpergröße eintragen noch am Hang
-            nachrechnen.
+            {t(
+              "Warum zwei Winkel: So fallen Augenhöhe und Hangneigung von selbst heraus – du musst weder deine Körpergröße eintragen noch am Hang nachrechnen.",
+            )}
             <br />
             <br />
-            <b>Bei kleinen Bäumen</b> – bis etwa {NEIGUNG_GRENZE_M} m Entfernung –
-            kann die App die Entfernung aus dem Fußwinkel schätzen, sobald der Fuß
-            angepeilt ist. Dafür muss die Handyhöhe stimmen und der Boden
-            waagerecht sein. Weiter weg peilt man zu flach: dort macht ein Grad
-            Sensorfehler aus 25 m alles zwischen 20 und 34 m, und die App bietet
-            deshalb gar keine Zahl mehr an.
+            <Markiert
+              text={t(
+                "*Bei kleinen Bäumen* – bis etwa {grenze} m Entfernung – kann die App die Entfernung aus dem Fußwinkel schätzen, sobald der Fuß angepeilt ist. Dafür muss die Handyhöhe stimmen und der Boden waagerecht sein. Weiter weg peilt man zu flach: dort macht ein Grad Sensorfehler aus 25 m alles zwischen 20 und 34 m, und die App bietet deshalb gar keine Zahl mehr an.",
+                { grenze: NEIGUNG_GRENZE_M },
+              )}
+            />
             <br />
             <br />
-            <b>Zur Probe:</b> denselben Baum aus zwei verschiedenen Entfernungen
-            messen. Kommt zweimal dasselbe heraus, stimmt die Entfernung. Weichen
-            die Werte ab, lag es daran und nicht am Sensor.
+            <Markiert
+              text={t(
+                "*Zur Probe:* denselben Baum aus zwei verschiedenen Entfernungen messen. Kommt zweimal dasselbe heraus, stimmt die Entfernung. Weichen die Werte ab, lag es daran und nicht am Sensor.",
+              )}
+            />
             <br />
             <br />
-            Häufigster Fehler im Bestand: ein Seitenast wird für die Spitze
-            gehalten. Bei Laubholz mit breiter Krone lieber einen Schritt zur
-            Seite gehen und noch einmal schauen.
+            {t(
+              "Häufigster Fehler im Bestand: ein Seitenast wird für die Spitze gehalten. Bei Laubholz mit breiter Krone lieber einen Schritt zur Seite gehen und noch einmal schauen.",
+            )}
           </div>
         </div>
       )}
 
       <div style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
-          WAAGERECHTE ENTFERNUNG m
+          {t("WAAGERECHTE ENTFERNUNG m")}
         </div>
         <input
           style={feld}
@@ -348,7 +362,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
           onChange={(e) => setEntfernung(e.target.value)}
           inputMode="decimal"
           placeholder="20"
-          aria-label="Entfernung"
+          aria-label={t("Entfernung")}
         />
         {arKann && (
           <button
@@ -365,7 +379,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
               cursor: "pointer",
             }}
           >
-            Entfernung mit AR messen
+            {t("Entfernung mit AR messen")}
           </button>
         )}
 
@@ -384,7 +398,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
             <div style={{ display: "flex", alignItems: "flex-end", gap: 12, marginBottom: 8 }}>
               <div style={{ width: 92 }}>
                 <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
-                  HANDYHÖHE m
+                  {t("HANDYHÖHE m")}
                 </div>
                 <input
                   style={{ ...feld, fontSize: 16 }}
@@ -394,19 +408,20 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
                     handyhoeheSpeichern(e.target.value);
                   }}
                   inputMode="decimal"
-                  aria-label="Handyhöhe über dem Boden"
+                  aria-label={t("Handyhöhe über dem Boden")}
                 />
               </div>
               <div style={{ flex: 1, fontSize: 11, color: farben.muted, lineHeight: 1.4 }}>
-                über dem Boden, beim Peilen. Einmal messen – 10 cm daneben sind
-                6 % Fehler.
+                {t("über dem Boden, beim Peilen. Einmal messen – 10 cm daneben sind 6 % Fehler.")}
               </div>
             </div>
 
             {schaetzung.brauchbar ? (
               <>
                 <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
-                  AUS DER NEIGUNG ({nk1(schaetzung.neigung)}° nach unten)
+                  {t("AUS DER NEIGUNG ({grad}° nach unten)", {
+                    grad: nk1(schaetzung.neigung),
+                  })}
                 </div>
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                   <div style={{ fontSize: 26, fontWeight: 800, color: farben.text }}>
@@ -414,8 +429,11 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
                   </div>
                   <div style={{ fontSize: 12, color: farben.muted }}>
                     {schaetzung.max == null
-                      ? `mindestens ${nk1(schaetzung.min)} m`
-                      : `${nk1(schaetzung.min)} – ${nk1(schaetzung.max)} m`}
+                      ? t("mindestens {m} m", { m: nk1(schaetzung.min) })
+                      : t("{von} – {bis} m", {
+                          von: nk1(schaetzung.min),
+                          bis: nk1(schaetzung.max),
+                        })}
                   </div>
                 </div>
                 <button
@@ -432,24 +450,31 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
                     cursor: "pointer",
                   }}
                 >
-                  Als Entfernung übernehmen
+                  {t("Als Entfernung übernehmen")}
                 </button>
                 <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, marginTop: 8 }}>
-                  Setzt <b>waagerechten Boden</b> zwischen dir und dem Stammfuß
-                  voraus – am Hang ist diese Rechnung nicht ungenau, sondern
-                  falsch. Dann schreiten oder messen.
+                  <Markiert
+                    text={t(
+                      "Setzt *waagerechten Boden* zwischen dir und dem Stammfuß voraus – am Hang ist diese Rechnung nicht ungenau, sondern falsch. Dann schreiten oder messen.",
+                    )}
+                  />
                 </div>
               </>
             ) : (
               <div style={{ fontSize: 11, color: farben.verb, lineHeight: 1.5 }}>
-                Der Fuß liegt nur {nk1(schaetzung.neigung)}° unter waagerecht. So
-                flach lässt sich die Entfernung nicht mehr schätzen
+                {t(
+                  "Der Fuß liegt nur {grad}° unter waagerecht. So flach lässt sich die Entfernung nicht mehr schätzen",
+                  { grad: nk1(schaetzung.neigung) },
+                )}
                 {schaetzung.max == null
-                  ? " – nach oben ist alles offen."
-                  : `: ein Grad Sensorfehler macht daraus ${nk1(schaetzung.min)} bis ${nk1(
-                      schaetzung.max,
-                    )} m.`}{" "}
-                Über {NEIGUNG_GRENZE_M} m hilft nur schreiten oder messen.
+                  ? t(" – nach oben ist alles offen.")
+                  : t(": ein Grad Sensorfehler macht daraus {von} bis {bis} m.", {
+                      von: nk1(schaetzung.min),
+                      bis: nk1(schaetzung.max),
+                    })}{" "}
+                {t("Über {grenze} m hilft nur schreiten oder messen.", {
+                  grenze: NEIGUNG_GRENZE_M,
+                })}
               </div>
             )}
           </div>
@@ -461,7 +486,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
           onClick={erlaubnisHolen}
           style={{ ...knopf(false), width: "100%", marginBottom: 16 }}
         >
-          Neigungssensor freigeben
+          {t("Neigungssensor freigeben")}
         </button>
       )}
 
@@ -469,7 +494,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
         <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
-              FUSS Grad
+              {t("FUSS Grad")}
             </div>
             <input
               style={feld}
@@ -477,12 +502,12 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
               onChange={(e) => setUntenText(e.target.value)}
               inputMode="decimal"
               placeholder="-10"
-              aria-label="Winkel zum Fuß"
+              aria-label={t("Winkel zum Fuß")}
             />
           </div>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
-              SPITZE Grad
+              {t("SPITZE Grad")}
             </div>
             <input
               style={feld}
@@ -490,7 +515,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
               onChange={(e) => setObenText(e.target.value)}
               inputMode="decimal"
               placeholder="45"
-              aria-label="Winkel zur Spitze"
+              aria-label={t("Winkel zur Spitze")}
             />
           </div>
         </div>
@@ -512,7 +537,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
               autoPlay
               playsInline
               muted
-              aria-label="Sucher"
+              aria-label={t("Sucher")}
               style={{
                 display: kamera === "laeuft" ? "block" : "none",
                 width: "100%",
@@ -561,7 +586,9 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
                 background: kamera === "laeuft" ? "rgba(18,22,15,0.72)" : "transparent",
               }}
             >
-              <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>NEIGUNG</div>
+              <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
+                {t("NEIGUNG")}
+              </div>
               <div style={{ fontSize: 40, fontWeight: 800, color: farben.text, lineHeight: 1.1 }}>
                 {winkel == null ? "–" : `${winkel.toFixed(1)}°`}
               </div>
@@ -575,22 +602,26 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
                     color: zittern <= 1 ? farben.unverb : farben.verb,
                   }}
                 >
-                  {zittern <= 1 ? "ruhig" : `wackelt ±${(zittern / 2).toFixed(1)}° – ruhiger halten`}
+                  {zittern <= 1
+                    ? t("ruhig")
+                    : t("wackelt ±{grad}° – ruhiger halten", {
+                        grad: (zittern / 2).toFixed(1),
+                      })}
                 </div>
               )}
             </div>
           </div>
           <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
             <button onClick={() => setUnten(winkel)} style={knopf(unten != null)}>
-              Fuß
+              {t("Fuß")}
               <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>
-                {unten == null ? "anpeilen" : `${unten.toFixed(1)}°`}
+                {unten == null ? t("anpeilen") : `${unten.toFixed(1)}°`}
               </div>
             </button>
             <button onClick={() => setOben(winkel)} style={knopf(oben != null)}>
-              Spitze
+              {t("Spitze")}
               <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>
-                {oben == null ? "anpeilen" : `${oben.toFixed(1)}°`}
+                {oben == null ? t("anpeilen") : `${oben.toFixed(1)}°`}
               </div>
             </button>
           </div>
@@ -606,7 +637,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
           marginBottom: 12,
         }}
       >
-        <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>HÖHE</div>
+        <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>{t("HÖHE")}</div>
         <div
           style={{
             fontSize: 44,
@@ -619,7 +650,9 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
         </div>
         {hoehe != null && (
           <div style={{ fontSize: 11, color: farben.muted, marginTop: 4 }}>
-            ±{(hoehe * 0.05).toFixed(1)} m bei 5 % Fehler in der Entfernung
+            {t("±{m} m bei 5 % Fehler in der Entfernung", {
+              m: (hoehe * 0.05).toFixed(1),
+            })}
           </div>
         )}
       </div>
@@ -634,7 +667,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
           }}
           style={{ ...knopf(false), flex: 1 }}
         >
-          Zurücksetzen
+          {t("Zurücksetzen")}
         </button>
         <button
           onClick={() => hoehe != null && onUebernehmen(Math.round(hoehe * 10) / 10)}
@@ -649,7 +682,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
             cursor: hoehe == null ? "default" : "pointer",
           }}
         >
-          Übernehmen
+          {t("Übernehmen")}
         </button>
       </div>
 
@@ -666,19 +699,19 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
             cursor: "pointer",
           }}
         >
-          Winkel lieber eintippen
+          {t("Winkel lieber eintippen")}
         </button>
       )}
 
       <div style={{ fontSize: 10, color: farben.muted, lineHeight: 1.5, marginTop: 16 }}>
-        Die Entfernung muss waagerecht sein – am Hang ist die abgeschrittene
-        Strecke länger als die waagerechte. Die Höhe hängt linear daran: zehn
-        Prozent zu weit geschätzt heißt zehn Prozent zu hoch gemessen. Das ist
-        der größte Fehler, nicht der Sensor.
+        {t(
+          "Die Entfernung muss waagerecht sein – am Hang ist die abgeschrittene Strecke länger als die waagerechte. Die Höhe hängt linear daran: zehn Prozent zu weit geschätzt heißt zehn Prozent zu hoch gemessen. Das ist der größte Fehler, nicht der Sensor.",
+        )}
         {kamera === "nein" &&
-          " Ohne Kamerabild gilt: Der Winkel gehört zu der Richtung, in die die" +
-            " Rückkamera zeigt – also senkrecht zur Bildschirmfläche, nicht" +
-            " entlang der Oberkante."}
+          " " +
+            t(
+              "Ohne Kamerabild gilt: Der Winkel gehört zu der Richtung, in die die Rückkamera zeigt – also senkrecht zur Bildschirmfläche, nicht entlang der Oberkante.",
+            )}
       </div>
 
       <ArEntfernung

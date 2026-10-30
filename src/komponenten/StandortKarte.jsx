@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { farben } from "../konfiguration.js";
+import { useT } from "../sprache.js";
 
 /* Standorte der Probekreise.
 
@@ -31,6 +32,7 @@ function netteLaenge(meter) {
 }
 
 function Lageskizze({ punkte }) {
+  const t = useT();
   const breite = 520; // Zeichenbreite; die Anzeige skaliert per viewBox mit
   const latMittel = punkte.reduce((s, p) => s + p.lat, 0) / punkte.length;
   const lonMittel = punkte.reduce((s, p) => s + p.lon, 0) / punkte.length;
@@ -120,14 +122,16 @@ function Lageskizze({ punkte }) {
       </div>
 
       <div style={{ fontSize: 10, color: farben.muted, margin: "6px 2px 0", lineHeight: 1.5 }}>
-        Lage der Probekreise zueinander, Norden oben – ohne Kartenhintergrund, damit es auch ohne
-        Empfang funktioniert.
+        {t(
+          "Lage der Probekreise zueinander, Norden oben – ohne Kartenhintergrund, damit es auch ohne Empfang funktioniert.",
+        )}
       </div>
     </>
   );
 }
 
 export default function StandortKarte({ kreise }) {
+  const t = useT();
   const [skizzeOffen, setSkizzeOffen] = useState(false);
   const punkte = kreise.filter((k) => k.lat != null && k.lon != null);
 
@@ -144,8 +148,9 @@ export default function StandortKarte({ kreise }) {
           lineHeight: 1.5,
         }}
       >
-        Für diesen Tag ist noch kein Standort erfasst. Beim Probekreis oben auf
-        „📍 Standort erfassen“ tippen.
+        {t(
+          "Für diesen Tag ist noch kein Standort erfasst. Beim Probekreis oben auf „📍 Standort erfassen“ tippen.",
+        )}
       </div>
     );
   }
@@ -217,7 +222,7 @@ export default function StandortKarte({ kreise }) {
           cursor: "pointer",
         }}
       >
-        {skizzeOffen ? "Lageskizze ausblenden" : "Lageskizze anzeigen (ohne Netz)"}
+        {skizzeOffen ? t("Lageskizze ausblenden") : t("Lageskizze anzeigen (ohne Netz)")}
       </button>
 
       {skizzeOffen && <Lageskizze punkte={punkte} />}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { farben } from "./konfiguration.js";
+import { SPRACHEN, setzeSprache, spracheLaden, useT } from "./sprache.js";
 import Verjuengung from "./Verjuengung.jsx";
 import Baummessung from "./Baummessung.jsx";
 import Monitoring from "./Monitoring.jsx";
@@ -13,7 +14,13 @@ import Monitoring from "./Monitoring.jsx";
 const SEITE_SCHLUESSEL = "app:seite";
 
 export default function App() {
+  const t = useT();
   const [seite, setSeite] = useState("verjuengung");
+  const [sprache, setSprache] = useState("de");
+
+  useEffect(() => {
+    setSprache(spracheLaden());
+  }, []);
 
   useEffect(() => {
     try {
@@ -70,9 +77,38 @@ export default function App() {
           borderBottom: `1px solid ${farben.line}`,
         }}
       >
-        {reiter("verjuengung", "Verjüngung")}
-        {reiter("baum", "Baummessung")}
-        {reiter("monitoring", "Monitoring")}
+        {reiter("verjuengung", t("Verjüngung"))}
+        {reiter("baum", t("Baummessung"))}
+        {reiter("monitoring", t("Monitoring"))}
+
+        {/* Sprachwahl. Klein und rechts aussen: Sie wird einmal
+            eingestellt und danach nie wieder angetippt - sie soll nicht
+            so breit sein wie ein Arbeitsbereich. */}
+        <div style={{ display: "flex", alignItems: "center", paddingRight: 6 }}>
+          {SPRACHEN.map((s) => (
+            <button
+              key={s.kuerzel}
+              onClick={() => {
+                setzeSprache(s.kuerzel);
+                setSprache(s.kuerzel);
+              }}
+              aria-label={s.name}
+              aria-pressed={sprache === s.kuerzel}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: sprache === s.kuerzel ? farben.unverb : farben.muted,
+                fontWeight: sprache === s.kuerzel ? 700 : 400,
+                fontSize: 12,
+                padding: "12px 5px",
+                cursor: "pointer",
+                WebkitTapHighlightColor: "transparent",
+              }}
+            >
+              {s.kuerzel.toUpperCase()}
+            </button>
+          ))}
+        </div>
       </div>
 
       {seite === "verjuengung" && <Verjuengung />}

@@ -1,4 +1,5 @@
 import { farben } from "../konfiguration.js";
+import { useT } from "../sprache.js";
 
 /* Auswahl der aufnehmenden Person - ein Buchstabe, durchgeklickt.
 
@@ -23,6 +24,7 @@ export function alsBuchstabe(wert) {
 }
 
 export default function PersonWahl({ wert, setWert, warnen }) {
+  const t = useT();
   const weiter = (richtung) => {
     // Ohne Auswahl faengt jede Richtung bei A an.
     const ziel = wert
@@ -47,7 +49,7 @@ export default function PersonWahl({ wert, setWert, warnen }) {
 
   return (
     <div>
-      <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>PERSON</div>
+      <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>{t("PERSON")}</div>
       <div
         style={{
           display: "flex",
@@ -57,11 +59,11 @@ export default function PersonWahl({ wert, setWert, warnen }) {
           padding: "2px 0",
         }}
       >
-        <button onClick={() => weiter(-1)} aria-label="Person zurück" style={pfeil}>
+        <button onClick={() => weiter(-1)} aria-label={t("Person zurück")} style={pfeil}>
           ‹
         </button>
         <div
-          aria-label="Gewählte Person"
+          aria-label={t("Gewählte Person")}
           style={{
             fontSize: 20,
             fontWeight: 700,
@@ -71,7 +73,7 @@ export default function PersonWahl({ wert, setWert, warnen }) {
         >
           {wert || "–"}
         </div>
-        <button onClick={() => weiter(1)} aria-label="Person weiter" style={pfeil}>
+        <button onClick={() => weiter(1)} aria-label={t("Person weiter")} style={pfeil}>
           ›
         </button>
       </div>

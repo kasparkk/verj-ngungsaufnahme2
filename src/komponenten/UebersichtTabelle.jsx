@@ -1,9 +1,12 @@
 import { farben } from "../konfiguration.js";
+import { useT, artName } from "../sprache.js";
 
 /* Alle Kreise dieser Aufnahme auf einen Blick: eine Zeile je Kreis, eine
    Spalte je Baumart, Werte als "verbissen / unverbissen".
    Rein lokal - zeigt auch, was noch nicht abgeglichen ist. */
 export default function UebersichtTabelle({ arten, kreise }) {
+  const t = useT();
+
   return (
     <div
       style={{
@@ -27,7 +30,7 @@ export default function UebersichtTabelle({ arten, kreise }) {
                 whiteSpace: "nowrap",
               }}
             >
-              Kreis
+              {t("Kreis")}
             </th>
             {arten.map((art) => (
               <th
@@ -39,7 +42,7 @@ export default function UebersichtTabelle({ arten, kreise }) {
                   fontWeight: 600,
                 }}
               >
-                {art.name}
+                {artName(art.name)}
               </th>
             ))}
           </tr>

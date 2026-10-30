@@ -12,6 +12,7 @@
    was zu verwechseln waere. */
 
 import { ausUtm33 } from "../utm33.js";
+import { t } from "../sprache.js";
 
 const zahlVon = (roh) => {
   const n = parseFloat(String(roh ?? "").trim().replace(",", "."));
@@ -157,7 +158,7 @@ export function sollpunkteLesen(text) {
       format = "CSV";
     }
   } catch {
-    return { punkte: [], format: "", grund: "Datei nicht lesbar" };
+    return { punkte: [], format: "", grund: t("Datei nicht lesbar") };
   }
 
   if (!punkte.length) {
@@ -165,8 +166,8 @@ export function sollpunkteLesen(text) {
       punkte: [],
       format,
       grund: format
-        ? `Keine Punkte in der ${format}-Datei gefunden`
-        : "Format nicht erkannt",
+        ? t("Keine Punkte in der {format}-Datei gefunden", { format })
+        : t("Format nicht erkannt"),
     };
   }
 

@@ -1,4 +1,5 @@
 import { farben } from "../konfiguration.js";
+import { useT } from "../sprache.js";
 
 /* Die Bausteine der Aufnahmemaske.
 
@@ -90,17 +91,21 @@ export function TextFeld({ wert, setWert, platzhalter, mehrzeilig, inputMode }) 
 
 /* Auswahl aus einer langen Liste. Der leere Eintrag bleibt waehlbar: eine
    versehentlich gesetzte Angabe muss sich zuruecknehmen lassen. */
-export function AuswahlFeld({ wert, setWert, werte, leerText = "— bitte wählen —" }) {
+export function AuswahlFeld({ wert, setWert, werte, leerText }) {
+  const t = useT();
+  const leer = leerText ?? t("— bitte wählen —");
   return (
     <select
       value={wert ?? ""}
       onChange={(e) => setWert(e.target.value)}
       style={{ ...eingabeStil, appearance: "none", cursor: "pointer" }}
     >
-      <option value="">{leerText}</option>
+      <option value="">{leer}</option>
       {werte.map((w) => {
         const schluessel = typeof w === "string" ? w : w.wert;
-        const text = typeof w === "string" ? w : `${w.wert} — ${w.text}`;
+        /* Uebersetzt wird nur die ANZEIGE. Gespeichert und exportiert wird
+           der Schluessel, also der Wert des amtlichen Bogens. */
+        const text = typeof w === "string" ? t(w) : `${w.wert} — ${t(w.text)}`;
         return (
           <option key={schluessel} value={schluessel}>
             {text}
@@ -114,6 +119,7 @@ export function AuswahlFeld({ wert, setWert, werte, leerText = "— bitte wähle
 /* Knopfreihe fuer kurze Listen. Erneutes Antippen der gewaehlten Antwort
    nimmt sie zurueck - sonst liesse sich eine Fehleingabe nicht loeschen. */
 export function KnopfWahl({ wert, setWert, werte, spalten }) {
+  const t = useT();
   return (
     <div
       style={
@@ -124,7 +130,7 @@ export function KnopfWahl({ wert, setWert, werte, spalten }) {
     >
       {werte.map((w) => {
         const schluessel = typeof w === "string" ? w : w.wert;
-        const text = typeof w === "string" ? w : w.kurz ?? w.wert;
+        const text = typeof w === "string" ? t(w) : t(w.kurz ?? w.wert);
         const gewaehlt = String(wert ?? "") === String(schluessel);
         return (
           <button

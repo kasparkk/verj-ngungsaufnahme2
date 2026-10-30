@@ -1,3 +1,5 @@
+import { holeSprache } from "./sprache.js";
+
 /* Bringt das Datum auf JJJJ-MM-TT, das Format der Datenbank.
 
    Das Eingabefeld ist ein natives Datumsfeld und liefert bereits JJJJ-MM-TT.
@@ -25,7 +27,10 @@ export function zeigeDatum(wert) {
   const iso = normDatum(String(wert ?? "").trim());
   if (!iso) return String(wert ?? "");
   const [jahr, monat, tag] = iso.split("-");
-  return `${tag}.${monat}.${jahr}`;
+  /* Im Englischen mit Schrägstrich - "28.08.2026" liest sich dort wie eine
+     Versionsnummer. Die Null bleibt in beiden Fällen stehen: Sie macht die
+     Spalten gleich breit, und genau danach sucht das Auge in einer Liste. */
+  return holeSprache() === "en" ? `${tag}/${monat}/${jahr}` : `${tag}.${monat}.${jahr}`;
 }
 
 /* Wochentag zum Datum, ausgeschrieben.
@@ -38,5 +43,9 @@ export function wochentag(wert) {
   const iso = normDatum(String(wert ?? "").trim());
   if (!iso) return "";
   const [jahr, monat, tag] = iso.split("-").map(Number);
-  return new Date(jahr, monat - 1, tag).toLocaleDateString("de-DE", { weekday: "long" });
+  /* Den Wochentag nennt der Browser selbst - in der eingestellten Sprache.
+     Ihn ins Woerterbuch zu schreiben waere unnoetig: Monats- und
+     Tagesnamen kennt jedes System schon. */
+  const ort = holeSprache() === "en" ? "en-GB" : "de-DE";
+  return new Date(jahr, monat - 1, tag).toLocaleDateString(ort, { weekday: "long" });
 }

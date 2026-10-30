@@ -5,9 +5,10 @@ import Grenzstamm from "./Grenzstamm.jsx";
 import { BAUMARTEN, ZAEHLFAKTOREN, zahl, wzpAuswerten } from "./berechnung.js";
 import { leereArt } from "./speicher.js";
 import ZaehlBox from "../komponenten/ZaehlBox.jsx";
+import { useT, artName, zahlOrt } from "../sprache.js";
 
 const nk = (wert, stellen = 1) =>
-  Number(wert).toLocaleString("de-DE", {
+  Number(wert).toLocaleString(zahlOrt(), {
     minimumFractionDigits: stellen,
     maximumFractionDigits: stellen,
   });
@@ -27,6 +28,7 @@ function WerteFeld({
   mittelText,
   onMessen,
 }) {
+  const t = useT();
   const feldStil = {
     background: "transparent",
     border: "none",
@@ -82,7 +84,7 @@ function WerteFeld({
         {onMessen && (
           <button
             onClick={onMessen}
-            aria-label={`${titel} messen`}
+            aria-label={t("{was} messen", { was: titel })}
             style={{
               background: farben.surface,
               border: `1px solid ${farben.line}`,
@@ -141,6 +143,7 @@ export default function Winkelzaehlprobe({
   formzahlStufen,
   setHinweis,
 }) {
+  const t = useT();
   const [neueHoehe, setNeueHoehe] = useState({});
   const [neuerDm, setNeuerDm] = useState({});
   /* Fuer welche Baumart der Hoehenmesser offen ist. Der gemessene Wert
@@ -157,14 +160,17 @@ export default function Winkelzaehlprobe({
      ueber die Adresse entgegen -, deshalb stehen sie hier zum Ablesen und
      Kopieren beieinander. */
   const kopieren = async (a) => {
+    /* Die Zeile bleibt deutsch, auch im englischen Bildschirm: Sie wird in
+       den Ertragstafel-Rechner der Landesforst Brandenburg eingetragen, und
+       der ist deutsch. */
     const zeile =
       `${a.name} · Alter ${a.alterJahre || "?"} Jahre · Mittelhöhe ${nk(a.mittelHoehe, 1)} m` +
       ` · Grundfläche ${nk(a.gHa, 0)} m²/ha`;
     try {
       await navigator.clipboard.writeText(zeile);
-      setHinweis("Kopiert");
+      setHinweis(t("Kopiert"));
     } catch {
-      setHinweis("Kopieren hier nicht möglich – Werte abtippen");
+      setHinweis(t("Kopieren hier nicht möglich – Werte abtippen"));
     }
   };
 
@@ -206,7 +212,7 @@ export default function Winkelzaehlprobe({
       art &&
       (art.anzahl > 0 || art.hoehen.length || (art.durchmesser ?? []).length)
     ) {
-      setHinweis("Erst Zähler auf 0 setzen");
+      setHinweis(t("Erst Zähler auf 0 setzen"));
       return;
     }
     setWzp((alt) => ({ ...alt, arten: alt.arten.filter((a) => a.id !== id) }));
@@ -236,7 +242,7 @@ export default function Winkelzaehlprobe({
     <div>
       {/* Zaehlfaktor */}
       <div style={{ marginBottom: 14 }}>
-        <div style={{ ...beschriftung, marginBottom: 6 }}>ZÄHLFAKTOR m²/ha</div>
+        <div style={{ ...beschriftung, marginBottom: 6 }}>{t("ZÄHLFAKTOR m²/ha")}</div>
         <div style={{ display: "flex", gap: 8 }}>
           {ZAEHLFAKTOREN.map((k) => (
             <button
@@ -274,7 +280,7 @@ export default function Winkelzaehlprobe({
           }}
         >
           <div style={{ ...beschriftung, marginBottom: 8 }}>
-            ERGEBNIS · {erg.gesamt.anzahl} gezählte Bäume
+            {t("ERGEBNIS · {n} gezählte Bäume", { n: erg.gesamt.anzahl })}
           </div>
           <div style={{ display: "flex", gap: 14 }}>
             <div style={{ flex: 1 }}>
@@ -288,7 +294,7 @@ export default function Winkelzaehlprobe({
                 {nk(erg.gesamt.gHa, 0)}
               </div>
               <div style={{ fontSize: 10, color: farben.muted }}>
-                Grundfläche m²/ha
+                {t("Grundfläche m²/ha")}
               </div>
             </div>
             <div style={{ flex: 1 }}>
@@ -301,9 +307,7 @@ export default function Winkelzaehlprobe({
               >
                 {erg.gesamt.vHa > 0 ? nk(erg.gesamt.vHa, 0) : "–"}
               </div>
-              <div style={{ fontSize: 10, color: farben.muted }}>
-                Vorrat fm/ha
-              </div>
+              <div style={{ fontSize: 10, color: farben.muted }}>{t("Vorrat fm/ha")}</div>
             </div>
             <div style={{ flex: 1 }}>
               <div
@@ -315,12 +319,12 @@ export default function Winkelzaehlprobe({
               >
                 {erg.gesamt.nHa > 0 ? nk(erg.gesamt.nHa, 0) : "–"}
               </div>
-              <div style={{ fontSize: 10, color: farben.muted }}>Stämme/ha</div>
+              <div style={{ fontSize: 10, color: farben.muted }}>{t("Stämme/ha")}</div>
             </div>
           </div>
           {erg.gesamt.vHa === 0 && (
             <div style={{ fontSize: 11, color: farben.verb, marginTop: 8 }}>
-              Für den Vorrat fehlt noch mindestens eine gemessene Höhe.
+              {t("Für den Vorrat fehlt noch mindestens eine gemessene Höhe.")}
             </div>
           )}
         </div>
@@ -339,7 +343,7 @@ export default function Winkelzaehlprobe({
                 marginBottom: 6,
               }}
             >
-              <div style={{ fontSize: 16, fontWeight: 600 }}>{a.name}</div>
+              <div style={{ fontSize: 16, fontWeight: 600 }}>{artName(a.name)}</div>
               <button
                 onClick={() => artWeg(a.id)}
                 style={{
@@ -360,13 +364,13 @@ export default function Winkelzaehlprobe({
                       : "pointer",
                 }}
               >
-                entfernen
+                {t("entfernen")}
               </button>
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <ZaehlBox
-                label="gezählt"
+                label={t("gezählt")}
                 wert={a.anzahl}
                 farbe={farben.unverb}
                 onPlus={() =>
@@ -386,7 +390,7 @@ export default function Winkelzaehlprobe({
 
               <div style={{ display: "flex", gap: 10 }}>
                 <WerteFeld
-                  titel="HÖHEN"
+                  titel={t("HÖHEN")}
                   einheit="m"
                   platzhalter="26"
                   werte={a.hoehen}
@@ -398,10 +402,10 @@ export default function Winkelzaehlprobe({
                   onWeg={(i) => hoeheWeg(a.id, i)}
                   onMessen={() => setMessenFuer(a.id)}
                   mittelwert={z.mittelHoehe}
-                  mittelText={`Mittel ${nk(z.mittelHoehe, 1)} m`}
+                  mittelText={t("Mittel {h} m", { h: nk(z.mittelHoehe, 1) })}
                 />
                 <WerteFeld
-                  titel="BHD"
+                  titel={t("BHD")}
                   einheit="cm"
                   platzhalter="34"
                   werte={a.durchmesser ?? []}
@@ -412,7 +416,7 @@ export default function Winkelzaehlprobe({
                   onHinzu={() => dmHinzu(a.id)}
                   onWeg={(i) => dmWeg(a.id, i)}
                   mittelwert={z.dg}
-                  mittelText={`Mittelstamm ${nk(z.dg, 1)} cm`}
+                  mittelText={t("Mittelstamm {d} cm", { d: nk(z.dg, 1) })}
                 />
               </div>
             </div>
@@ -427,16 +431,22 @@ export default function Winkelzaehlprobe({
                     lineHeight: 1.5,
                   }}
                 >
-                  {z.gHa} m²/ha
+                  {t("{g} m²/ha", { g: z.gHa })}
                   {z.vHa > 0
-                    ? ` · ${nk(z.vHa, 0)} fm/ha (Formzahl ${nk(z.formzahl, 2)})`
+                    ? t(" · {v} fm/ha (Formzahl {f})", {
+                        v: nk(z.vHa, 0),
+                        f: nk(z.formzahl, 2),
+                      })
                     : ""}
                   {z.nHa > 0 && (
                     <>
                       <br />
-                      {nk(z.nHa, 0)} Stämme/ha · Mittelstamm {nk(z.dg, 1)} cm
+                      {t("{n} Stämme/ha · Mittelstamm {d} cm", {
+                        n: nk(z.nHa, 0),
+                        d: nk(z.dg, 1),
+                      })}
                       {z.vMittelstamm > 0
-                        ? ` mit ${nk(z.vMittelstamm, 2)} fm`
+                        ? t(" mit {v} fm", { v: nk(z.vMittelstamm, 2) })
                         : ""}
                     </>
                   )}
@@ -465,7 +475,7 @@ export default function Winkelzaehlprobe({
                         letterSpacing: 0.6,
                       }}
                     >
-                      FÜR DIE ERTRAGSTAFEL
+                      {t("FÜR DIE ERTRAGSTAFEL")}
                     </div>
                     <div
                       style={{
@@ -478,7 +488,7 @@ export default function Winkelzaehlprobe({
                         fontVariantNumeric: "tabular-nums",
                       }}
                     >
-                      <span>Alter</span>
+                      <span>{t("Alter")}</span>
                       <input
                         value={a.alter ?? ""}
                         onChange={(e) =>
@@ -486,7 +496,7 @@ export default function Winkelzaehlprobe({
                         }
                         placeholder={String(zahl(alter) || "?")}
                         inputMode="numeric"
-                        aria-label={`Alter ${a.name}`}
+                        aria-label={t("Alter {art}", { art: artName(a.name) })}
                         style={{
                           width: 42,
                           background: "transparent",
@@ -500,11 +510,11 @@ export default function Winkelzaehlprobe({
                         }}
                       />
                       <span>
-                        · Höhe{" "}
+                        · {t("Höhe")}{" "}
                         <b style={{ color: z.mittelHoehe > 0 ? farben.text : farben.verb }}>
                           {z.mittelHoehe > 0 ? `${nk(z.mittelHoehe, 1)} m` : "?"}
                         </b>{" "}
-                        · G <b>{nk(z.gHa, 0)} m²/ha</b>
+                        · {t("G")} <b>{nk(z.gHa, 0)} m²/ha</b>
                       </span>
                     </div>
                   </div>
@@ -522,7 +532,7 @@ export default function Winkelzaehlprobe({
                         whiteSpace: "nowrap",
                       }}
                     >
-                      Kopieren
+                      {t("Kopieren")}
                     </button>
                   )}
                 </div>
@@ -535,7 +545,7 @@ export default function Winkelzaehlprobe({
       {offeneArten.length > 0 && (
         <div style={{ marginTop: 4 }}>
           <div style={{ ...beschriftung, marginBottom: 6 }}>
-            BAUMART ERGÄNZEN
+            {t("BAUMART ERGÄNZEN")}
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {offeneArten.map((b) => (
@@ -557,7 +567,7 @@ export default function Winkelzaehlprobe({
                   cursor: "pointer",
                 }}
               >
-                + {b.name}
+                + {artName(b.name)}
               </button>
             ))}
           </div>
@@ -580,7 +590,7 @@ export default function Winkelzaehlprobe({
           textDecoration: "none",
         }}
       >
-        Ertragstafel-Rechner öffnen ›
+        {t("Ertragstafel-Rechner öffnen ›")}
       </a>
       <div
         style={{
@@ -590,8 +600,7 @@ export default function Winkelzaehlprobe({
           textAlign: "center",
         }}
       >
-        Landesforst Brandenburg – Alter, Mittelhöhe und Grundfläche dort
-        eintragen
+        {t("Landesforst Brandenburg – Alter, Mittelhöhe und Grundfläche dort eintragen")}
       </div>
 
       <div
@@ -602,11 +611,9 @@ export default function Winkelzaehlprobe({
           lineHeight: 1.5,
         }}
       >
-        Am Standpunkt einmal im Kreis drehen und jeden Baum zählen, der in
-        Brusthöhe breiter erscheint als der Spalt am Zählstab. Grundfläche je
-        Hektar = gezählte Bäume × Zählfaktor; der Vorrat ergibt sich daraus mit
-        der mittleren Höhe und der Formzahl. Trägt man auch Durchmesser ein,
-        kommt der Mittelstamm dazu und daraus die Stammzahl je Hektar.
+        {t(
+          "Am Standpunkt einmal im Kreis drehen und jeden Baum zählen, der in Brusthöhe breiter erscheint als der Spalt am Zählstab. Grundfläche je Hektar = gezählte Bäume × Zählfaktor; der Vorrat ergibt sich daraus mit der mittleren Höhe und der Formzahl. Trägt man auch Durchmesser ein, kommt der Mittelstamm dazu und daraus die Stammzahl je Hektar.",
+        )}
       </div>
     </div>
 

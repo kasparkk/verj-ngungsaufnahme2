@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { farben } from "../konfiguration.js";
 import { nachUtm33 } from "../utm33.js";
+import { useT } from "../sprache.js";
 
 /* Koordinate zum Antippen und Weitergeben.
 
@@ -13,6 +14,7 @@ import { nachUtm33 } from "../utm33.js";
    Punkt als Dezimaltrenner, nicht Komma: das Komma trennt hier bereits die
    beiden Werte, und die Ziele erwarten es so. */
 export default function KoordinatenKopieren({ breite, laenge, klein }) {
+  const t = useT();
   const [kopiert, setKopiert] = useState("");
 
   if (breite == null || laenge == null) return null;
@@ -52,20 +54,22 @@ export default function KoordinatenKopieren({ breite, laenge, klein }) {
   return (
     <div>
       {utmPaar && (
-        <button onClick={() => kopieren(utmPaar, "UTM 33N")} style={zeile} aria-label="UTM-Koordinate kopieren">
+        <button onClick={() => kopieren(utmPaar, "UTM 33N")} style={zeile} aria-label={t("UTM-Koordinate kopieren")}>
           <span>UTM 33N</span>
           <span style={wert}>{utmPaar}</span>
           <span>⧉</span>
         </button>
       )}
-      <button onClick={() => kopieren(gradPaar, "Breite/Länge")} style={zeile} aria-label="Breite und Länge kopieren">
-        <span>Grad</span>
+      <button onClick={() => kopieren(gradPaar, t("Breite/Länge"))} style={zeile} aria-label={t("Breite und Länge kopieren")}>
+        <span>{t("Grad")}</span>
         <span style={wert}>{gradPaar}</span>
         <span>⧉</span>
       </button>
       {kopiert && (
         <div style={{ fontSize: 10, color: farben.unverb, paddingTop: 2 }}>
-          {kopiert === "geht hier nicht" ? "Kopieren hier nicht möglich" : `${kopiert} kopiert`}
+          {kopiert === "geht hier nicht"
+            ? t("Kopieren hier nicht möglich")
+            : t("{was} kopiert", { was: kopiert })}
         </div>
       )}
     </div>

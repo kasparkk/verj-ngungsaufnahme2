@@ -10,10 +10,11 @@ import {
 } from "./berechnung.js";
 import { nachUtm33, ausUtm33, entfernung, peilung, himmelsrichtung } from "../utm33.js";
 import { Abschnitt, Feld, TextFeld, AuswahlFeld, KnopfWahl, JaNein, beschriftung } from "./Felder.jsx";
+import { useT, artName, t, zahlOrt } from "../sprache.js";
 import KoordinatenKopieren from "../komponenten/KoordinatenKopieren.jsx";
 
 const nk = (wert, stellen = 1) =>
-  Number(wert).toLocaleString("de-DE", {
+  Number(wert).toLocaleString(zahlOrt(), {
     minimumFractionDigits: stellen,
     maximumFractionDigits: stellen,
   });
@@ -34,13 +35,14 @@ function AutoFeld({ titel, wert, hinweis }) {
           fontWeight: wert ? 600 : 400,
         }}
       >
-        {wert || "— ergibt sich aus den Angaben darüber —"}
+        {wert || t("— ergibt sich aus den Angaben darüber —")}
       </div>
     </Feld>
   );
 }
 
 export default function Kopf({ punkt, aendere, setHinweis }) {
+  const t = useT();
   const [gpsLaeuft, setGpsLaeuft] = useState(false);
   const [artOffen, setArtOffen] = useState(false);
   const [stabOffen, setStabOffen] = useState(false);
@@ -57,7 +59,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
 
   const orten = () => {
     if (!navigator.geolocation) {
-      setHinweis("Kein GPS auf diesem Gerät");
+      setHinweis(t("Kein GPS auf diesem Gerät"));
       return;
     }
     setGpsLaeuft(true);
@@ -80,7 +82,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
       },
       () => {
         setGpsLaeuft(false);
-        setHinweis("Standort nicht verfügbar");
+        setHinweis(t("Standort nicht verfügbar"));
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
     );
@@ -94,7 +96,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
     const y = parseFloat(String(stab.y).replace(",", "."));
     const grad = ausUtm33(x, y);
     if (!grad) {
-      setHinweis("Rechts- und Hochwert prüfen (UTM 33N)");
+      setHinweis(t("Rechts- und Hochwert prüfen (UTM 33N)"));
       return;
     }
     const genau = parseFloat(String(stab.genau).replace(",", "."));
@@ -112,7 +114,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
     }));
     setStabOffen(false);
     setStab({ x: "", y: "", genau: "" });
-    setHinweis("Koordinate vom Messstab übernommen");
+    setHinweis(t("Koordinate vom Messstab übernommen"));
   };
 
   /* Peilung zum Sollpunkt: einmal messen, Entfernung und Richtung anzeigen.
@@ -120,7 +122,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
      ohne genauer zu werden. */
   const peilen = () => {
     if (!navigator.geolocation) {
-      setHinweis("Kein GPS auf diesem Gerät");
+      setHinweis(t("Kein GPS auf diesem Gerät"));
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -130,7 +132,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
           grad: peilung(pos.coords.latitude, pos.coords.longitude, punkt.sollLat, punkt.sollLon),
           genau: pos.coords.accuracy,
         }),
-      () => setHinweis("Standort nicht verfügbar"),
+      () => setHinweis(t("Standort nicht verfügbar")),
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
     );
   };
@@ -157,14 +159,14 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
 
   return (
     <div>
-      <Abschnitt titel="A — Allgemeine Aufnahmedaten">
-        <Feld titel="Name Monitorer/in">
-          <TextFeld wert={punkt.monitorer} setWert={setzeFeld("monitorer")} platzhalter="Vor- und Nachname" />
+      <Abschnitt titel={t("A — Allgemeine Aufnahmedaten")}>
+        <Feld titel={t("Name Monitorer/in")}>
+          <TextFeld wert={punkt.monitorer} setWert={setzeFeld("monitorer")} platzhalter={t("Vor- und Nachname")} />
         </Feld>
-        <Feld titel="Untersuchungsgebiet">
+        <Feld titel={t("Untersuchungsgebiet")}>
           <TextFeld wert={punkt.gebiet} setWert={setzeFeld("gebiet")} platzhalter="FB Gebersdorf" />
         </Feld>
-        <Feld titel="Datum">
+        <Feld titel={t("Datum")}>
           <input
             type="date"
             value={punkt.datum ?? ""}
@@ -179,13 +181,13 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
 
         <div style={{ display: "flex", gap: 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <Feld titel="Probekreis-Radius (m)">
+            <Feld titel={t("Probekreis-Radius (m)")}>
               <TextFeld wert={punkt.radius} setWert={setzeFeld("radius")} platzhalter="5" inputMode="decimal" />
             </Feld>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <AutoFeld
-              titel="Probekreisfläche (m²)"
+              titel={t("Probekreisfläche (m²)")}
               wert={probekreisflaeche(punkt.radius) ? nk(probekreisflaeche(punkt.radius)) : ""}
             />
           </div>
@@ -193,7 +195,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
 
         {/* Sollpunkt anlaufen */}
         {punkt.sollLat != null && (
-          <Feld titel="Sollpunkt">
+          <Feld titel={t("Sollpunkt")}>
             <div style={{ fontSize: 12, color: farben.muted, marginBottom: 6, fontVariantNumeric: "tabular-nums" }}>
               {sollUtm ? `X ${nk(sollUtm.x, 2)} · Y ${nk(sollUtm.y, 2)}` : ""}
             </div>
@@ -207,7 +209,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
             >
               {peil
                 ? `➤ noch ${nk(peil.m, 0)} m Richtung ${himmelsrichtung(peil.grad)} (${nk(peil.grad, 0)}°)`
-                : "➤ Entfernung und Richtung zum Sollpunkt"}
+                : t("➤ Entfernung und Richtung zum Sollpunkt")}
             </button>
             {peil && (
               <div style={{ fontSize: 10, color: farben.muted, marginTop: 4 }}>
@@ -219,7 +221,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
         )}
 
         {/* Ist-Position */}
-        <Feld titel="Ist-Position">
+        <Feld titel={t("Ist-Position")}>
           <button
             onClick={orten}
             style={{
@@ -229,18 +231,18 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
             }}
           >
             {gpsLaeuft
-              ? "📍 Position wird gesucht …"
+              ? t("📍 Position wird gesucht …")
               : punkt.lat != null
                 ? `📍 ${punkt.lat.toFixed(6)}, ${punkt.lon.toFixed(6)}` +
                   (punkt.genauigkeit != null ? `  ±${nk(punkt.genauigkeit, 2)} m` : "")
-                : "📍 Mit dem Handy erfassen"}
+                : t("📍 Mit dem Handy erfassen")}
           </button>
 
           {utm && (
             <div style={{ marginTop: 4 }}>
               <KoordinatenKopieren breite={punkt.lat} laenge={punkt.lon} />
               <div style={{ fontSize: 10, color: farben.muted }}>
-                {punkt.quelle === "stab" ? "vom Messstab" : punkt.quelle === "geraet" ? "vom Handy" : ""}
+                {punkt.quelle === "stab" ? t("vom Messstab") : punkt.quelle === "geraet" ? t("vom Handy") : ""}
               </div>
             </div>
           )}
@@ -250,24 +252,24 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
               steht in den Daten die genaue Lage und nicht die ungefaehre. */}
           {stabOffen ? (
             <div style={{ marginTop: 8, border: `1px solid ${farben.line}`, borderRadius: 10, padding: 10 }}>
-              <div style={{ ...beschriftung, marginBottom: 6 }}>Vom Messstab (UTM 33N)</div>
+              <div style={{ ...beschriftung, marginBottom: 6 }}>{t("Vom Messstab (UTM 33N)")}</div>
               <div style={{ display: "flex", gap: 8 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <TextFeld wert={stab.x} setWert={(w) => setStab((a) => ({ ...a, x: w }))} platzhalter="Rechtswert" inputMode="decimal" />
+                  <TextFeld wert={stab.x} setWert={(w) => setStab((a) => ({ ...a, x: w }))} platzhalter={t("Rechtswert")} inputMode="decimal" />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <TextFeld wert={stab.y} setWert={(w) => setStab((a) => ({ ...a, y: w }))} platzhalter="Hochwert" inputMode="decimal" />
+                  <TextFeld wert={stab.y} setWert={(w) => setStab((a) => ({ ...a, y: w }))} platzhalter={t("Hochwert")} inputMode="decimal" />
                 </div>
               </div>
               <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <TextFeld wert={stab.genau} setWert={(w) => setStab((a) => ({ ...a, genau: w }))} platzhalter="Genauigkeit m" inputMode="decimal" />
+                  <TextFeld wert={stab.genau} setWert={(w) => setStab((a) => ({ ...a, genau: w }))} platzhalter={t("Genauigkeit m")} inputMode="decimal" />
                 </div>
                 <button onClick={stabUebernehmen} style={{
                   flex: 1, background: farben.unverb, border: "none", color: farben.bg,
                   borderRadius: 10, padding: "10px 0", fontSize: 14, fontWeight: 700, cursor: "pointer",
                 }}>
-                  Übernehmen
+                  {t("Übernehmen")}
                 </button>
               </div>
             </div>
@@ -279,14 +281,14 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
                 color: farben.muted, borderRadius: 8, padding: "9px 12px", fontSize: 13, cursor: "pointer",
               }}
             >
-              Koordinate vom Messstab eintragen …
+              {t("Koordinate vom Messstab eintragen …")}
             </button>
           )}
 
           {abweichung && (
             <div style={{ fontSize: 11, color: punkt.verlegt ? farben.verb : farben.muted, marginTop: 6 }}>
               {nk(abweichung.m, 1)} m {himmelsrichtung(abweichung.grad)} vom Sollpunkt
-              {punkt.verlegt ? " · als verlegt vermerkt" : ""}
+              {punkt.verlegt ? ` · ${t("als verlegt vermerkt")}` : ""}
             </div>
           )}
           {punkt.lat != null && (
@@ -297,53 +299,53 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
                 color: farben.muted, borderRadius: 8, padding: "6px 10px", fontSize: 12, cursor: "pointer",
               }}
             >
-              {punkt.verlegt ? "✓ als verlegt vermerkt" : "Punkt als verlegt vermerken"}
+              {punkt.verlegt ? t("✓ als verlegt vermerkt") : t("Punkt als verlegt vermerken")}
             </button>
           )}
         </Feld>
 
-        <Feld titel="Hauptbestand / BZT">
+        <Feld titel={t("Hauptbestand / BZT")}>
           <AuswahlFeld wert={punkt.bzt} setWert={setzeFeld("bzt")} werte={BZT_LISTE} />
         </Feld>
         <div style={{ display: "flex", gap: 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <Feld titel="Man. ZB1">
+            <Feld titel={t("Man. ZB1")}>
               <AuswahlFeld wert={punkt.manZb1} setWert={setzeFeld("manZb1")} werte={BAUMARTEN.map((a) => a.kuerzel)} leerText="—" />
             </Feld>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <Feld titel="Man. ZB2">
+            <Feld titel={t("Man. ZB2")}>
               <AuswahlFeld wert={punkt.manZb2} setWert={setzeFeld("manZb2")} werte={BAUMARTEN.map((a) => a.kuerzel)} leerText="—" />
             </Feld>
           </div>
         </div>
         <AutoFeld
-          titel="► Aktiver BZT"
+          titel={t("► Aktiver BZT")}
           wert={aktiverBzt(punkt.bzt, punkt.manZb1, punkt.manZb2)}
-          hinweis="Eine manuelle Zielbaumart überschreibt den Standard-BZT."
+          hinweis={t("Eine manuelle Zielbaumart überschreibt den Standard-BZT.")}
         />
       </Abschnitt>
 
       <Abschnitt
-        titel="Referenzbaum zur Punktverortung"
-        hinweis="Kein geeigneter Referenzbaum vorhanden? Unter „Bemerkungen“ vermerken."
+        titel={t("Referenzbaum zur Punktverortung")}
+        hinweis={t("Kein geeigneter Referenzbaum vorhanden? Unter „Bemerkungen“ vermerken.")}
       >
-        <Feld titel="Baumart">
+        <Feld titel={t("Baumart")}>
           <AuswahlFeld wert={punkt.referenz.art} setWert={setzeReferenz("art")} werte={BAUMARTEN.map((a) => a.name)} />
         </Feld>
         <div style={{ display: "flex", gap: 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <Feld titel="BHD (cm)">
+            <Feld titel={t("BHD (cm)")}>
               <TextFeld wert={punkt.referenz.bhd} setWert={setzeReferenz("bhd")} platzhalter="47,8" inputMode="decimal" />
             </Feld>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <Feld titel="Winkel (gon)" hinweis="0–400">
+            <Feld titel={t("Winkel (gon)")} hinweis="0–400">
               <TextFeld wert={punkt.referenz.winkel} setWert={setzeReferenz("winkel")} platzhalter="245" inputMode="decimal" />
             </Feld>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <Feld titel="Abstand (m)">
+            <Feld titel={t("Abstand (m)")}>
               <TextFeld wert={punkt.referenz.abstand} setWert={setzeReferenz("abstand")} platzhalter="4,64" inputMode="decimal" />
             </Feld>
           </div>
@@ -351,39 +353,39 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
       </Abschnitt>
 
       <Abschnitt
-        titel="B — Ziel-Profil & Verbissziel"
-        hinweis="VZ1 tolerierbar · VZ2 kritisch · VZ3 nicht akzeptabel"
+        titel={t("B — Ziel-Profil & Verbissziel")}
+        hinweis={t("VZ1 tolerierbar · VZ2 kritisch · VZ3 nicht akzeptabel")}
       >
-        <Feld titel="Ziel-Mischung">
+        <Feld titel={t("Ziel-Mischung")}>
           <AuswahlFeld wert={punkt.mix} setWert={setzeFeld("mix")} werte={MISCHUNG} />
         </Feld>
-        <Feld titel="Ziel-Schichtung">
+        <Feld titel={t("Ziel-Schichtung")}>
           <AuswahlFeld wert={punkt.schicht} setWert={setzeFeld("schicht")} werte={SCHICHTUNG} />
         </Feld>
-        <Feld titel="Ziel-Struktur horizontal">
+        <Feld titel={t("Ziel-Struktur horizontal")}>
           <AuswahlFeld wert={punkt.struktur} setWert={setzeFeld("struktur")} werte={STRUKTUR} />
         </Feld>
-        <AutoFeld titel="Ziel-Profil" wert={zielProfil(punkt.mix, punkt.schicht, punkt.struktur)} />
+        <AutoFeld titel={t("Ziel-Profil")} wert={zielProfil(punkt.mix, punkt.schicht, punkt.struktur)} />
 
-        <Feld titel="Verbissziel ZB1 (Haupt-Zielbaumart)" hinweis="VZ1 ≤ 20 % · VZ2 ≤ 35 %">
+        <Feld titel={t("Verbissziel ZB1 (Haupt-Zielbaumart)")} hinweis={t("VZ1 ≤ 20 % · VZ2 ≤ 35 %")}>
           <KnopfWahl wert={punkt.vzZb1} setWert={setzeFeld("vzZb1")} werte={VERBISSZIEL_STUFEN} spalten={3} />
         </Feld>
-        <Feld titel="Verbissziel ZB2 (Struktur-/Nebenbaumart)" hinweis="VZ1 ≤ 25 % · VZ2 ≤ 40 %">
+        <Feld titel={t("Verbissziel ZB2 (Struktur-/Nebenbaumart)")} hinweis={t("VZ1 ≤ 25 % · VZ2 ≤ 40 %")}>
           <KnopfWahl wert={punkt.vzZb2} setWert={setzeFeld("vzZb2")} werte={VERBISSZIEL_STUFEN} spalten={3} />
         </Feld>
       </Abschnitt>
 
-      <Abschnitt titel="C — Bestandesbeschreibung">
-        <Feld titel="Verjüngungsverteilung">
+      <Abschnitt titel={t("C — Bestandesbeschreibung")}>
+        <Feld titel={t("Verjüngungsverteilung")}>
           <KnopfWahl wert={punkt.beschreibung.verteilung} setWert={setzeBeschreibung("verteilung")} werte={VERTEILUNG} spalten={2} />
         </Feld>
-        <Feld titel="Kronenschluss">
+        <Feld titel={t("Kronenschluss")}>
           <KnopfWahl wert={punkt.beschreibung.kronenschluss} setWert={setzeBeschreibung("kronenschluss")} werte={KRONENSCHLUSS} spalten={2} />
         </Feld>
-        <Feld titel="Bodenvegetation">
+        <Feld titel={t("Bodenvegetation")}>
           <KnopfWahl wert={punkt.beschreibung.bodenvegetation} setWert={setzeBeschreibung("bodenvegetation")} werte={BODENVEGETATION} spalten={4} />
         </Feld>
-        <Feld titel="Bodenvegetationstyp" hinweis="Bis zu drei Angaben.">
+        <Feld titel={t("Bodenvegetationstyp")} hinweis={t("Bis zu drei Angaben.")}>
           <div style={{ display: "flex", gap: 6 }}>
             {[0, 1, 2].map((i) => (
               <div key={i} style={{ flex: 1, minWidth: 0 }}>
@@ -403,34 +405,34 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
             ))}
           </div>
         </Feld>
-        <Feld titel="Bodengare">
+        <Feld titel={t("Bodengare")}>
           <KnopfWahl wert={punkt.beschreibung.bodengare} setWert={setzeBeschreibung("bodengare")} werte={BODENGARE} spalten={3} />
         </Feld>
-        <Feld titel="Samenbäume vorhanden">
+        <Feld titel={t("Samenbäume vorhanden")}>
           <JaNein wert={punkt.beschreibung.samenbaeume} setWert={setzeBeschreibung("samenbaeume")} />
         </Feld>
-        <Feld titel="Randeffekte">
+        <Feld titel={t("Randeffekte")}>
           <JaNein wert={punkt.beschreibung.randeffekte} setWert={setzeBeschreibung("randeffekte")} />
         </Feld>
-        <Feld titel="Hasenverbiss signifikant" hinweis="Erkennbar am glatten Schrägschnitt.">
+        <Feld titel={t("Hasenverbiss signifikant")} hinweis={t("Erkennbar am glatten Schrägschnitt.")}>
           <JaNein wert={punkt.beschreibung.hasenverbiss} setWert={setzeBeschreibung("hasenverbiss")} />
         </Feld>
-        <Feld titel="Zäune / Weisergatter">
+        <Feld titel={t("Zäune / Weisergatter")}>
           <JaNein wert={punkt.beschreibung.zaeune} setWert={setzeBeschreibung("zaeune")} />
         </Feld>
-        <Feld titel="Bemerkungen">
-          <TextFeld wert={punkt.beschreibung.bemerkungen} setWert={setzeBeschreibung("bemerkungen")} platzhalter="Besondere Beobachtungen" mehrzeilig />
+        <Feld titel={t("Bemerkungen")}>
+          <TextFeld wert={punkt.beschreibung.bemerkungen} setWert={setzeBeschreibung("bemerkungen")} platzhalter={t("Besondere Beobachtungen")} mehrzeilig />
         </Feld>
         <AutoFeld
-          titel="Verjüngungsfreundlich"
+          titel={t("Verjüngungsfreundlich")}
           wert={verjuengungsfreundlich(punkt.beschreibung)}
-          hinweis="Aus Kronenschluss, Bodenvegetation, Bodengare, Samenbäumen, Randeffekten und Hasenverbiss."
+          hinweis={t("Aus Kronenschluss, Bodenvegetation, Bodengare, Samenbäumen, Randeffekten und Hasenverbiss.")}
         />
       </Abschnitt>
 
       <Abschnitt
-        titel="D — Zielbaumarten"
-        hinweis="Nur aktive Baumarten stehen bei der Pflanzenaufnahme zur Wahl. ZB1 = Haupt-Zielbaumart, ZB2 = Struktur-/Nebenbaumart, BW = Begleiter."
+        titel={t("D — Zielbaumarten")}
+        hinweis={t("Nur aktive Baumarten stehen bei der Pflanzenaufnahme zur Wahl. ZB1 = Haupt-Zielbaumart, ZB2 = Struktur-/Nebenbaumart, BW = Begleiter.")}
       >
         {aktive.map((a) => (
           <div
@@ -441,9 +443,9 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
             }}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 600 }}>{a.name}</div>
+              <div style={{ fontSize: 14, fontWeight: 600 }}>{artName(a.name)}</div>
               <div style={{ fontSize: 10, color: farben.muted }}>
-                {a.kuerzel} · {a.typ}
+                {a.kuerzel} · {t(a.typ)}
               </div>
             </div>
             <div style={{ display: "flex", gap: 4 }}>
@@ -468,7 +470,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
             </div>
             <button
               onClick={() => setzeArt(a.kuerzel, { aktiv: false })}
-              aria-label={`${a.name} deaktivieren`}
+              aria-label={t("{art} deaktivieren", { art: artName(a.name) })}
               style={{
                 background: "none", border: "none", color: farben.muted,
                 fontSize: 18, cursor: "pointer", padding: "0 2px",
@@ -481,7 +483,9 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
 
         {!aktive.length && (
           <div style={{ fontSize: 12, color: farben.verb, marginBottom: 8 }}>
-            Noch keine Baumart aktiv — ohne aktive Baumart lässt sich keine Pflanze aufnehmen.
+            {t(
+              "Noch keine Baumart aktiv — ohne aktive Baumart lässt sich keine Pflanze aufnehmen.",
+            )}
           </div>
         )}
 
@@ -492,8 +496,8 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
               if (k) setzeArt(k, { aktiv: true });
               setArtOffen(false);
             }}
-            werte={offene.map((a) => ({ wert: a.kuerzel, text: a.name }))}
-            leerText="— Baumart wählen —"
+            werte={offene.map((a) => ({ wert: a.kuerzel, text: artName(a.name) }))}
+            leerText={t("— Baumart wählen —")}
           />
         ) : (
           <button
@@ -503,7 +507,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
               color: farben.muted, borderRadius: 10, padding: "11px 0", fontSize: 13, cursor: "pointer",
             }}
           >
-            + Baumart aktivieren
+            + {t("Baumart aktivieren")}
           </button>
         )}
       </Abschnitt>

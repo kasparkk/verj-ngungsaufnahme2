@@ -1,4 +1,5 @@
 import { farben } from "../konfiguration.js";
+import { useT } from "../sprache.js";
 
 /* Skizze zur Hoehenmessung.
 
@@ -9,6 +10,7 @@ import { farben } from "../konfiguration.js";
    Selbstgezeichnet statt Bilddatei: so bleibt sie im dunklen Design
    lesbar, skaliert mit und kostet keinen Ladevorgang im Funkloch. */
 export default function HoeheSkizze() {
+  const t = useT();
   const boden = 112;      // Hoehe der Gelaendelinie
   const augeX = 26;       // Standort des Messenden
   const augeY = 74;       // Augenhoehe
@@ -40,17 +42,17 @@ export default function HoeheSkizze() {
       <line x1={augeX} y1={augeY} x2={baumX} y2={augeY}
             stroke={farben.muted} strokeWidth="1" strokeDasharray="4 3" />
       <text x={(augeX + baumX) / 2} y={augeY - 5} fill={farben.muted}
-            fontSize="9" textAnchor="middle">d (waagerecht)</text>
+            fontSize="9" textAnchor="middle">{t("d (waagerecht)")}</text>
 
       {/* Peilung zur Spitze */}
       <line x1={augeX} y1={augeY} x2={baumX} y2={spitzeY}
             stroke={farben.unverb} strokeWidth="1.6" />
-      <text x={augeX + 46} y={augeY - 17} fill={farben.unverb} fontSize="9">Spitze</text>
+      <text x={augeX + 46} y={augeY - 17} fill={farben.unverb} fontSize="9">{t("Spitze")}</text>
 
       {/* Peilung zum Stammfuss */}
       <line x1={augeX} y1={augeY} x2={baumX} y2={boden}
             stroke={farben.verb} strokeWidth="1.6" />
-      <text x={augeX + 52} y={augeY + 24} fill={farben.verb} fontSize="9">Fuß</text>
+      <text x={augeX + 52} y={augeY + 24} fill={farben.verb} fontSize="9">{t("Fuß")}</text>
 
       {/* Die gesuchte Hoehe */}
       <line x1={baumX + 16} y1={spitzeY} x2={baumX + 16} y2={boden}

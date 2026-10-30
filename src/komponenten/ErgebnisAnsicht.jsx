@@ -8,6 +8,7 @@ import {
   baueGeoJsonKreise,
   geoDateiname,
 } from "../ergebnisExport.js";
+import { useT, artName, zahlOrt } from "../sprache.js";
 
 const kopfZelle = {
   padding: "6px 8px",
@@ -35,6 +36,7 @@ export default function ErgebnisAnsicht({
   onNurDiesePerson,
   onAktualisieren,
 }) {
+  const t = useT();
   const [meldung, setMeldung] = useState("");
   /* Die Datei bekommt nur den einen Tag in der einen Abteilung - die Ansicht
      darf mehr zeigen, die Datei soll es nicht. */
@@ -53,7 +55,7 @@ export default function ErgebnisAnsicht({
     try {
       const datei = new File([blob], name, { type: blob.type });
       if (navigator.canShare?.({ files: [datei] })) {
-        await navigator.share({ files: [datei], title: "Verjüngungsaufnahme" });
+        await navigator.share({ files: [datei], title: t("Verjüngungsaufnahme") });
         return;
       }
     } catch (fehler) {
@@ -68,17 +70,17 @@ export default function ErgebnisAnsicht({
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    setMeldung(erfolg ?? `${name} gespeichert`);
+    setMeldung(erfolg ?? t("{name} gespeichert", { name }));
   };
 
   // Beide Ausgaben brauchen dasselbe: einen Tag und etwas darin.
   const bereit = () => {
     if (!fuerDatei.datum) {
-      setMeldung("Kein Aufnahmedatum gesetzt – ohne Datum keine Ausgabe");
+      setMeldung(t("Kein Aufnahmedatum gesetzt – ohne Datum keine Ausgabe"));
       return false;
     }
     if (!fuerDatei.zeilen.length) {
-      setMeldung(`Für den ${fuerDatei.datum} gibt es hier keine Einträge`);
+      setMeldung(t("Für den {datum} gibt es hier keine Einträge", { datum: fuerDatei.datum }));
       return false;
     }
     return true;
@@ -97,7 +99,7 @@ export default function ErgebnisAnsicht({
     if (!bereit()) return;
     const mitOrtung = kreise.filter((k) => k.lat != null);
     if (!mitOrtung.length) {
-      setMeldung("Kein Probekreis hat eine Ortung – es gäbe nichts zu zeigen");
+      setMeldung(t("Kein Probekreis hat eine Ortung – es gäbe nichts zu zeigen"));
       return;
     }
     const name = geoDateiname(kopf);
@@ -107,8 +109,8 @@ export default function ErgebnisAnsicht({
     await weitergeben(
       blob,
       name,
-      `${mitOrtung.length} Probekreise gespeichert` +
-        (ohne ? ` – ${ohne} ohne Ortung weggelassen` : ""),
+      t("{n} Probekreise gespeichert", { n: mitOrtung.length }) +
+        (ohne ? t(" – {n} ohne Ortung weggelassen", { n: ohne }) : ""),
     );
   };
 
@@ -133,10 +135,10 @@ export default function ErgebnisAnsicht({
           marginBottom: 4,
         }}
       >
-        <div style={{ fontSize: 18, fontWeight: 700 }}>Ergebnis</div>
+        <div style={{ fontSize: 18, fontWeight: 700 }}>{t("Ergebnis")}</div>
         <button
           onClick={onSchliessen}
-          aria-label="Schließen"
+          aria-label={t("Schließen")}
           style={{
             background: "none",
             border: "none",
@@ -164,7 +166,7 @@ export default function ErgebnisAnsicht({
             cursor: "pointer",
           }}
         >
-          Alle zusammen
+          {t("Alle zusammen")}
         </button>
         <button
           onClick={onNurDiesePerson}
@@ -180,23 +182,26 @@ export default function ErgebnisAnsicht({
             cursor: "pointer",
           }}
         >
-          Nur diese Person
+          {t("Nur diese Person")}
         </button>
       </div>
 
       <div style={{ fontSize: 12, color: farben.muted, marginBottom: 16 }}>
-        {kopf.abteilung || "ohne Abteilung"}
+        {kopf.abteilung || t("ohne Abteilung")}
         {kopf.datum ? ` · ${kopf.datum}` : ""} ·{" "}
-        {nurDiesePerson ? `nur ${kopf.trupp.trim() || "?"}` : "alle Personen zusammen"}
+        {nurDiesePerson
+          ? t("nur {wer}", { wer: kopf.trupp.trim() || "?" })
+          : t("alle Personen zusammen")}
       </div>
 
-      {laedt && <div style={{ color: farben.muted }}>Wird geladen ...</div>}
+      {laedt && <div style={{ color: farben.muted }}>{t("Wird geladen ...")}</div>}
       {fehler && <div style={{ color: farben.verb }}>{fehler}</div>}
 
       {!laedt && !fehler && ergebnis.length === 0 && (
         <div style={{ color: farben.muted, lineHeight: 1.5 }}>
-          Für diese Abteilung und dieses Datum liegt noch nichts vor. Zuerst abgleichen lassen – und
-          prüfen, ob Abteilung und Datum bei allen Personen gleich eingetragen sind.
+          {t(
+            "Für diese Abteilung und dieses Datum liegt noch nichts vor. Zuerst abgleichen lassen – und prüfen, ob Abteilung und Datum bei allen Personen gleich eingetragen sind.",
+          )}
         </div>
       )}
 
@@ -211,7 +216,7 @@ export default function ErgebnisAnsicht({
             }}
           >
             <div style={{ fontSize: 11, color: farben.muted, letterSpacing: 0.6 }}>
-              PROBEKREISE INSGESAMT
+              {t("PROBEKREISE INSGESAMT")}
             </div>
             <div style={{ fontSize: 30, fontWeight: 700 }}>{ergebnis[0].kreise_gesamt}</div>
             <div style={{ fontSize: 12, color: farben.muted, marginTop: 4 }}>
@@ -227,15 +232,21 @@ export default function ErgebnisAnsicht({
                 style={{ borderBottom: `1px solid ${farben.line}`, padding: "10px 2px" }}
               >
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                  <div style={{ fontSize: 16, fontWeight: 600 }}>{zeile.baumart}</div>
+                  <div style={{ fontSize: 16, fontWeight: 600 }}>{artName(zeile.baumart)}</div>
                   <div style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
-                    {Number(zeile.stueck_je_ha).toLocaleString("de-DE")}
-                    <span style={{ fontSize: 11, color: farben.muted, fontWeight: 400 }}> Stk/ha</span>
+                    {Number(zeile.stueck_je_ha).toLocaleString(zahlOrt())}
+                    <span style={{ fontSize: 11, color: farben.muted, fontWeight: 400 }}>
+                      {" "}
+                      {t("Stk/ha")}
+                    </span>
                   </div>
                 </div>
                 <div style={{ fontSize: 12, color: farben.muted, marginTop: 3 }}>
-                  {zeile.gesamt} gezählt · {zeile.verbissen} verbissen
-                  {Number.isFinite(prozent) ? ` (${prozent.toLocaleString("de-DE")} %)` : ""}
+                  {t("{gesamt} gezählt · {verbissen} verbissen", {
+                    gesamt: zeile.gesamt,
+                    verbissen: zeile.verbissen,
+                  })}
+                  {Number.isFinite(prozent) ? ` (${prozent.toLocaleString(zahlOrt())} %)` : ""}
                 </div>
                 <div
                   style={{
@@ -261,18 +272,20 @@ export default function ErgebnisAnsicht({
           {zeilen.length > 0 && (
             <div style={{ marginTop: 24 }}>
               <div style={{ fontSize: 11, color: farben.muted, letterSpacing: 0.6, marginBottom: 6 }}>
-                ALLE EINTRÄGE ({zeilen.length})
+                {t("ALLE EINTRÄGE ({n})", { n: zeilen.length })}
               </div>
               <div style={{ overflowX: "auto", border: `1px solid ${farben.line}`, borderRadius: 10 }}>
                 <table style={{ borderCollapse: "collapse", width: "100%", fontSize: 12 }}>
                   <thead>
                     <tr>
-                      <th style={{ ...kopfZelle, textAlign: "left" }}>Person</th>
-                      {mehrereTage && <th style={{ ...kopfZelle, textAlign: "left" }}>Datum</th>}
-                      <th style={{ ...kopfZelle, textAlign: "left" }}>Kreis</th>
-                      <th style={{ ...kopfZelle, textAlign: "left" }}>Baumart</th>
-                      <th style={{ ...kopfZelle, textAlign: "center" }}>verb.</th>
-                      <th style={{ ...kopfZelle, textAlign: "center" }}>unverb.</th>
+                      <th style={{ ...kopfZelle, textAlign: "left" }}>{t("Person")}</th>
+                      {mehrereTage && (
+                        <th style={{ ...kopfZelle, textAlign: "left" }}>{t("Datum")}</th>
+                      )}
+                      <th style={{ ...kopfZelle, textAlign: "left" }}>{t("Kreis")}</th>
+                      <th style={{ ...kopfZelle, textAlign: "left" }}>{t("Baumart")}</th>
+                      <th style={{ ...kopfZelle, textAlign: "center" }}>{t("verb.")}</th>
+                      <th style={{ ...kopfZelle, textAlign: "center" }}>{t("unverb.")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -287,7 +300,9 @@ export default function ErgebnisAnsicht({
                           </td>
                         )}
                         <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>{zeile.kreis}</td>
-                        <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>{zeile.baumart}</td>
+                        <td style={{ padding: "6px 8px", whiteSpace: "nowrap" }}>
+                          {artName(zeile.baumart)}
+                        </td>
                         <td style={{ padding: "6px 8px", textAlign: "center", color: farben.verb }}>
                           {zeile.verbissen}
                         </td>
@@ -319,7 +334,7 @@ export default function ErgebnisAnsicht({
             cursor: "pointer",
           }}
         >
-          {laedt ? "Wird geladen ..." : "Aktualisieren"}
+          {laedt ? t("Wird geladen ...") : t("Aktualisieren")}
         </button>
         <button
           onClick={excel}
@@ -334,7 +349,7 @@ export default function ErgebnisAnsicht({
             cursor: "pointer",
           }}
         >
-          Excel
+          {t("Excel")}
         </button>
         <button
           onClick={geodaten}
@@ -349,7 +364,7 @@ export default function ErgebnisAnsicht({
             cursor: "pointer",
           }}
         >
-          Geodaten
+          {t("Geodaten")}
           <div style={{ fontSize: 10, opacity: 0.6, marginTop: 1 }}>GeoJSON</div>
         </button>
         <button
@@ -365,31 +380,40 @@ export default function ErgebnisAnsicht({
             cursor: "pointer",
           }}
         >
-          PDF
+          {t("PDF")}
         </button>
       </div>
 
       <div className="no-print" style={{ fontSize: 10, color: farben.muted, marginTop: 8, lineHeight: 1.5 }}>
         {fuerDatei.datum ? (
           <>
-            Die Excel-Datei enthält nur {fuerDatei.abteilung || "die Aufnahme ohne Abteilung"} vom{" "}
-            {fuerDatei.datum} – {fuerDatei.zeilen.length}{" "}
-            {fuerDatei.zeilen.length === 1 ? "Eintrag" : "Einträge"}
+            {t("Die Excel-Datei enthält nur {gebiet} vom {datum} – {n} {eintraege}", {
+              gebiet: fuerDatei.abteilung || t("die Aufnahme ohne Abteilung"),
+              datum: fuerDatei.datum,
+              n: fuerDatei.zeilen.length,
+              eintraege: fuerDatei.zeilen.length === 1 ? t("Eintrag") : t("Einträge"),
+            })}
             {fuerDatei.weggelassen > 0 &&
-              `, ${fuerDatei.weggelassen} von anderen Tagen bleiben draußen`}
-            . Drei Blätter: Zählungen (je Probekreis und Baumart eine Zeile),
-            Probekreise (je Kreis eine Zeile mit Koordinate und Kartenlink) und
-            Auswertung (je Baumart, über alle Kreise zusammengefasst).
+              t(", {n} von anderen Tagen bleiben draußen", { n: fuerDatei.weggelassen })}
+            {". "}
+            {t(
+              "Drei Blätter: Zählungen (je Probekreis und Baumart eine Zeile), Probekreise (je Kreis eine Zeile mit Koordinate und Kartenlink) und Auswertung (je Baumart, über alle Kreise zusammengefasst).",
+            )}
             {kreise.length > 0 &&
-              ` ${mitOrt} von ${kreise.length} Probekreisen haben eine Koordinate.`}
-            {" "}Die Geodaten sind eine GeoJSON-Datei (.geojson) mit einem Punkt je
-            Probekreis – zum Öffnen in QGIS, OsmAnd, Organic Maps oder einem
-            anderen Kartenprogramm.
+              " " +
+                t("{mitOrt} von {alle} Probekreisen haben eine Koordinate.", {
+                  mitOrt,
+                  alle: kreise.length,
+                })}{" "}
+            {t(
+              "Die Geodaten sind eine GeoJSON-Datei (.geojson) mit einem Punkt je Probekreis – zum Öffnen in QGIS, OsmAnd, Organic Maps oder einem anderen Kartenprogramm.",
+            )}
           </>
         ) : (
           <span style={{ color: farben.verb }}>
-            Für die Excel-Datei fehlt das Aufnahmedatum. Sie soll immer genau
-            einen Tag enthalten – oben ein Datum setzen.
+            {t(
+              "Für die Excel-Datei fehlt das Aufnahmedatum. Sie soll immer genau einen Tag enthalten – oben ein Datum setzen.",
+            )}
           </span>
         )}
       </div>

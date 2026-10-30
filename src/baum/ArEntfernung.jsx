@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { farben } from "../konfiguration.js";
 import { waagerechteEntfernung } from "./hoehe.js";
+import { useT } from "../sprache.js";
+import Markiert from "../komponenten/Markiert.jsx";
 
 /* Entfernung mit AR messen (WebXR, auf Android mit ARCore dahinter).
 
@@ -28,6 +30,7 @@ export async function arMoeglich() {
 }
 
 export default function ArEntfernung({ offen, onSchliessen, onUebernehmen }) {
+  const t = useT();
   const [entfernung, setEntfernung] = useState(null);
   const [fehler, setFehler] = useState("");
   const [laeuft, setLaeuft] = useState(false);
@@ -93,8 +96,8 @@ export default function ArEntfernung({ offen, onSchliessen, onUebernehmen }) {
           setLaeuft(false);
           setFehler(
             e?.name === "NotAllowedError"
-              ? "Keine Freigabe für die Kamera"
-              : "AR lässt sich hier nicht starten",
+              ? t("Keine Freigabe für die Kamera")
+              : t("AR lässt sich hier nicht starten"),
           );
         }
       }
@@ -153,9 +156,11 @@ export default function ArEntfernung({ offen, onSchliessen, onUebernehmen }) {
           lineHeight: 1.5,
         }}
       >
-        Fadenkreuz auf den <b>Stammfuß</b> richten – dorthin, wo der Stamm den
-        Boden trifft. Das Handy dabei langsam bewegen, damit der Boden erkannt
-        wird.
+        <Markiert
+          text={t(
+            "Fadenkreuz auf den *Stammfuß* richten – dorthin, wo der Stamm den Boden trifft. Das Handy dabei langsam bewegen, damit der Boden erkannt wird.",
+          )}
+        />
       </div>
 
       {/* Fadenkreuz: der Strahl geht durch die Bildmitte. */}
@@ -177,7 +182,7 @@ export default function ArEntfernung({ offen, onSchliessen, onUebernehmen }) {
           }}
         >
           <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
-            WAAGERECHTE ENTFERNUNG
+            {t("WAAGERECHTE ENTFERNUNG")}
           </div>
           <div
             style={{
@@ -191,7 +196,7 @@ export default function ArEntfernung({ offen, onSchliessen, onUebernehmen }) {
           </div>
           {entfernung == null && !fehler && (
             <div style={{ fontSize: 11, color: farben.muted }}>
-              Boden wird gesucht – Handy langsam schwenken
+              {t("Boden wird gesucht – Handy langsam schwenken")}
             </div>
           )}
           {fehler && <div style={{ fontSize: 12, color: farben.verb }}>{fehler}</div>}
@@ -205,7 +210,7 @@ export default function ArEntfernung({ offen, onSchliessen, onUebernehmen }) {
             }}
             style={{ ...knopf, flex: 1 }}
           >
-            Abbrechen
+            {t("Abbrechen")}
           </button>
           <button
             onClick={uebernehmen}
@@ -220,7 +225,7 @@ export default function ArEntfernung({ offen, onSchliessen, onUebernehmen }) {
               cursor: entfernung == null ? "default" : "pointer",
             }}
           >
-            Übernehmen
+            {t("Übernehmen")}
           </button>
         </div>
       </div>

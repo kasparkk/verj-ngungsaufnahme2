@@ -8,6 +8,7 @@ import Einzelbaeume from "./baum/Einzelbaeume.jsx";
 import Formzahlen from "./baum/Formzahlen.jsx";
 import KoordinatenKopieren from "./komponenten/KoordinatenKopieren.jsx";
 import { baueGeoJsonMessung, geoDateiname } from "./baum/geo.js";
+import { useT } from "./sprache.js";
 
 /* Rahmen der Baummessung mit zwei Verfahren:
 
@@ -18,6 +19,7 @@ import { baueGeoJsonMessung, geoDateiname } from "./baum/geo.js";
    Ort und Formzahlen gelten fuer den Bestand und werden deshalb von beiden
    Verfahren geteilt. */
 export default function Baummessung() {
+  const t = useT();
   const [stand, setStand] = useState(leererStand);
   const [geladen, setGeladen] = useState(false);
   const [hinweis, setHinweis] = useState("");
@@ -42,7 +44,7 @@ export default function Baummessung() {
     try {
       speichern(stand);
     } catch {
-      setHinweis("Speichern fehlgeschlagen");
+      setHinweis(t("Speichern fehlgeschlagen"));
     }
   }, [stand, geladen]);
 
@@ -58,8 +60,8 @@ export default function Baummessung() {
 
   useEffect(() => {
     if (!hinweis) return;
-    const t = setTimeout(() => setHinweis(""), 2500);
-    return () => clearTimeout(t);
+    const uhr = setTimeout(() => setHinweis(""), 2500);
+    return () => clearTimeout(uhr);
   }, [hinweis]);
 
   const setzeFeld = (feld) => (wert) => setStand((alt) => ({ ...alt, [feld]: wert }));
@@ -73,7 +75,7 @@ export default function Baummessung() {
      oeffnet, will keine neue Koordinate darueberschreiben. */
   const holeStandort = () => {
     if (!navigator.geolocation) {
-      setHinweis("Kein GPS auf diesem Gerät");
+      setHinweis(t("Kein GPS auf diesem Gerät"));
       return;
     }
     setGpsLaeuft(true);
@@ -89,7 +91,7 @@ export default function Baummessung() {
       },
       () => {
         setGpsLaeuft(false);
-        setHinweis("Standort nicht verfügbar");
+        setHinweis(t("Standort nicht verfügbar"));
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
     );
@@ -116,14 +118,14 @@ export default function Baummessung() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    setHinweis(erfolg ?? `${name} gespeichert`);
+    setHinweis(erfolg ?? t("{name} gespeichert", { name }));
   };
 
   /* Die Messung als Punkt fuer ein Kartenprogramm. Ohne Ortung gibt es
      nichts zu zeigen - dann ein Hinweis statt einer leeren Datei. */
   const geodaten = async () => {
     if (stand.lat == null || stand.lon == null) {
-      setHinweis("Erst den Standort erfassen – ohne Punkt keine Karte");
+      setHinweis(t("Erst den Standort erfassen – ohne Punkt keine Karte"));
       return;
     }
 
@@ -131,13 +133,13 @@ export default function Baummessung() {
     if (stand.modus === "wzp") {
       const erg = wzpAuswerten(stand.wzp.arten, stand.wzp.zaehlfaktor, stand.formzahlen, stand.alter, stand.formzahlStufen);
       if (!erg.jeArt.some((a) => a.anzahl > 0)) {
-        setHinweis("Noch nichts gezählt");
+        setHinweis(t("Noch nichts gezählt"));
         return;
       }
       auswertung = { ...erg, zaehlfaktor: zahl(stand.wzp.zaehlfaktor) || 4 };
     } else {
       if (!stand.baeume.length) {
-        setHinweis("Noch keine Bäume eingetragen");
+        setHinweis(t("Noch keine Bäume eingetragen"));
         return;
       }
       const flaeche = zahl(stand.flaeche) || 0;
@@ -156,7 +158,7 @@ export default function Baummessung() {
 
     const geo = baueGeoJsonMessung(stand, auswertung);
     const blob = new Blob([JSON.stringify(geo, null, 2)], { type: "application/geo+json" });
-    await weitergeben(blob, geoDateiname(stand), "Baummessung", "Standort gespeichert");
+    await weitergeben(blob, geoDateiname(stand), "Baummessung", t("Standort gespeichert"));
   };
 
   const excelDatei = async () => {
@@ -166,7 +168,7 @@ export default function Baummessung() {
       const erg = wzpAuswerten(stand.wzp.arten, stand.wzp.zaehlfaktor, stand.formzahlen, stand.alter, stand.formzahlStufen);
       const mitZahlen = erg.jeArt.filter((a) => a.anzahl > 0);
       if (!mitZahlen.length) {
-        setHinweis("Noch nichts gezählt");
+        setHinweis(t("Noch nichts gezählt"));
         return;
       }
       zeilen = [
@@ -193,7 +195,7 @@ export default function Baummessung() {
       ];
     } else {
       if (!stand.baeume.length) {
-        setHinweis("Noch keine Bäume eingetragen");
+        setHinweis(t("Noch keine Bäume eingetragen"));
         return;
       }
       zeilen = [
@@ -214,7 +216,7 @@ export default function Baummessung() {
     }
 
     const name = `Baummessung_${stand.ort || "Aufnahme"}.xlsx`;
-    await weitergeben(baueXlsx(zeilen, "Baummessung"), name, "Baummessung", "Excel-Datei gespeichert");
+    await weitergeben(baueXlsx(zeilen, "Baummessung"), name, "Baummessung", t("Excel-Datei gespeichert"));
   };
 
   const feldStil = {
@@ -258,7 +260,7 @@ export default function Baummessung() {
     >
       <div style={{ display: "flex", gap: 12, marginBottom: 14 }}>
         <div style={{ flex: 2 }}>
-          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>ORT / BESTAND</div>
+          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>{t("ORT / BESTAND")}</div>
           <input
             style={feldStil}
             value={stand.ort}
@@ -267,7 +269,7 @@ export default function Baummessung() {
           />
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>ALTER Jahre</div>
+          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>{t("ALTER Jahre")}</div>
           <input
             style={feldStil}
             value={stand.alter}
@@ -297,7 +299,7 @@ export default function Baummessung() {
           {gpsLaeuft
             ? "📍 …"
             : stand.lat == null
-              ? "📍 Standort erfassen"
+              ? t("📍 Standort erfassen")
               : `📍 ${stand.lat.toFixed(5)}, ${stand.lon.toFixed(5)}`}
         </button>
         {stand.genauigkeit != null && (
@@ -314,13 +316,15 @@ export default function Baummessung() {
 
       {stand.modus === "wzp" && (
         <div style={{ fontSize: 10, color: farben.muted, marginTop: -8, marginBottom: 14 }}>
-          Das Alter gilt für alle Baumarten – bei jeder Baumart lässt es sich einzeln überschreiben.
+          {t(
+            "Das Alter gilt für alle Baumarten – bei jeder Baumart lässt es sich einzeln überschreiben.",
+          )}
         </div>
       )}
 
       <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-        {verfahren("wzp", "Winkelzählprobe")}
-        {verfahren("einzel", "Einzelbäume")}
+        {verfahren("wzp", t("Winkelzählprobe"))}
+        {verfahren("einzel", t("Einzelbäume"))}
       </div>
 
       {stand.modus === "wzp" ? (
@@ -358,7 +362,7 @@ export default function Baummessung() {
           cursor: "pointer",
         }}
       >
-        {formzahlenOffen ? "Formzahlen ausblenden" : "Formzahlen anpassen"}
+        {formzahlenOffen ? t("Formzahlen ausblenden") : t("Formzahlen anpassen")}
       </button>
 
       {formzahlenOffen && (
@@ -412,7 +416,7 @@ export default function Baummessung() {
               cursor: "pointer",
             }}
           >
-            Excel
+            {t("Excel")}
           </button>
           <button
             onClick={geodaten}
@@ -427,14 +431,14 @@ export default function Baummessung() {
               cursor: "pointer",
             }}
           >
-            Geodaten
+            {t("Geodaten")}
             <div style={{ fontSize: 10, opacity: 0.6, marginTop: 1 }}>GeoJSON</div>
           </button>
         </div>
         <div style={{ fontSize: 10, color: farben.muted, marginTop: 8, lineHeight: 1.5 }}>
-          Geodaten: eine GeoJSON-Datei (.geojson) mit dem Standpunkt und den
-          Ergebnissen – zum Öffnen in QGIS, OsmAnd, Organic Maps oder einem
-          anderen Kartenprogramm.
+          {t(
+            "Geodaten: eine GeoJSON-Datei (.geojson) mit dem Standpunkt und den Ergebnissen – zum Öffnen in QGIS, OsmAnd, Organic Maps oder einem anderen Kartenprogramm.",
+          )}
         </div>
       </div>
     </div>

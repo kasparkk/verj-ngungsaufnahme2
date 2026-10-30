@@ -26,6 +26,19 @@ neigung.cjs     Die Entfernungsschätzung aus dem Neigungswinkel.
                 8 m gar keine Zahl mehr anbietet - eine Zahl ohne ihre
                 Spanne wäre hier schlimmer als keine.
 
+sprache.mjs     Die Übersetzung, ohne Browser.
+                  node pruefungen/sprache.mjs
+                Liest ALLE t()-Aufrufe aus dem Quelltext und meldet, was
+                im Wörterbuch fehlt - dazu Baumarten, Werte des
+                Aufnahmebogens, Platzhalter und fehlende Importe. Eine
+                vergessene Übersetzung fällt sonst niemandem auf: Es
+                steht einfach ein deutsches Wort im englischen Bild.
+
+englisch.cjs    Die englische Fassung in der Oberfläche. Gleicher Aufruf
+                wie grenzstamm.cjs. Prüft neben den Texten vor allem,
+                dass die Sprache NICHT in die Daten durchschlägt:
+                gespeichert und exportiert wird immer der deutsche Wert.
+
 Warum hier und nicht im Arbeitsverzeichnis: Der Container, in dem
 entwickelt wird, wird gelegentlich neu aufgesetzt. Zweimal sind dabei
 alle Prüfskripte verlorengegangen. Im Repository überleben sie das.

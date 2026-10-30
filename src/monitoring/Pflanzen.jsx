@@ -4,6 +4,7 @@ import { BAUMARTEN, HOEHENKLASSEN, MERKMALE, MAX_PFLANZEN, artNach } from "./sta
 import { schadensklasse, istVerbissen, rolleVon, aktiveArten } from "./berechnung.js";
 import { leerePflanze } from "./speicher.js";
 import { Feld, AuswahlFeld, Schalter, beschriftung } from "./Felder.jsx";
+import { useT, artName } from "../sprache.js";
 
 const KLASSEN_FARBE = {
   "1 — gering": farben.unverb,
@@ -19,6 +20,7 @@ const KLASSEN_FARBE = {
    Schadensmerkmale werden dagegen zurueckgesetzt, weil ein stehen
    gebliebener Haken die naechste Pflanze still verfaelschen wuerde. */
 export default function Pflanzen({ punkt, aendere, setHinweis }) {
+  const t = useT();
   const [entwurf, setEntwurf] = useState(leerePflanze);
   const [aendertIndex, setAendertIndex] = useState(null);
   const [andereOffen, setAndereOffen] = useState(false);
@@ -31,7 +33,7 @@ export default function Pflanzen({ punkt, aendere, setHinweis }) {
 
   const uebernehmen = () => {
     if (!fertig) {
-      setHinweis(entwurf.kuerzel ? "Höhenklasse fehlt" : "Baumart wählen");
+      setHinweis(entwurf.kuerzel ? t("Höhenklasse fehlt") : t("Baumart wählen"));
       return;
     }
     if (aendertIndex !== null) {
@@ -41,7 +43,7 @@ export default function Pflanzen({ punkt, aendere, setHinweis }) {
       }));
       setAendertIndex(null);
       setEntwurf(leerePflanze());
-      setHinweis("Geändert");
+      setHinweis(t("Geändert"));
       return;
     }
     if (voll) {
@@ -83,11 +85,14 @@ export default function Pflanzen({ punkt, aendere, setHinweis }) {
       >
         <div style={{ ...beschriftung, marginBottom: 10 }}>
           {aendertIndex !== null
-            ? `Pflanze ${aendertIndex + 1} ändern`
-            : `Pflanze ${punkt.pflanzen.length + 1} von höchstens ${MAX_PFLANZEN}`}
+            ? t("Pflanze {n} ändern", { n: aendertIndex + 1 })
+            : t("Pflanze {n} von höchstens {max}", {
+                n: punkt.pflanzen.length + 1,
+                max: MAX_PFLANZEN,
+              })}
         </div>
 
-        <Feld titel="Baumart">
+        <Feld titel={t("Baumart")}>
           {aktive.length > 0 && (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 6 }}>
               {aktive.map((a) => {
@@ -96,7 +101,7 @@ export default function Pflanzen({ punkt, aendere, setHinweis }) {
                   <button
                     key={a.kuerzel}
                     onClick={() => setzeEntwurf("kuerzel")(a.kuerzel)}
-                    aria-label={a.name}
+                    aria-label={artName(a.name)}
                     style={{
                       background: gewaehlt ? farben.unverb : "transparent",
                       border: `1px solid ${gewaehlt ? farben.unverb : farben.line}`,
@@ -125,8 +130,8 @@ export default function Pflanzen({ punkt, aendere, setHinweis }) {
                 setzeEntwurf("kuerzel")(k);
                 setAndereOffen(false);
               }}
-              werte={BAUMARTEN.map((a) => ({ wert: a.kuerzel, text: a.name }))}
-              leerText="— andere Baumart —"
+              werte={BAUMARTEN.map((a) => ({ wert: a.kuerzel, text: artName(a.name) }))}
+              leerText={t("— andere Baumart —")}
             />
           ) : (
             <button
@@ -137,18 +142,19 @@ export default function Pflanzen({ punkt, aendere, setHinweis }) {
                 fontSize: 13, cursor: "pointer",
               }}
             >
-              andere Baumart …
+              {t("andere Baumart …")}
             </button>
           )}
 
           {entwurf.kuerzel && (
             <div style={{ fontSize: 11, color: farben.muted, marginTop: 6 }}>
-              {artNach(entwurf.kuerzel)?.name} · Rolle {rolleVon(entwurf.kuerzel, punkt.arten)}
+              {artName(artNach(entwurf.kuerzel)?.name)} · {t("Rolle")}{" "}
+              {rolleVon(entwurf.kuerzel, punkt.arten)}
             </div>
           )}
         </Feld>
 
-        <Feld titel="Höhenklasse">
+        <Feld titel={t("Höhenklasse")}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 5 }}>
             {HOEHENKLASSEN.map((h) => {
               const gewaehlt = String(entwurf.hk) === String(h.stufe);
@@ -176,14 +182,14 @@ export default function Pflanzen({ punkt, aendere, setHinweis }) {
           </div>
         </Feld>
 
-        <Feld titel="Merkmale">
+        <Feld titel={t("Merkmale")}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 5 }}>
             {MERKMALE.map((m) => (
               <Schalter
                 key={m.feld}
                 an={entwurf[m.feld] === 1}
                 setAn={(w) => setzeEntwurf(m.feld)(w)}
-                text={m.kurz}
+                text={t(m.kurz)}
                 // Der Verbissschutz ist kein Schaden, sondern eine Maßnahme.
                 farbe={m.feld === "schutz" ? farben.unverb : farben.verb}
               />
@@ -194,7 +200,7 @@ export default function Pflanzen({ punkt, aendere, setHinweis }) {
         {klasse && klasse !== "—" && (
           <div style={{ fontSize: 12, color: KLASSEN_FARBE[klasse] ?? farben.muted, marginBottom: 10 }}>
             Schadensklasse {klasse}
-            {istVerbissen(entwurf) ? " · verbissen" : ""}
+            {istVerbissen(entwurf) ? ` · ${t("verbissen")}` : ""}
           </div>
         )}
 
@@ -214,7 +220,7 @@ export default function Pflanzen({ punkt, aendere, setHinweis }) {
               WebkitTapHighlightColor: "transparent",
             }}
           >
-            {aendertIndex !== null ? "Änderung speichern" : "+ Pflanze aufnehmen"}
+            {aendertIndex !== null ? t("Änderung speichern") : t("+ Pflanze aufnehmen")}
           </button>
           {aendertIndex !== null && (
             <button
@@ -228,7 +234,7 @@ export default function Pflanzen({ punkt, aendere, setHinweis }) {
                 fontSize: 14, cursor: "pointer",
               }}
             >
-              Abbrechen
+              {t("Abbrechen")}
             </button>
           )}
         </div>
@@ -273,19 +279,19 @@ export default function Pflanzen({ punkt, aendere, setHinweis }) {
             <div
               onClick={() => bearbeiten(i)}
               role="button"
-              aria-label={`Pflanze ${i + 1} ändern`}
+              aria-label={t("Pflanze {n} ändern", { n: i + 1 })}
               style={{ flex: 1, minWidth: 0, cursor: "pointer" }}
             >
               <div style={{ fontSize: 14, fontWeight: 600 }}>
                 {pf.kuerzel} <span style={{ color: farben.muted, fontWeight: 400 }}>· HK {pf.hk}</span>
               </div>
               <div style={{ fontSize: 10, color: farben.muted, marginTop: 1 }}>
-                {merkmale.length ? merkmale.map((m) => m.kurz).join(" · ") : "ohne Befund"}
+                {merkmale.length ? merkmale.map((m) => t(m.kurz)).join(" · ") : t("ohne Befund")}
               </div>
             </div>
             <button
               onClick={() => loeschen(i)}
-              aria-label={`Pflanze ${i + 1} löschen`}
+              aria-label={t("Pflanze {n} löschen", { n: i + 1 })}
               style={{
                 background: "none", border: "none", color: farben.muted,
                 fontSize: 18, cursor: "pointer", padding: "0 2px",

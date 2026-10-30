@@ -8,6 +8,7 @@ import { laden, speichern, neuerPunkt, naechsteNummer, VORLAGE_FELDER } from "./
 import { masterZeilen, baueCsv, baueGeoJson } from "./monitoring/export.js";
 import { sollpunkteLesen } from "./monitoring/einlesen.js";
 import { istVerbissen } from "./monitoring/berechnung.js";
+import { useT, t } from "./sprache.js";
 
 /* Verjuengungszustandsmonitoring - die Aufnahmemaske der Landesforst
    Brandenburg als App.
@@ -17,15 +18,20 @@ import { istVerbissen } from "./monitoring/berechnung.js";
    darunter derselbe Bogen wie in der Datei - Kopf, Pflanzen, Auswertung.
    Ein abgeschlossener Punkt wird gruen. */
 
+/* Die Reiter stehen als Textfunktion da, damit pruefungen/sprache.mjs sie
+   findet: Die Pruefung liest nur woertliche t()-Aufrufe aus dem Quelltext,
+   und ein t(variable) waere ihr entgangen - genau so sind "Kopf" und
+   "Auswertung" beim ersten Mal deutsch stehengeblieben. */
 const REITER = [
-  { id: "kopf", text: "Kopf" },
-  { id: "pflanzen", text: "Pflanzen" },
-  { id: "auswertung", text: "Auswertung" },
+  { id: "Kopf", text: () => t("Kopf") },
+  { id: "Pflanzen", text: () => t("Pflanzen") },
+  { id: "Auswertung", text: () => t("Auswertung") },
 ];
 
 export default function Monitoring() {
+  const t = useT();
   const [stand, setStand] = useState(null);
-  const [reiter, setReiter] = useState("kopf");
+  const [reiter, setReiter] = useState("Kopf");
   const [hinweis, setHinweis] = useState("");
 
   useEffect(() => {
@@ -38,8 +44,8 @@ export default function Monitoring() {
 
   useEffect(() => {
     if (!hinweis) return;
-    const t = setTimeout(() => setHinweis(""), 2600);
-    return () => clearTimeout(t);
+    const uhr = setTimeout(() => setHinweis(""), 2600);
+    return () => clearTimeout(uhr);
   }, [hinweis]);
 
   if (!stand) return null;
@@ -69,7 +75,7 @@ export default function Monitoring() {
     try {
       text = await datei.text();
     } catch {
-      setHinweis("Datei nicht lesbar");
+      setHinweis(t("Datei nicht lesbar"));
       return;
     }
 
@@ -112,8 +118,8 @@ export default function Monitoring() {
       );
 
       setHinweis(
-        `${punkte.length} Sollpunkte aus ${format} übernommen` +
-          (ergaenzt ? ` (${ergaenzt} vorhandenen ergänzt)` : ""),
+        t("{n} Sollpunkte aus {format} übernommen", { n: punkte.length, format }) +
+          (ergaenzt ? t(" ({n} vorhandenen ergänzt)", { n: ergaenzt }) : ""),
       );
       return { ...alt, punkte: liste, aktiv: 0 };
     });
@@ -128,11 +134,11 @@ export default function Monitoring() {
 
   const punktWeg = () => {
     if (punkt.pflanzen.length || punkt.lat != null) {
-      setHinweis("Punkt enthält Daten – erst Pflanzen löschen");
+      setHinweis(t("Punkt enthält Daten – erst Pflanzen löschen"));
       return;
     }
     if (stand.punkte.length === 1) {
-      setHinweis("Der letzte Punkt bleibt stehen");
+      setHinweis(t("Der letzte Punkt bleibt stehen"));
       return;
     }
     setStand((alt) => {
@@ -162,7 +168,7 @@ export default function Monitoring() {
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    setHinweis(`${name} gespeichert`);
+    setHinweis(t("{name} gespeichert", { name }));
   };
 
   const dateiname = (endung) =>
@@ -181,7 +187,7 @@ export default function Monitoring() {
   const geo = () => {
     const mitOrt = stand.punkte.filter((p) => p.lat != null || p.sollLat != null);
     if (!mitOrt.length) {
-      setHinweis("Noch kein Punkt hat eine Koordinate");
+      setHinweis(t("Noch kein Punkt hat eine Koordinate"));
       return;
     }
     ausgeben(
@@ -214,7 +220,7 @@ export default function Monitoring() {
             <button
               key={p.nr}
               onClick={() => setStand((alt) => ({ ...alt, aktiv: i }))}
-              aria-label={`Punkt ${p.nr}`}
+              aria-label={t("Punkt {nr}", { nr: p.nr })}
               style={{
                 flex: "0 0 auto",
                 background: fertig ? farben.unverb : aktiv ? farben.surfaceHi : "transparent",
@@ -236,7 +242,7 @@ export default function Monitoring() {
         })}
         <button
           onClick={punktHinzu}
-          aria-label="Neuer Punkt"
+          aria-label={t("Neuer Punkt")}
           style={{
             flex: "0 0 auto",
             background: "transparent",
@@ -248,7 +254,7 @@ export default function Monitoring() {
             cursor: "pointer",
           }}
         >
-          + Punkt
+          + {t("Punkt")}
         </button>
       </div>
 
@@ -260,7 +266,7 @@ export default function Monitoring() {
             borderRadius: 10, padding: "9px 0", fontSize: 12, cursor: "pointer",
           }}
         >
-          Sollpunkte aus dem Geoprogramm laden
+          {t("Sollpunkte aus dem Geoprogramm laden")}
           <input
             type="file"
             accept=".geojson,.json,.csv,.txt,.gpx,.kml,application/geo+json,text/csv,application/gpx+xml"
@@ -274,17 +280,21 @@ export default function Monitoring() {
         </label>
       </div>
       <div style={{ fontSize: 9, color: farben.muted, marginBottom: 12, lineHeight: 1.5 }}>
-        GeoJSON, CSV (Rechts-/Hochwert oder Länge/Breite), GPX oder KML. Das
-        Format und das Bezugssystem erkennt die App selbst.
+        {t(
+          "GeoJSON, CSV (Rechts-/Hochwert oder Länge/Breite), GPX oder KML. Das Format und das Bezugssystem erkennt die App selbst.",
+        )}
       </div>
 
       <div style={{ fontSize: 10, color: farben.muted, marginBottom: 14 }}>
-        {stand.punkte.filter((p) => p.abgeschlossen).length} von {stand.punkte.length} Punkten
-        abgeschlossen · Punkt {punkt.nr}
-        {punkt.verlegt ? " (verlegt)" : ""} ·{" "}
-        {punkt.pflanzen.length} Pflanzen
+        {t("{fertig} von {alle} Punkten abgeschlossen · Punkt {nr}", {
+          fertig: stand.punkte.filter((p) => p.abgeschlossen).length,
+          alle: stand.punkte.length,
+          nr: punkt.nr,
+        })}
+        {punkt.verlegt ? ` ${t("(verlegt)")}` : ""} ·{" "}
+        {t("{n} Pflanzen", { n: punkt.pflanzen.length })}
         {punkt.pflanzen.length > 0 &&
-          `, davon ${punkt.pflanzen.filter(istVerbissen).length} verbissen`}
+          t(", davon {n} verbissen", { n: punkt.pflanzen.filter(istVerbissen).length })}
       </div>
 
       {/* Reiter */}
@@ -306,25 +316,33 @@ export default function Monitoring() {
               cursor: "pointer",
             }}
           >
-            {r.text}
+            {r.text()}
           </button>
         ))}
       </div>
 
-      {reiter === "kopf" && <Kopf punkt={punkt} aendere={aendere} setHinweis={setHinweis} />}
-      {reiter === "pflanzen" && <Pflanzen punkt={punkt} aendere={aendere} setHinweis={setHinweis} />}
-      {reiter === "auswertung" && <Auswertung punkt={punkt} aendere={aendere} />}
+      {reiter === "Kopf" && <Kopf punkt={punkt} aendere={aendere} setHinweis={setHinweis} />}
+      {reiter === "Pflanzen" && (
+        <Pflanzen punkt={punkt} aendere={aendere} setHinweis={setHinweis} />
+      )}
+      {reiter === "Auswertung" && <Auswertung punkt={punkt} aendere={aendere} />}
 
       {/* Ausgabe */}
       <div style={{ display: "flex", gap: 8, marginTop: 26 }}>
-        <button onClick={excel} style={knopf}>Excel</button>
-        <button onClick={csv} style={knopf}>CSV</button>
-        <button onClick={geo} style={knopf}>Geodaten</button>
+        <button onClick={excel} style={knopf}>
+          {t("Excel")}
+        </button>
+        <button onClick={csv} style={knopf}>
+          {t("CSV")}
+        </button>
+        <button onClick={geo} style={knopf}>
+          {t("Geodaten")}
+        </button>
       </div>
       <div style={{ fontSize: 10, color: farben.muted, marginTop: 8, lineHeight: 1.5 }}>
-        Excel und CSV enthalten alle Punkte in den Spalten der Mastertabelle,
-        eine Zeile je Pflanze. Die Geodaten-Datei (GeoJSON) enthält die
-        Aufnahmepunkte mit Ist- und Soll-Lage für die Wiederholungsaufnahme.
+        {t(
+          "Excel und CSV enthalten alle Punkte in den Spalten der Mastertabelle, eine Zeile je Pflanze. Die Geodaten-Datei (GeoJSON) enthält die Aufnahmepunkte mit Ist- und Soll-Lage für die Wiederholungsaufnahme.",
+        )}
       </div>
 
       <button
@@ -334,7 +352,7 @@ export default function Monitoring() {
           color: farben.muted, fontSize: 12, cursor: "pointer", padding: "8px 0",
         }}
       >
-        Diesen Punkt löschen
+        {t("Diesen Punkt löschen")}
       </button>
 
       {hinweis && (

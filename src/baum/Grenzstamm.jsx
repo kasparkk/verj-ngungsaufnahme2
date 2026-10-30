@@ -2,6 +2,7 @@ import { useState } from "react";
 import { farben } from "../konfiguration.js";
 import { grenzRadius, zaehltMit } from "./berechnung.js";
 import ArEntfernung, { arMoeglich } from "./ArEntfernung.jsx";
+import { useT } from "../sprache.js";
 
 /* Grenzstammpruefung.
 
@@ -14,6 +15,7 @@ import ArEntfernung, { arMoeglich } from "./ArEntfernung.jsx";
    Deshalb: BHD kluppen, Entfernung messen, nachsehen. Mehr steckt nicht
    dahinter - r = 0,5 * BHD / Wurzel(k), hergeleitet in berechnung.js. */
 export default function Grenzstamm({ zaehlfaktor }) {
+  const t = useT();
   const [offen, setOffen] = useState(false);
   const [bhd, setBhd] = useState("");
   const [weite, setWeite] = useState("");
@@ -27,6 +29,10 @@ export default function Grenzstamm({ zaehlfaktor }) {
 
   const radius = grenzRadius(bhd, zaehlfaktor);
   const zaehlt = zaehltMit(bhd, zaehlfaktor, weite);
+  const abstand =
+    radius == null
+      ? null
+      : Math.abs(Number(String(weite).replace(",", ".")) - radius).toFixed(2);
 
   const feld = {
     background: "transparent",
@@ -57,7 +63,7 @@ export default function Grenzstamm({ zaehlfaktor }) {
           cursor: "pointer",
         }}
       >
-        {offen ? "Grenzstamm schließen" : "Grenzstamm prüfen"}
+        {offen ? t("Grenzstamm schließen") : t("Grenzstamm prüfen")}
       </button>
 
       {offen && (
@@ -70,31 +76,33 @@ export default function Grenzstamm({ zaehlfaktor }) {
           }}
         >
           <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, marginBottom: 10 }}>
-            Für Bäume, bei denen man es nicht sieht: BHD kluppen, Entfernung zur
-            Stammmitte messen. Zählfaktor {zaehlfaktor || "–"} m²/ha.
+            {t(
+              "Für Bäume, bei denen man es nicht sieht: BHD kluppen, Entfernung zur Stammmitte messen. Zählfaktor {k} m²/ha.",
+              { k: zaehlfaktor || "–" },
+            )}
           </div>
 
           <div style={{ display: "flex", gap: 12 }}>
             <div style={{ flex: 1 }}>
-              <div style={beschriftung}>BHD cm</div>
+              <div style={beschriftung}>{t("BHD cm")}</div>
               <input
                 style={feld}
                 value={bhd}
                 onChange={(e) => setBhd(e.target.value)}
                 inputMode="decimal"
                 placeholder="30"
-                aria-label="BHD des Grenzstamms"
+                aria-label={t("BHD des Grenzstamms")}
               />
             </div>
             <div style={{ flex: 1 }}>
-              <div style={beschriftung}>ENTFERNUNG m</div>
+              <div style={beschriftung}>{t("ENTFERNUNG m")}</div>
               <input
                 style={feld}
                 value={weite}
                 onChange={(e) => setWeite(e.target.value)}
                 inputMode="decimal"
                 placeholder="7,4"
-                aria-label="Entfernung zum Grenzstamm"
+                aria-label={t("Entfernung zum Grenzstamm")}
               />
             </div>
           </div>
@@ -114,7 +122,7 @@ export default function Grenzstamm({ zaehlfaktor }) {
                 cursor: "pointer",
               }}
             >
-              Entfernung mit AR messen
+              {t("Entfernung mit AR messen")}
             </button>
           )}
 
@@ -130,15 +138,15 @@ export default function Grenzstamm({ zaehlfaktor }) {
             }}
           >
             {radius == null ? (
-              <div style={{ fontSize: 12, color: farben.muted }}>BHD eintragen</div>
+              <div style={{ fontSize: 12, color: farben.muted }}>{t("BHD eintragen")}</div>
             ) : (
               <>
-                <div style={beschriftung}>GRENZRADIUS</div>
+                <div style={beschriftung}>{t("GRENZRADIUS")}</div>
                 <div style={{ fontSize: 26, fontWeight: 800, color: farben.text }}>
                   {radius.toFixed(2)} m
                 </div>
                 <div style={{ fontSize: 11, color: farben.muted, marginTop: 2 }}>
-                  Bäume innerhalb dieser Entfernung werden gezählt
+                  {t("Bäume innerhalb dieser Entfernung werden gezählt")}
                 </div>
                 {zaehlt != null && (
                   <div
@@ -149,10 +157,11 @@ export default function Grenzstamm({ zaehlfaktor }) {
                       color: zaehlt ? farben.unverb : farben.verb,
                     }}
                   >
-                    {zaehlt ? "zählt mit" : "zählt nicht"}
+                    {zaehlt ? t("zählt mit") : t("zählt nicht")}
                     <div style={{ fontSize: 11, fontWeight: 400, opacity: 0.85 }}>
-                      {Math.abs(Number(String(weite).replace(",", ".")) - radius).toFixed(2)} m
-                      {zaehlt ? " innerhalb" : " außerhalb"} der Grenze
+                      {zaehlt
+                        ? t("{m} m innerhalb der Grenze", { m: abstand })
+                        : t("{m} m außerhalb der Grenze", { m: abstand })}
                     </div>
                   </div>
                 )}

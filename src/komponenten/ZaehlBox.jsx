@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { farben } from "../konfiguration.js";
 import Strichliste from "./Strichliste.jsx";
+import { useT } from "../sprache.js";
 
 /* Eine Zaehlbox (verbissen bzw. unverbissen) fuer eine Baumart.
 
@@ -16,6 +17,7 @@ import Strichliste from "./Strichliste.jsx";
    gross=true macht die Box etwas groesser (fuer "unverbissen", die haeufigere
    Eingabe). */
 export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, gross }) {
+  const t = useT();
   const [eingabe, setEingabe] = useState(false);
   // Verhindert, dass das Wegtippen aus dem Zahlenfeld zusaetzlich als Plus zaehlt:
   // Blur- und Klick-Ereignis derselben Beruehrung folgen kurz hintereinander.
@@ -137,7 +139,7 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
             setEingabe(true);
           }}
           role="button"
-          aria-label="Zahl eingeben"
+          aria-label={t("Zahl eingeben")}
           style={{ ...kleinerKnopf, border: `1px solid ${farbe}`, color: farbe, fontSize: 13 }}
         >
           ✎
@@ -149,7 +151,7 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
             if (wert !== 0) onMinus();
           }}
           role="button"
-          aria-label="Eins abziehen"
+          aria-label={t("Eins abziehen")}
           style={{
             ...kleinerKnopf,
             border: `1px solid ${farbe}`,
@@ -167,7 +169,7 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
             onSet(wert + 5);
           }}
           role="button"
-          aria-label="Fünf dazu"
+          aria-label={t("Fünf dazu")}
           style={{
             ...kleinerKnopf,
             width: 34,

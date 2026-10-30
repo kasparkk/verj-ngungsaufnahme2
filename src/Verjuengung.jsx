@@ -6,17 +6,19 @@ import { baueTabelle, baueZeilen } from "./tabelle.js";
 import { baueXlsx } from "./xlsx.js";
 import PersonWahl, { alsBuchstabe } from "./komponenten/PersonWahl.jsx";
 import KoordinatenKopieren from "./komponenten/KoordinatenKopieren.jsx";
-import { zeilenHochladen, ergebnisAllePersonen, ergebnisEinePerson, istSchlafend, RUHE_HINWEIS } from "./datenbank.js";
+import { zeilenHochladen, ergebnisAllePersonen, ergebnisEinePerson, istSchlafend } from "./datenbank.js";
 import { baueGeoJsonKreise, geoDateiname } from "./ergebnisExport.js";
 import ZaehlBox from "./komponenten/ZaehlBox.jsx";
 import UebersichtTabelle from "./komponenten/UebersichtTabelle.jsx";
 import StandortKarte from "./komponenten/StandortKarte.jsx";
 import ErgebnisAnsicht from "./komponenten/ErgebnisAnsicht.jsx";
+import { useT, artName } from "./sprache.js";
 
 // Wartezeit nach der letzten Aenderung, bevor automatisch abgeglichen wird.
 const SYNC_VERZOEGERUNG = 1500;
 
 export default function Verjuengung() {
+  const t = useT();
   // Geraeteweit - aendert sich nicht von Tag zu Tag.
   const [trupp, setTrupp] = useState("");
   const [radius, setRadius] = useState("100");
@@ -142,7 +144,7 @@ export default function Verjuengung() {
         },
       });
     } catch {
-      setHinweis("Speichern fehlgeschlagen");
+      setHinweis(t("Speichern fehlgeschlagen"));
     }
   }, [trupp, radius, datum, abteilung, arten, kreise, aktiv, gesendet, andereBlaetter, geladen]);
 
@@ -386,7 +388,7 @@ export default function Verjuengung() {
      Tag beim Start gemerkt und beim Eintreffen geprueft. */
   const holeStandort = (nr) => {
     if (!navigator.geolocation) {
-      setHinweis("Kein GPS auf diesem Gerät");
+      setHinweis(t("Kein GPS auf diesem Gerät"));
       return;
     }
     const fuerTag = datumRef.current;
@@ -411,7 +413,7 @@ export default function Verjuengung() {
       () => {
         setGpsLaeuft(false);
         if (datumRef.current !== fuerTag) return;
-        setHinweis("Standort nicht verfügbar");
+        setHinweis(t("Standort nicht verfügbar"));
       },
       { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
     );
@@ -498,7 +500,12 @@ export default function Verjuengung() {
       (summe, z) => summe + (Number(z.verbissen) || 0) + (Number(z.unverbissen) || 0),
       0,
     );
-    setHinweis(`${geholteKreise.length} Probekreise mit ${pflanzen} Pflanzen geholt`);
+    setHinweis(
+      t("{kreise} Probekreise mit {pflanzen} Pflanzen geholt", {
+        kreise: geholteKreise.length,
+        pflanzen,
+      }),
+    );
   };
 
   const blattZurueckholen = async () => {
@@ -506,7 +513,7 @@ export default function Verjuengung() {
     const gebiet = kopf.abteilung.trim();
     const tag = normDatum(kopf.datum.trim());
     if (!person) {
-      setHinweis("Dafür braucht es eine Person");
+      setHinweis(t("Dafür braucht es eine Person"));
       return;
     }
 
@@ -524,7 +531,9 @@ export default function Verjuengung() {
 
       if (!zeilen.length) {
         setHinweis(
-          `${person}${gebiet ? ` · ${gebiet}` : " · ohne Gebiet"}: nichts in der Datenbank`,
+          t("{wer}: nichts in der Datenbank", {
+            wer: `${person}${gebiet ? ` · ${gebiet}` : ` · ${t("ohne Gebiet")}`}`,
+          }),
         );
         return;
       }
@@ -544,7 +553,7 @@ export default function Verjuengung() {
       );
       setHinweis("");
     } catch (fehler) {
-      setHinweis(fehler?.message || "Abruf fehlgeschlagen");
+      setHinweis(fehler?.message || t("Abruf fehlgeschlagen"));
     } finally {
       setHoltBlatt(false);
     }
@@ -562,9 +571,9 @@ export default function Verjuengung() {
         zielDatum,
       );
       if (zeilen.length) zeilenUebernehmen(zeilen);
-      else setHinweis("Für diesen Tag steht doch nichts da");
+      else setHinweis(t("Für diesen Tag steht doch nichts da"));
     } catch (fehler) {
-      setHinweis(fehler?.message || "Abruf fehlgeschlagen");
+      setHinweis(fehler?.message || t("Abruf fehlgeschlagen"));
     } finally {
       setHoltBlatt(false);
     }
@@ -574,7 +583,7 @@ export default function Verjuengung() {
     const sauber = (name ?? neueArt).trim();
     if (!sauber) return;
     if (arten.some((art) => art.name.toLowerCase() === sauber.toLowerCase())) {
-      setHinweis(`${sauber} ist schon in der Liste`);
+      setHinweis(t("{art} ist schon in der Liste", { art: sauber }));
       setNeueArt("");
       return;
     }
@@ -585,15 +594,15 @@ export default function Verjuengung() {
   const csvKopieren = async () => {
     const alsTabulator = baueTabelle(kopf, arten, kreise, "\t");
     if (!alsTabulator) {
-      setHinweis("Noch nichts gezählt");
+      setHinweis(t("Noch nichts gezählt"));
       return;
     }
     setCsvText(baueTabelle(kopf, arten, kreise, ";"));
     try {
       await navigator.clipboard.writeText(alsTabulator);
-      setHinweis("Kopiert – in Excel-Zelle A2 einfügen, fällt direkt in die Spalten");
+      setHinweis(t("Kopiert – in Excel-Zelle A2 einfügen, fällt direkt in die Spalten"));
     } catch {
-      setHinweis("Text unten markieren und kopieren");
+      setHinweis(t("Text unten markieren und kopieren"));
     }
   };
 
@@ -607,7 +616,7 @@ export default function Verjuengung() {
   const excelDatei = async () => {
     const zeilen = baueZeilen(kopf, arten, kreise);
     if (!zeilen) {
-      setHinweis("Noch nichts gezählt");
+      setHinweis(t("Noch nichts gezählt"));
       return;
     }
 
@@ -618,7 +627,7 @@ export default function Verjuengung() {
     try {
       const datei = new File([blob], name, { type: blob.type });
       if (navigator.canShare?.({ files: [datei] })) {
-        await navigator.share({ files: [datei], title: "Verjüngungsaufnahme" });
+        await navigator.share({ files: [datei], title: t("Verjüngungsaufnahme") });
         return;
       }
     } catch (fehler) {
@@ -635,10 +644,10 @@ export default function Verjuengung() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-      setHinweis("Excel-Datei gespeichert – in den Downloads antippen");
+      setHinweis(t("Excel-Datei gespeichert – in den Downloads antippen"));
     } catch {
       setCsvText(baueTabelle(kopf, arten, kreise, ";"));
-      setHinweis("Datei hier nicht möglich – Text unten markieren und kopieren");
+      setHinweis(t("Datei hier nicht möglich – Text unten markieren und kopieren"));
     }
   };
 
@@ -685,8 +694,8 @@ export default function Verjuengung() {
     if (!fuerDatei.length) {
       setHinweis(
         kreise.length === 1
-          ? "Für den Probekreis ist kein Standort erfasst – 📍 antippen"
-          : "Kein Probekreis hat einen Standort – 📍 antippen",
+          ? t("Für den Probekreis ist kein Standort erfasst – 📍 antippen")
+          : t("Kein Probekreis hat einen Standort – 📍 antippen"),
       );
       return;
     }
@@ -696,13 +705,13 @@ export default function Verjuengung() {
     const blob = new Blob([text], { type: "application/geo+json" });
     const ohne = kreise.length - fuerDatei.length;
     const meldung =
-      `${fuerDatei.length} Probekreise gespeichert` +
-      (ohne ? ` – ${ohne} ohne Standort weggelassen` : "");
+      t("{n} Probekreise gespeichert", { n: fuerDatei.length }) +
+      (ohne ? t(" – {n} ohne Standort weggelassen", { n: ohne }) : "");
 
     try {
       const datei = new File([blob], name, { type: blob.type });
       if (navigator.canShare?.({ files: [datei] })) {
-        await navigator.share({ files: [datei], title: "Verjüngungsaufnahme" });
+        await navigator.share({ files: [datei], title: t("Verjüngungsaufnahme") });
         return;
       }
     } catch (fehler) {
@@ -775,9 +784,7 @@ export default function Verjuengung() {
          (spaeter nochmal). Vorher las sich alles gleich. */
       const meldung = fehler?.message ?? "";
       setErgebnisFehler(
-        meldung === RUHE_HINWEIS || meldung.startsWith("Abruf")
-          ? meldung
-          : "Kein Netz – Ergebnis kann gerade nicht geladen werden",
+        fehler?.vomServer ? meldung : t("Kein Netz – Ergebnis kann gerade nicht geladen werden"),
       );
     } finally {
       setErgebnisLaedt(false);
@@ -874,11 +881,17 @@ export default function Verjuengung() {
     if (gezaehltHeute === 0) return "";
     if (gewarnt.current === blattSchluessel(alt, datum, abteilung)) return "";
     return (
-      `Auf diesem Blatt sind ${gezaehltHeute} Pflanzen gezählt – ${alt}, ${datum}` +
-      `${abteilung.trim() ? `, ${abteilung.trim()}` : ""}.\n\n` +
-      `${neu} fängt mit einem leeren Blatt an. Die Zahlen bleiben bei ${alt} ` +
-      `und gehen nicht verloren; zurückstellen holt sie wieder.\n\n` +
-      `Zu ${neu} wechseln?`
+      t("Auf diesem Blatt sind {n} Pflanzen gezählt – {blatt}.", {
+        n: gezaehltHeute,
+        blatt: `${alt}, ${datum}${abteilung.trim() ? `, ${abteilung.trim()}` : ""}`,
+      }) +
+      "\n\n" +
+      t(
+        "{neu} fängt mit einem leeren Blatt an. Die Zahlen bleiben bei {alt} und gehen nicht verloren; zurückstellen holt sie wieder.",
+        { neu, alt },
+      ) +
+      "\n\n" +
+      t("Zu {neu} wechseln?", { neu })
     );
   };
 
@@ -909,12 +922,19 @@ export default function Verjuengung() {
       return;
     }
     if (gezaehltHeute > 0) {
-      const bisher = abteilung.trim() || "ohne Gebiet";
+      const bisher = abteilung.trim() || t("ohne Gebiet");
       const weiter = window.confirm(
-        `Auf diesem Blatt sind ${gezaehltHeute} Pflanzen gezählt – ${bisher}, ${datum}.\n\n` +
-          `„${ziel}" bekommt ein eigenes, leeres Blatt. Die Zahlen bleiben bei ` +
-          `${bisher} und gehen nicht verloren; zurückstellen holt sie wieder.\n\n` +
-          `Zu „${ziel}" wechseln?`,
+        t("Auf diesem Blatt sind {n} Pflanzen gezählt – {blatt}.", {
+          n: gezaehltHeute,
+          blatt: `${bisher}, ${datum}`,
+        }) +
+          "\n\n" +
+          t(
+            "„{ziel}“ bekommt ein eigenes, leeres Blatt. Die Zahlen bleiben bei {bisher} und gehen nicht verloren; zurückstellen holt sie wieder.",
+            { ziel, bisher },
+          ) +
+          "\n\n" +
+          t("Zu „{ziel}“ wechseln?", { ziel }),
       );
       if (!weiter) {
         setAbteilungEntwurf(abteilung);
@@ -925,14 +945,15 @@ export default function Verjuengung() {
   };
 
   const syncText = () => {
-    if (!kopf.trupp.trim()) return "Person eintragen – dann wird automatisch abgeglichen";
-    if (sendet) return "Gleicht ab ...";
-    if (syncStatus === "ok") return "✓ Abgeglichen";
+    if (!kopf.trupp.trim()) return t("Person eintragen – dann wird automatisch abgeglichen");
+    if (sendet) return t("Gleicht ab ...");
+    if (syncStatus === "ok") return t("✓ Abgeglichen");
     if (syncStatus === "schlaeft")
-      return "Datenbank schläft – Zahlen sind gesichert und werden nachgetragen";
-    if (syncStatus === "err") return "Abgleich fehlgeschlagen – wird erneut versucht";
-    if (syncStatus === "offline") return "Kein Netz – wird nachgeholt, sobald wieder Empfang da ist";
-    return "Noch nichts gezählt";
+      return t("Datenbank schläft – Zahlen sind gesichert und werden nachgetragen");
+    if (syncStatus === "err") return t("Abgleich fehlgeschlagen – wird erneut versucht");
+    if (syncStatus === "offline")
+      return t("Kein Netz – wird nachgeholt, sobald wieder Empfang da ist");
+    return t("Noch nichts gezählt");
   };
   const syncFarbe =
     syncStatus === "err" || syncStatus === "offline" || syncStatus === "schlaeft"
@@ -956,7 +977,7 @@ export default function Verjuengung() {
           <PersonWahl wert={kopf.trupp} setWert={personWechseln} warnen={personWarnung} />
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>DATUM</div>
+          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>{t("DATUM")}</div>
           <input
             type="date"
             style={
@@ -993,18 +1014,21 @@ export default function Verjuengung() {
               der Mensch davor - und darunter steht, was er dann tut. */}
           <div style={{ fontSize: 12, color: farben.warn, lineHeight: 1.5 }}>
             <div style={{ fontWeight: 700, fontSize: 13 }}>
-              Zählst du für den {zeigeDatum(kopf.datum)}?
+              {t("Zählst du für den {datum}?", { datum: zeigeDatum(kopf.datum) })}
             </div>
             <div style={{ opacity: 0.85 }}>
-              Heute ist {wochentag(heuteIst)}, der {zeigeDatum(heuteIst)}.
+              {t("Heute ist {tag}, der {datum}.", {
+                tag: wochentag(heuteIst),
+                datum: zeigeDatum(heuteIst),
+              })}
             </div>
             {gezaehltHeute > 0 && (
               <div style={{ opacity: 0.85 }}>
-                {gezaehltHeute} Pflanzen stehen schon auf diesem Blatt.
+                {t("{n} Pflanzen stehen schon auf diesem Blatt.", { n: gezaehltHeute })}
               </div>
             )}
             <div style={{ opacity: 0.85, marginTop: 4 }}>
-              Wenn du für heute zählst, tippe auf „Auf heute umstellen".
+              {t("Wenn du für heute zählst, tippe auf „Auf heute umstellen“.")}
             </div>
           </div>
           <button
@@ -1020,14 +1044,14 @@ export default function Verjuengung() {
               cursor: "pointer",
             }}
           >
-            Auf heute umstellen
+            {t("Auf heute umstellen")}
           </button>
         </div>
       )}
 
       {!kopf.trupp && (
         <div style={{ fontSize: 10, color: farben.muted, marginTop: -4, marginBottom: 10 }}>
-          Person wählen – ohne Person wird nichts abgeglichen.
+          {t("Person wählen – ohne Person wird nichts abgeglichen.")}
         </div>
       )}
 
@@ -1045,12 +1069,14 @@ export default function Verjuengung() {
           cursor: "pointer",
         }}
       >
-        Ergebnis aller Personen ansehen
+        {t("Ergebnis aller Personen ansehen")}
       </button>
 
       <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
         <div style={{ flex: 2 }}>
-          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>ABTEILUNG</div>
+          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
+            {t("ABTEILUNG")}
+          </div>
           <input
             style={feldStil}
             value={abteilungEntwurf}
@@ -1061,7 +1087,9 @@ export default function Verjuengung() {
           />
         </div>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>FLÄCHE m²</div>
+          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
+            {t("FLÄCHE m²")}
+          </div>
           <input
             style={feldStil}
             value={kopf.radius}
@@ -1097,12 +1125,12 @@ export default function Verjuengung() {
                 cursor: "pointer",
               }}
             >
-              Kreis davor
+              {t("Kreis davor")}
             </button>
           ) : (
             <button
               disabled
-              aria-label="Voriger Kreis"
+              aria-label={t("Voriger Kreis")}
               style={{
                 background: "none",
                 border: "none",
@@ -1118,7 +1146,7 @@ export default function Verjuengung() {
         ) : (
           <button
             onClick={() => setAktiv(aktiv - 1)}
-            aria-label="Voriger Kreis"
+            aria-label={t("Voriger Kreis")}
             style={{
               background: "none",
               border: "none",
@@ -1133,11 +1161,15 @@ export default function Verjuengung() {
         )}
 
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 1 }}>PROBEKREIS</div>
+          <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 1 }}>
+            {t("PROBEKREIS")}
+          </div>
           <div style={{ fontSize: 26, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
             {aktuellerKreis?.nr}
           </div>
-          <div style={{ fontSize: 11, color: farben.muted }}>{pflanzenImKreis} Pflanzen</div>
+          <div style={{ fontSize: 11, color: farben.muted }}>
+            {t("{n} Pflanzen", { n: pflanzenImKreis })}
+          </div>
           <button
             onClick={() => holeStandort(aktuellerKreis?.nr)}
             disabled={gpsLaeuft}
@@ -1155,7 +1187,7 @@ export default function Verjuengung() {
               ? "📍 …"
               : aktuellerKreis?.lat != null
                 ? `📍 ${aktuellerKreis.lat.toFixed(5)}, ${aktuellerKreis.lon.toFixed(5)}`
-                : "📍 Standort erfassen"}
+                : t("📍 Standort erfassen")}
           </button>
           <KoordinatenKopieren
             breite={aktuellerKreis?.lat ?? null}
@@ -1177,12 +1209,12 @@ export default function Verjuengung() {
               cursor: "pointer",
             }}
           >
-            Neuer Kreis
+            {t("Neuer Kreis")}
           </button>
         ) : (
           <button
             onClick={() => setAktiv(Math.min(kreise.length - 1, aktiv + 1))}
-            aria-label="Nächster Kreis"
+            aria-label={t("Nächster Kreis")}
             style={{
               background: "none",
               border: "none",
@@ -1215,7 +1247,7 @@ export default function Verjuengung() {
             cursor: holtBlatt ? "default" : "pointer",
           }}
         >
-          {holtBlatt ? "Holt ..." : "Zählung aus der Datenbank holen"}
+          {holtBlatt ? t("Holt ...") : t("Zählung aus der Datenbank holen")}
         </button>
       )}
 
@@ -1224,9 +1256,11 @@ export default function Verjuengung() {
       {angeboteneTage.length > 0 && (
         <div style={{ marginTop: -6, marginBottom: 14 }}>
           <div style={{ fontSize: 11, color: farben.muted, marginBottom: 6 }}>
-            Für {kopf.trupp.trim()}
-            {kopf.abteilung.trim() ? ` · ${kopf.abteilung.trim()}` : ""} steht etwas an diesen
-            Tagen – antippen zum Holen:
+            {t("Für {wer} steht etwas an diesen Tagen – antippen zum Holen:", {
+              wer: `${kopf.trupp.trim()}${
+                kopf.abteilung.trim() ? ` · ${kopf.abteilung.trim()}` : ""
+              }`,
+            })}
           </div>
           {angeboteneTage.map((tag) => (
             <button
@@ -1250,7 +1284,10 @@ export default function Verjuengung() {
             >
               <span>{zeigeDatum(tag.datum)}</span>
               <span style={{ fontSize: 11, color: farben.muted }}>
-                {tag.kreise} Probekreise · {tag.pflanzen} Pflanzen
+                {t("{kreise} Probekreise · {pflanzen} Pflanzen", {
+                  kreise: tag.kreise,
+                  pflanzen: tag.pflanzen,
+                })}
               </span>
             </button>
           ))}
@@ -1271,7 +1308,7 @@ export default function Verjuengung() {
           cursor: "pointer",
         }}
       >
-        {uebersichtOffen ? "Übersicht ausblenden" : "Übersicht anzeigen"}
+        {uebersichtOffen ? t("Übersicht ausblenden") : t("Übersicht anzeigen")}
       </button>
 
       {uebersichtOffen && <UebersichtTabelle arten={arten} kreise={kreise} />}
@@ -1290,7 +1327,7 @@ export default function Verjuengung() {
           cursor: "pointer",
         }}
       >
-        {standorteOffen ? "Standorte ausblenden" : "Standorte anzeigen"}
+        {standorteOffen ? t("Standorte ausblenden") : t("Standorte anzeigen")}
       </button>
 
       {standorteOffen && <StandortKarte kreise={kreise} />}
@@ -1305,7 +1342,7 @@ export default function Verjuengung() {
               marginBottom: 6,
             }}
           >
-            <div style={{ fontSize: 16, fontWeight: 600 }}>{art.name}</div>
+            <div style={{ fontSize: 16, fontWeight: 600 }}>{artName(art.name)}</div>
             <button
               onClick={() => {
                 if (!hatZahlen(art.id)) setArten((alle) => alle.filter((a) => a.id !== art.id));
@@ -1313,7 +1350,7 @@ export default function Verjuengung() {
               disabled={hatZahlen(art.id)}
               title={
                 hatZahlen(art.id)
-                  ? "Schon irgendwo gezählt – erst überall auf 0 setzen, dann entfernbar"
+                  ? t("Schon irgendwo gezählt – erst überall auf 0 setzen, dann entfernbar")
                   : undefined
               }
               style={{
@@ -1324,12 +1361,12 @@ export default function Verjuengung() {
                 cursor: hatZahlen(art.id) ? "default" : "pointer",
               }}
             >
-              entfernen
+              {t("entfernen")}
             </button>
           </div>
           <div style={{ display: "flex", gap: 10 }}>
             <ZaehlBox
-              label="verbissen"
+              label={t("verbissen")}
               wert={wert(art.id, "v")}
               farbe={farben.verb}
               onPlus={() => plus(art.id, "v")}
@@ -1337,7 +1374,7 @@ export default function Verjuengung() {
               onSet={(zahl) => setzen(art.id, "v", zahl)}
             />
             <ZaehlBox
-              label="unverbissen"
+              label={t("unverbissen")}
               wert={wert(art.id, "u")}
               farbe={farben.unverb}
               onPlus={() => plus(art.id, "u")}
@@ -1355,7 +1392,7 @@ export default function Verjuengung() {
           value={neueArt}
           onChange={(e) => setNeueArt(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && artHinzufuegen()}
-          placeholder="Baumart ergänzen"
+          placeholder={t("Baumart ergänzen")}
         />
         <button
           onClick={() => artHinzufuegen()}
@@ -1368,7 +1405,7 @@ export default function Verjuengung() {
             cursor: "pointer",
           }}
         >
-          Hinzufügen
+          {t("Hinzufügen")}
         </button>
       </div>
 
@@ -1382,7 +1419,7 @@ export default function Verjuengung() {
             <div
               style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6, marginBottom: 6 }}
             >
-              VORSCHLÄGE
+              {t("VORSCHLÄGE")}
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
               {offen.map((name) => (
@@ -1400,7 +1437,7 @@ export default function Verjuengung() {
                     WebkitTapHighlightColor: "transparent",
                   }}
                 >
-                  + {name}
+                  + {artName(name)}
                 </button>
               ))}
             </div>
@@ -1411,9 +1448,9 @@ export default function Verjuengung() {
       {csvText && (
         <div style={{ marginTop: 18 }}>
           <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6, marginBottom: 6 }}>
-            Bereits kopiert – nur falls nötig hier markieren. Beim automatischen Kopieren fallen die
-            Werte in Excel direkt in die Spalten; wird dieser Text von Hand kopiert, in Excel: Daten
-            › Text in Spalten › Semikolon.
+            {t(
+              "Bereits kopiert – nur falls nötig hier markieren. Beim automatischen Kopieren fallen die Werte in Excel direkt in die Spalten; wird dieser Text von Hand kopiert, in Excel: Daten › Text in Spalten › Semikolon.",
+            )}
           </div>
           <textarea
             readOnly
@@ -1437,13 +1474,13 @@ export default function Verjuengung() {
               onClick={excelDatei}
               style={{ ...leisteKnopf, color: farben.muted, borderRadius: 10, padding: "10px 0", fontSize: 13 }}
             >
-              Als Datei versuchen
+              {t("Als Datei versuchen")}
             </button>
             <button
               onClick={() => setCsvText(null)}
               style={{ ...leisteKnopf, color: farben.muted, borderRadius: 10, padding: "10px 0", fontSize: 13 }}
             >
-              Schließen
+              {t("Schließen")}
             </button>
           </div>
         </div>
@@ -1512,13 +1549,13 @@ export default function Verjuengung() {
         </div>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={csvKopieren} style={leisteKnopf}>
-            CSV
+            {t("CSV")}
           </button>
           <button onClick={excelDatei} style={leisteKnopf}>
-            Excel
+            {t("Excel")}
           </button>
           <button onClick={geodaten} style={leisteKnopf}>
-            Geodaten
+            {t("Geodaten")}
             <div style={{ fontSize: 10, opacity: 0.6, marginTop: 1 }}>GeoJSON</div>
           </button>
         </div>

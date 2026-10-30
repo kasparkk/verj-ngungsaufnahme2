@@ -1,4 +1,5 @@
 import { SUPABASE_URL, SUPABASE_KEY } from "./konfiguration.js";
+import { t } from "./sprache.js";
 
 const kopfzeilen = {
   apikey: SUPABASE_KEY,
@@ -20,11 +21,22 @@ const SCHLAEFT = [500, 502, 503, 504, 521, 522, 540, 544];
 
 export const istSchlafend = (status) => SCHLAEFT.includes(status);
 
-export const RUHE_HINWEIS =
-  "Datenbank nicht erreichbar – sie schläft vermutlich (kostenloser Tarif, " +
-  "nach etwa einer Woche ohne Nutzung). Sie muss einmal im Supabase-Konto " +
-  "geweckt werden, von allein passiert das nicht. Die eigenen Zahlen auf " +
-  "diesem Gerät sind davon nicht betroffen und werden nachgetragen.";
+/* Als Funktion und nicht als Konstante: Der Text wird erst gebraucht,
+   wenn es klemmt - und dann in der Sprache, die gerade eingestellt ist.
+   Eine Konstante waere beim Laden der Datei festgelegt worden. */
+export const ruheHinweis = () =>
+  t(
+    "Datenbank nicht erreichbar – sie schläft vermutlich (kostenloser Tarif, nach etwa einer Woche ohne Nutzung). Sie muss einmal im Supabase-Konto geweckt werden, von allein passiert das nicht. Die eigenen Zahlen auf diesem Gerät sind davon nicht betroffen und werden nachgetragen.",
+  );
+
+/* Ein Fehler, der vom Server kommt - im Unterschied zu "gar kein Netz".
+   Die Unterscheidung am Text abzulesen hat frueher gereicht, solange es
+   nur eine Sprache gab; mit zwei muss sie am Fehler selbst haengen. */
+function vomServer(text) {
+  const fehler = new Error(text);
+  fehler.vomServer = true;
+  return fehler;
+}
 
 /* Schickt die gezaehlten Zeilen hoch. Gleiche Kombination aus Person, Datum,
    Kreis und Baumart wird ueberschrieben statt doppelt angelegt - deshalb darf
@@ -88,7 +100,9 @@ export async function ergebnisAllePersonen(abteilung, datum) {
 
   if (!auswertung.ok || !rohzeilen.ok) {
     const status = auswertung.ok ? rohzeilen.status : auswertung.status;
-    throw new Error(istSchlafend(status) ? RUHE_HINWEIS : `Abruf fehlgeschlagen (${status})`);
+    throw vomServer(
+      istSchlafend(status) ? ruheHinweis() : t("Abruf fehlgeschlagen ({status})", { status }),
+    );
   }
 
   return { auswertung: await auswertung.json(), zeilen: await rohzeilen.json() };
@@ -105,8 +119,10 @@ export async function ergebnisEinePerson(person, abteilung, datum) {
   );
 
   if (!antwort.ok) {
-    throw new Error(
-      istSchlafend(antwort.status) ? RUHE_HINWEIS : `Abruf fehlgeschlagen (${antwort.status})`,
+    throw vomServer(
+      istSchlafend(antwort.status)
+        ? ruheHinweis()
+        : t("Abruf fehlgeschlagen ({status})", { status: antwort.status }),
     );
   }
 

@@ -2,9 +2,10 @@ import { useState } from "react";
 import { farben } from "../konfiguration.js";
 import Hoehenmesser from "./Hoehenmesser.jsx";
 import { BAUMARTEN, zahl, volumen, auswerten, formzahlFuer } from "./berechnung.js";
+import { useT, artName, zahlOrt } from "../sprache.js";
 
 const nk = (wert, stellen = 2) =>
-  Number(wert).toLocaleString("de-DE", { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
+  Number(wert).toLocaleString(zahlOrt(), { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
 
 /* Einzelbaeume: jeder Baum wird mit BHD und Hoehe auf einer abgesteckten
    Flaeche erfasst. Aufwendiger als die Winkelzaehlprobe, dafuer hat man die
@@ -18,6 +19,7 @@ export default function Einzelbaeume({
   setBaeume,
   setHinweis,
 }) {
+  const t = useT();
   const [art, setArt] = useState(BAUMARTEN[0].name);
   const [bhd, setBhd] = useState("");
   // Offen oder nicht; der gemessene Wert landet im Hoehenfeld darunter.
@@ -32,7 +34,7 @@ export default function Einzelbaeume({
 
   const hinzufuegen = () => {
     if (zahl(bhd) <= 0) {
-      setHinweis("BHD eintragen");
+      setHinweis(t("BHD eintragen"));
       return;
     }
     setBaeume((alle) => [
@@ -63,7 +65,7 @@ export default function Einzelbaeume({
     <>
     <div>
       <div style={{ marginBottom: 14, maxWidth: 140 }}>
-        <div style={beschriftung}>FLÄCHE m²</div>
+        <div style={beschriftung}>{t("FLÄCHE m²")}</div>
         <input
           style={feldStil}
           value={flaeche}
@@ -74,7 +76,7 @@ export default function Einzelbaeume({
       </div>
 
       <div style={{ background: farben.surface, borderRadius: 14, padding: "12px 14px", marginBottom: 14 }}>
-        <div style={{ ...beschriftung, marginBottom: 6 }}>BAUMART</div>
+        <div style={{ ...beschriftung, marginBottom: 6 }}>{t("BAUMART")}</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
           {BAUMARTEN.map((a) => (
             <button
@@ -92,14 +94,14 @@ export default function Einzelbaeume({
                 WebkitTapHighlightColor: "transparent",
               }}
             >
-              {a.name}
+              {artName(a.name)}
             </button>
           ))}
         </div>
 
         <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
           <div style={{ flex: 1 }}>
-            <div style={beschriftung}>BHD cm</div>
+            <div style={beschriftung}>{t("BHD cm")}</div>
             <input
               style={{ ...feldStil, fontSize: 22, fontWeight: 700 }}
               value={bhd}
@@ -110,7 +112,7 @@ export default function Einzelbaeume({
             />
           </div>
           <div style={{ flex: 1 }}>
-            <div style={beschriftung}>HÖHE m</div>
+            <div style={beschriftung}>{t("HÖHE m")}</div>
             <div style={{ display: "flex", gap: 6, alignItems: "flex-end" }}>
               <input
                 style={{ ...feldStil, fontSize: 22, fontWeight: 700, flex: 1, minWidth: 0 }}
@@ -122,7 +124,7 @@ export default function Einzelbaeume({
               />
               <button
                 onClick={() => setMisst(true)}
-                aria-label="HÖHE messen"
+                aria-label={t("HÖHE messen")}
                 style={{
                   background: farben.surface,
                   border: `1px solid ${farben.line}`,
@@ -154,45 +156,56 @@ export default function Einzelbaeume({
           </button>
         </div>
         <div style={{ fontSize: 10, color: farben.muted, marginTop: 8 }}>
-          Formzahl {nk(formzahlVon(art, hoehe), 2)} für {art}
+          {t("Formzahl {wert} für {art}", {
+            wert: nk(formzahlVon(art, hoehe), 2),
+            art: artName(art),
+          })}
           {gestaffelt &&
             (zahl(hoehe) > 0
-              ? ` – Höhenstufe bei ${nk(zahl(hoehe), 0)} m`
-              : " – Grundwert, die Höhenstufe greift erst mit eingetragener Höhe")}
+              ? t(" – Höhenstufe bei {m} m", { m: nk(zahl(hoehe), 0) })
+              : t(" – Grundwert, die Höhenstufe greift erst mit eingetragener Höhe"))}
         </div>
       </div>
 
       {erg.anzahl > 0 && (
         <div style={{ background: farben.surface, borderRadius: 14, padding: "12px 14px", marginBottom: 14 }}>
           <div style={{ ...beschriftung, marginBottom: 8 }}>
-            ERGEBNIS · {erg.anzahl} {erg.anzahl === 1 ? "Baum" : "Bäume"}
+            {erg.anzahl === 1
+              ? t("ERGEBNIS · {n} Baum", { n: erg.anzahl })
+              : t("ERGEBNIS · {n} Bäume", { n: erg.anzahl })}
           </div>
 
           {erg.jeHektar ? (
             <div style={{ display: "flex", gap: 14, marginBottom: 12 }}>
               <div style={{ flex: 1 }}>
                 <div style={kennzahl}>{nk(erg.jeHektar.vorrat, 1)}</div>
-                <div style={{ fontSize: 10, color: farben.muted }}>Vorrat fm/ha</div>
+                <div style={{ fontSize: 10, color: farben.muted }}>{t("Vorrat fm/ha")}</div>
               </div>
               <div style={{ flex: 1 }}>
                 <div style={kennzahl}>{nk(erg.jeHektar.grundflaeche, 1)}</div>
-                <div style={{ fontSize: 10, color: farben.muted }}>Grundfläche m²/ha</div>
+                <div style={{ fontSize: 10, color: farben.muted }}>{t("Grundfläche m²/ha")}</div>
               </div>
               <div style={{ flex: 1 }}>
                 <div style={kennzahl}>{nk(erg.jeHektar.staemme, 0)}</div>
-                <div style={{ fontSize: 10, color: farben.muted }}>Stämme/ha</div>
+                <div style={{ fontSize: 10, color: farben.muted }}>{t("Stämme/ha")}</div>
               </div>
             </div>
           ) : (
             <div style={{ fontSize: 12, color: farben.verb, marginBottom: 10 }}>
-              Fläche eintragen, dann wird auf Hektar hochgerechnet.
+              {t("Fläche eintragen, dann wird auf Hektar hochgerechnet.")}
             </div>
           )}
 
           <div style={{ fontSize: 12, color: farben.muted, lineHeight: 1.6 }}>
-            Summe Grundfläche {nk(erg.summeG, 3)} m² · Summe Volumen {nk(erg.summeV, 3)} fm
+            {t("Summe Grundfläche {g} m² · Summe Volumen {v} fm", {
+              g: nk(erg.summeG, 3),
+              v: nk(erg.summeV, 3),
+            })}
             <br />
-            Mittelhöhe {nk(erg.mittelHoehe, 1)} m · Grundflächenmittelstamm {nk(erg.dg, 1)} cm
+            {t("Mittelhöhe {h} m · Grundflächenmittelstamm {d} cm", {
+              h: nk(erg.mittelHoehe, 1),
+              d: nk(erg.dg, 1),
+            })}
           </div>
         </div>
       )}
@@ -212,7 +225,7 @@ export default function Einzelbaeume({
               }}
             >
               <div style={{ width: 22, color: farben.muted, fontVariantNumeric: "tabular-nums" }}>{i + 1}</div>
-              <div style={{ flex: 1, fontWeight: 600 }}>{b.art}</div>
+              <div style={{ flex: 1, fontWeight: 600 }}>{artName(b.art)}</div>
               <div style={{ fontVariantNumeric: "tabular-nums", color: farben.muted }}>
                 {nk(zahl(b.bhd), 0)} cm · {nk(zahl(b.hoehe), 0)} m
               </div>
@@ -221,7 +234,7 @@ export default function Einzelbaeume({
               </div>
               <button
                 onClick={() => setBaeume((alle) => alle.filter((x) => x.id !== b.id))}
-                aria-label="Baum entfernen"
+                aria-label={t("Baum entfernen")}
                 style={{
                   background: "none",
                   border: "none",

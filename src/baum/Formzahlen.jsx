@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { farben } from "../konfiguration.js";
 import { BAUMARTEN, STANDARD_FORMZAHL, zahl } from "./berechnung.js";
+import { useT, artName, zahlOrt } from "../sprache.js";
 
 const nk = (wert, stellen = 2) =>
-  Number(wert).toLocaleString("de-DE", { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
+  Number(wert).toLocaleString(zahlOrt(), { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
 
 /* Formzahlen einstellen - Grundwert je Baumart und, wer mag, eine
    Staffelung nach Hoehe.
@@ -13,6 +14,7 @@ const nk = (wert, stellen = 2) =>
    nicht aus der App: Erfundene Werte sahen aus wie richtige und wuerden
    jeden Vorrat still verschieben. */
 export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufen }) {
+  const t = useT();
   const [staffelOffen, setStaffelOffen] = useState(false);
   const [art, setArt] = useState(BAUMARTEN[0].name);
 
@@ -51,10 +53,9 @@ export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufe
   return (
     <div style={{ marginTop: 10 }}>
       <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, marginBottom: 10 }}>
-        Die Formzahl beschreibt, wie stark sich der Stamm nach oben verjüngt. Die Werte sind
-        Richtwerte für Derbholz – je nach Alter, Bonität und Herkunft weichen sie ab. Das
-        Volumen ist damit eine Schätzung, keine Massentafel. Eigene Werte gerne eintragen; sie
-        gelten für beide Verfahren.
+        {t(
+          "Die Formzahl beschreibt, wie stark sich der Stamm nach oben verjüngt. Die Werte sind Richtwerte für Derbholz – je nach Alter, Bonität und Herkunft weichen sie ab. Das Volumen ist damit eine Schätzung, keine Massentafel. Eigene Werte gerne eintragen; sie gelten für beide Verfahren.",
+        )}
       </div>
 
       {BAUMARTEN.map((a) => {
@@ -62,11 +63,14 @@ export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufe
         return (
           <div key={a.name} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
             <div style={{ flex: 1, fontSize: 13 }}>
-              {a.name}
+              {artName(a.name)}
               {anzahl > 0 && (
                 <span style={{ color: farben.muted, fontSize: 11 }}>
                   {" "}
-                  · {anzahl} {anzahl === 1 ? "Höhenstufe" : "Höhenstufen"}
+                  ·{" "}
+                  {anzahl === 1
+                    ? t("{n} Höhenstufe", { n: anzahl })
+                    : t("{n} Höhenstufen", { n: anzahl })}
                 </span>
               )}
             </div>
@@ -75,7 +79,7 @@ export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufe
               value={formzahlen?.[a.name] ?? ""}
               onChange={(e) => setFormzahlen((alt) => ({ ...alt, [a.name]: e.target.value }))}
               inputMode="decimal"
-              aria-label={`Formzahl ${a.name}`}
+              aria-label={t("Formzahl {art}", { art: artName(a.name) })}
             />
           </div>
         );
@@ -95,7 +99,7 @@ export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufe
           cursor: "pointer",
         }}
       >
-        {staffelOffen ? "Höhenstaffelung ausblenden" : "Nach Höhe staffeln (freiwillig)"}
+        {staffelOffen ? t("Höhenstaffelung ausblenden") : t("Nach Höhe staffeln (freiwillig)")}
       </button>
 
       {staffelOffen && (
@@ -108,17 +112,17 @@ export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufe
           }}
         >
           <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, marginBottom: 10 }}>
-            Eine Formzahl je Baumart ist eine Vereinfachung: Ein schlanker Stangenbestand hat eine
-            andere als derselbe Bestand 60 Jahre später. Wer Werte aus seiner Ertragstafel oder der
-            Betriebsanweisung hat, kann sie hier nach Höhe staffeln.
+            {t(
+              "Eine Formzahl je Baumart ist eine Vereinfachung: Ein schlanker Stangenbestand hat eine andere als derselbe Bestand 60 Jahre später. Wer Werte aus seiner Ertragstafel oder der Betriebsanweisung hat, kann sie hier nach Höhe staffeln.",
+            )}
             <br />
             <br />
-            Die App bringt dafür keine Zahlen mit – erfundene Werte wären von richtigen nicht zu
-            unterscheiden und würden jeden Vorrat verschieben. Solange hier nichts steht, gilt der
-            Grundwert von oben, und gerechnet wird genau wie bisher.
+            {t(
+              "Die App bringt dafür keine Zahlen mit – erfundene Werte wären von richtigen nicht zu unterscheiden und würden jeden Vorrat verschieben. Solange hier nichts steht, gilt der Grundwert von oben, und gerechnet wird genau wie bisher.",
+            )}
           </div>
 
-          <div style={{ ...beschriftung, marginBottom: 6 }}>BAUMART</div>
+          <div style={{ ...beschriftung, marginBottom: 6 }}>{t("BAUMART")}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
             {BAUMARTEN.map((a) => {
               const gewaehlt = art === a.name;
@@ -139,7 +143,7 @@ export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufe
                     WebkitTapHighlightColor: "transparent",
                   }}
                 >
-                  {a.name}
+                  {artName(a.name)}
                   {hat ? " •" : ""}
                 </button>
               );
@@ -148,7 +152,10 @@ export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufe
 
           {zeilen.length === 0 && (
             <div style={{ fontSize: 12, color: farben.muted, marginBottom: 10 }}>
-              Keine Stufen für {art} – es gilt der Grundwert {nk(grundwert, 2)}.
+              {t("Keine Stufen für {art} – es gilt der Grundwert {wert}.", {
+                art: artName(art),
+                wert: nk(grundwert, 2),
+              })}
             </div>
           )}
 
@@ -158,7 +165,7 @@ export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufe
               style={{ display: "flex", alignItems: "flex-end", gap: 10, marginBottom: 8 }}
             >
               <div style={{ width: 74 }}>
-                <div style={beschriftung}>BIS m</div>
+                <div style={beschriftung}>{t("BIS m")}</div>
                 <input
                   style={{ ...feldStil, width: "100%" }}
                   value={s.bis}
@@ -169,12 +176,12 @@ export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufe
                   }
                   placeholder="15"
                   inputMode="decimal"
-                  aria-label={`Stufe ${i + 1} bis Meter`}
+                  aria-label={t("Stufe {n} bis Meter", { n: i + 1 })}
                 />
               </div>
               <div style={{ color: farben.muted, fontSize: 13, paddingBottom: 4 }}>→</div>
               <div style={{ width: 84 }}>
-                <div style={beschriftung}>FORMZAHL</div>
+                <div style={beschriftung}>{t("FORMZAHL")}</div>
                 <input
                   style={{ ...feldStil, width: "100%" }}
                   value={s.wert}
@@ -185,12 +192,12 @@ export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufe
                   }
                   placeholder="0,55"
                   inputMode="decimal"
-                  aria-label={`Stufe ${i + 1} Formzahl`}
+                  aria-label={t("Stufe {n} Formzahl", { n: i + 1 })}
                 />
               </div>
               <button
                 onClick={() => setzeZeilen((alte) => alte.filter((_, j) => j !== i))}
-                aria-label={`Stufe ${i + 1} entfernen`}
+                aria-label={t("Stufe {n} entfernen", { n: i + 1 })}
                 style={{
                   background: "none",
                   border: "none",
@@ -218,18 +225,21 @@ export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufe
               cursor: "pointer",
             }}
           >
-            + Stufe
+            {t("+ Stufe")}
           </button>
 
           {gelesen.length > 0 && (
             <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.6, marginTop: 10 }}>
-              So wird gelesen:{" "}
+              {t("So wird gelesen:")}{" "}
               {gelesen.map((s, i) => (
                 <span key={i}>
-                  bis {nk(s.bis, 0)} m → {nk(s.wert, 2)} ·{" "}
+                  {t("bis {m} m → {wert}", { m: nk(s.bis, 0), wert: nk(s.wert, 2) })} ·{" "}
                 </span>
               ))}
-              über {nk(gelesen[gelesen.length - 1].bis, 0)} m → {nk(grundwert, 2)} (Grundwert)
+              {t("über {m} m → {wert} (Grundwert)", {
+                m: nk(gelesen[gelesen.length - 1].bis, 0),
+                wert: nk(grundwert, 2),
+              })}
             </div>
           )}
         </div>
