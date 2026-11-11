@@ -1,6 +1,8 @@
 Prüfungen
 =========
 
+Die drei ohne Browser laufen zusammen mit:  npm run pruefen
+
 rechnung.mjs    Die Formeln der Baummessung, ohne Browser.
                   node pruefungen/rechnung.mjs
                 Läuft in einer Sekunde und braucht nichts weiter.
@@ -39,6 +41,12 @@ felder.mjs      Keine Beispielzahlen in leeren Feldern.
                 Ein graues "30" im leeren BHD-Feld sieht aus wie eine
                 eingetragene 30. Die Prüfung findet solche Platzhalter
                 und Felder ohne Bezeichnung.
+
+mitschnitt.cjs  Der Sensor-Mitschnitt in der Oberfläche. Gleicher Aufruf
+                wie grenzstamm.cjs, dauert gut eine halbe Minute - die
+                Aufnahme läuft in echt zehn Sekunden. Geprüft wird der
+                ganze Weg bis zur Datei: Käme sie leer heraus, wäre der
+                Gang nach draußen umsonst gewesen.
 
 englisch.cjs    Die englische Fassung in der Oberfläche. Gleicher Aufruf
                 wie grenzstamm.cjs. Prüft neben den Texten vor allem,

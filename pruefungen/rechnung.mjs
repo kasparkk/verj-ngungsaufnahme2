@@ -12,6 +12,7 @@ import {
   entfernungAusNeigung, NEIGUNG_GRENZE_M,
 } from "../src/baum/hoehe.js";
 import { grenzRadius, zaehltMit, grundflaeche, volumen, formzahlFuer, wzpAuswerten } from "../src/baum/berechnung.js";
+import { fasseZusammen, rate, baueMitschnitt, SCHRITTE } from "../src/baum/mitschnitt.js";
 
 let ok = 0;
 let schlecht = 0;
@@ -165,6 +166,45 @@ pruefe("Müll statt Stufen wirft nichts um", JSON.stringify(laden().formzahlStuf
 roh = JSON.stringify({ formzahlStufen: { Fichte: [null, 5, { bis: 15, wert: 0.55 }] } });
 pruefe("kaputte Zeilen fallen heraus",
   JSON.stringify(laden().formzahlStufen), '{"Fichte":[{"bis":"15","wert":"0.55"}]}');
+
+titel("SENSOR-MITSCHNITT");
+/* Die beiden ersten Schritte sind die eigentliche Pruefung am Geraet:
+   Tisch = -90 Grad, Wand = 0 Grad. Hier wird nur die Auswertung geprueft,
+   mit Werten, von denen ich weiss, was herauskommen muss. */
+const reihe = (beta, n = 11) =>
+  Array.from({ length: n }, (_, i) => ({ t: i * 50, beta, gamma: 0, alpha: 0 }));
+
+const flach = fasseZusammen(reihe(0), -90);
+pruefe("flach liegend: beta 0 → −90°", flach.median, -90);
+pruefe("und damit 0° Abweichung", flach.abweichung, 0);
+pruefe("elf Werte gezählt", flach.anzahl, 11);
+pruefe("keine Spanne bei ruhigem Gerät", flach.spanne, 0);
+
+const wand = fasseZusammen(reihe(90), 0);
+pruefe("senkrecht: beta 90 → 0°", wand.median, 0);
+pruefe("auch hier 0° Abweichung", wand.abweichung, 0);
+
+/* Ein einzelner Ausreisser darf die Mitte nicht verschieben - genau dafuer
+   ist es ein Median und kein Mittelwert. */
+const mitAusreisser = fasseZusammen([...reihe(90, 10), { t: 500, beta: -170 }], 0);
+pruefe("ein Ausreißer verschiebt die Mitte nicht", mitAusreisser.median, 0);
+pruefe("die Spanne zeigt ihn trotzdem", r(mitAusreisser.spanne), 260);
+
+const schief = fasseZusammen(reihe(85), 0);
+pruefe("5° schief gehalten → 5° Abweichung", r(schief.abweichung), -5);
+
+pruefe("ohne Sollwert keine Abweichung", fasseZusammen(reihe(45), null).abweichung, null);
+pruefe("ohne Werte nichts", fasseZusammen([], 0), null);
+pruefe("Rate aus Zeitstempeln", rate(reihe(0)), 20);
+pruefe("eine Messung hat keine Rate", rate([{ t: 0, beta: 0 }]), null);
+
+const datei = baueMitschnitt({ flach: reihe(0), hand: reihe(30) }, { kennung: "Prüfung" });
+pruefe("leerer Schritt fällt heraus", datei.schritte.length, 2);
+pruefe("Reihenfolge wie in der Anleitung", datei.schritte.map((s) => s.id).join(","), "flach,hand");
+pruefe("Sollwert steht in der Datei", datei.schritte[0].soll, -90);
+pruefe("Rohwerte sind vollständig dabei", datei.schritte[0].werte.length, 11);
+pruefe("Zusammenfassung liegt bei", r(datei.schritte[0].zusammenfassung.median), -90);
+pruefe("drei Schritte sind vorgesehen", SCHRITTE.length, 3);
 
 console.log(`\nERGEBNIS: ${ok} in Ordnung, ${schlecht} Fehler`);
 process.exit(schlecht ? 1 : 0);
