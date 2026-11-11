@@ -6,7 +6,6 @@ import { baueXlsx } from "./xlsx.js";
 import Winkelzaehlprobe from "./baum/Winkelzaehlprobe.jsx";
 import Einzelbaeume from "./baum/Einzelbaeume.jsx";
 import Formzahlen from "./baum/Formzahlen.jsx";
-import SensorMitschnitt from "./baum/SensorMitschnitt.jsx";
 import KoordinatenKopieren from "./komponenten/KoordinatenKopieren.jsx";
 import { baueGeoJsonMessung, geoDateiname } from "./baum/geo.js";
 import { useT } from "./sprache.js";
@@ -25,7 +24,6 @@ export default function Baummessung() {
   const [geladen, setGeladen] = useState(false);
   const [hinweis, setHinweis] = useState("");
   const [formzahlenOffen, setFormzahlenOffen] = useState(false);
-  const [mitschnittOffen, setMitschnittOffen] = useState(false);
   const [gpsLaeuft, setGpsLaeuft] = useState(false);
 
   /* Hoehe der festen Leiste unten, gemessen statt geraten. Geraten war sie
@@ -386,30 +384,6 @@ export default function Baummessung() {
           }
         />
       )}
-
-      {/* Werkzeug fuer die Pruefung, nicht fuer die Aufnahme: klein, ganz
-          unten, damit im Bestand niemand aus Versehen hier landet. */}
-      <button
-        onClick={() => setMitschnittOffen(true)}
-        style={{
-          width: "100%",
-          background: "transparent",
-          border: "none",
-          color: farben.muted,
-          fontSize: 11,
-          padding: "14px 0 0",
-          cursor: "pointer",
-        }}
-      >
-        {t("Sensor-Mitschnitt")}
-      </button>
-
-      <SensorMitschnitt
-        offen={mitschnittOffen}
-        onSchliessen={() => setMitschnittOffen(false)}
-        onDatei={weitergeben}
-        setHinweis={setHinweis}
-      />
 
       {hinweis && (
         <div style={{ marginTop: 14, fontSize: 13, color: farben.muted, textAlign: "center" }}>{hinweis}</div>

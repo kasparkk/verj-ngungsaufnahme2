@@ -784,56 +784,6 @@ export const WOERTER = {
     "e.g. {was}",
   "{was} eintragen":
     "Enter {was}",
-
-  // Sensor-Mitschnitt - ein Werkzeug für die Prüfung, kein Teil der Aufnahme.
-  "Sensor-Mitschnitt":
-    "Sensor recording",
-  "Flach auf den Tisch":
-    "Flat on the table",
-  "Handy flach hinlegen, Bildschirm nach oben. Liegen lassen, nicht festhalten.":
-    "Put the phone down flat, screen up. Leave it lying, do not hold it.",
-  "Senkrecht an die Wand":
-    "Upright against the wall",
-  "Handy senkrecht an eine Wand oder einen Türrahmen halten, Bildschirm zu dir.":
-    "Hold the phone upright against a wall or a door frame, screen facing you.",
-  "Frei in der Hand":
-    "Free in your hand",
-  "Auf etwas Hohes peilen – Dachfirst, Baumspitze, Laterne – und ruhig halten, wie beim Messen.":
-    "Sight something tall – a roof ridge, a treetop, a lamp post – and hold steady, as you would when measuring.",
-  "Drei kurze Aufnahmen von je {s} Sekunden. Die ersten beiden haben einen bekannten Sollwert – ein Tisch ist waagerecht, eine Wand ist senkrecht –, und genau daran lässt sich prüfen, ob die App den Sensor deines Geräts richtig deutet. Die dritte zeigt, wie ruhig eine echte Hand hält.":
-    "Three short recordings of {s} seconds each. The first two have a known target value – a table is level, a wall is vertical – and that is exactly what shows whether the app reads your device's sensor correctly. The third shows how steadily a real hand holds.",
-  "Dieses Gerät liefert keine Neigung – hier lässt sich nichts aufnehmen.":
-    "This device reports no tilt – there is nothing to record here.",
-  "NEIGUNG JETZT":
-    "TILT RIGHT NOW",
-  "roh: beta {b}°":
-    "raw: beta {b}°",
-  "Erwartet: {soll}°.":
-    "Expected: {soll}°.",
-  "{schritt} aufnehmen":
-    "Record {schritt}",
-  "Nimmt auf – noch {s} s":
-    "Recording – {s} s left",
-  "Nochmal aufnehmen":
-    "Record again",
-  "Aufnehmen":
-    "Record",
-  "Mitte {m}° · Spanne {sp}° · {n} Werte":
-    "Middle {m}° · range {sp}° · {n} values",
-  "✓ {ab}° daneben – die App deutet den Sensor richtig":
-    "✓ {ab}° off – the app reads the sensor correctly",
-  "✗ {ab}° daneben – das ist zu viel, bitte schick mir die Datei":
-    "✗ {ab}° off – that is too much, please send me the file",
-  "Mitschnitt speichern ({n} von 3)":
-    "Save the recording ({n} of 3)",
-  "Die Datei enthält die einzelnen Sensorwerte, die Gerätekennung des Browsers und die Bildschirmgröße – keinen Standort, keinen Namen. Sie ist nur für die Prüfung der App gedacht.":
-    "The file holds the individual sensor values, the browser's device string and the screen size – no location, no name. It is meant only for testing the app.",
-  "Der Sensor hat nichts geliefert":
-    "The sensor delivered nothing",
-  "Noch nichts aufgenommen":
-    "Nothing recorded yet",
-  "Mitschnitt gespeichert":
-    "Recording saved",
 };
 
 /* Werte des amtlichen Aufnahmebogens - ebenfalls nur fuer die ANZEIGE.

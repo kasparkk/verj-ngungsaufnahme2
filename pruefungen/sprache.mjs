@@ -12,7 +12,6 @@ import { join, relative } from "node:path";
 import { WOERTER, WERTE, ARTEN } from "../src/woerterbuch.js";
 import { BAUMARTEN } from "../src/baum/berechnung.js";
 import { START_BAUMARTEN, BAUMART_VORSCHLAEGE } from "../src/konfiguration.js";
-import { SCHRITTE } from "../src/baum/mitschnitt.js";
 import {
   BAUMARTEN as MONITORING_ARTEN,
   VERTEILUNG,
@@ -56,17 +55,6 @@ for (const datei of dateien(QUELLE)) {
     benutzt.get(text).add(kurz);
   }
   if (VORLAGE.test(quelle)) vorlagen.push(kurz);
-}
-
-/* Die Schritte des Sensor-Mitschnitts stehen als Daten in mitschnitt.js
-   und werden ueber t(s.titel) uebersetzt - woertlich findet sie der
-   Quelltext-Durchlauf also nicht. Hier kommen sie dazu, damit sie wie
-   jeder andere Text geprueft werden. */
-for (const schritt of SCHRITTE) {
-  for (const text of [schritt.titel, schritt.anleitung]) {
-    if (!benutzt.has(text)) benutzt.set(text, new Set());
-    benutzt.get(text).add("baum/mitschnitt.js (über t(s.titel))");
-  }
 }
 
 let fehler = 0;
