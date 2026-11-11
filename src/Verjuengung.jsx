@@ -1083,7 +1083,8 @@ export default function Verjuengung() {
             onChange={(e) => setAbteilungEntwurf(e.target.value)}
             onBlur={abteilungUebernehmen}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-            placeholder="4138 b1"
+            placeholder={t("z. B. {was}", { was: "4138 b1" })}
+            aria-label={t("ABTEILUNG")}
           />
         </div>
         <div style={{ flex: 1 }}>
@@ -1094,8 +1095,8 @@ export default function Verjuengung() {
             style={feldStil}
             value={kopf.radius}
             onChange={(e) => setRadius(e.target.value)}
-            placeholder="100"
             inputMode="decimal"
+            aria-label={t("FLÄCHE m²")}
           />
         </div>
       </div>

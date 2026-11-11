@@ -39,8 +39,8 @@ const tippe = async (loc) => {
   // Fichte ist die erste Karte: 10 Stammzahl, eine Hoehe von 12 m.
   await tippe(page.getByRole('button',{name:'Fünf dazu'}).first());
   await tippe(page.getByRole('button',{name:'Fünf dazu'}).first());
-  await page.getByPlaceholder('26').first().fill('12');
-  await page.getByPlaceholder('26').first().press('Enter');
+  await page.getByLabel('HÖHEN m eintragen').first().fill('12');
+  await page.getByLabel('HÖHEN m eintragen').first().press('Enter');
   await page.waitForTimeout(300);
   pruefe('40 m²/ha · 240 fm/ha mit Formzahl 0,50',
     await page.getByText('40 m²/ha · 240 fm/ha (Formzahl 0,50)').count(), 1);
@@ -98,10 +98,10 @@ const tippe = async (loc) => {
   await tippe(page.getByRole('button',{name:'Einzelbäume'})); await page.waitForTimeout(300);
   pruefe('ohne Höhe der Grundwert',
     await page.getByText(/Formzahl 0,50 für Fichte – Grundwert/).count(), 1);
-  await page.getByPlaceholder('25').fill('12'); await page.waitForTimeout(300);
+  await page.getByLabel('HÖHE m',{exact:true}).fill('12'); await page.waitForTimeout(300);
   pruefe('12 m → 0,55',
     await page.getByText('Formzahl 0,55 für Fichte – Höhenstufe bei 12 m').count(), 1);
-  await page.getByPlaceholder('25').fill('30'); await page.waitForTimeout(300);
+  await page.getByLabel('HÖHE m',{exact:true}).fill('30'); await page.waitForTimeout(300);
   pruefe('30 m → wieder Grundwert',
     await page.getByText('Formzahl 0,50 für Fichte – Höhenstufe bei 30 m').count(), 1);
 

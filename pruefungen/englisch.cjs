@@ -88,8 +88,8 @@ const tippe = async (loc) => {
   console.log('\nZAHLEN IM ENGLISCHEN FORMAT');
   await tippe(page.getByRole('button',{name:'Add five'}).first());
   await tippe(page.getByRole('button',{name:'Add five'}).first());
-  await page.getByPlaceholder('26').first().fill('12');
-  await page.getByPlaceholder('26').first().press('Enter');
+  await page.getByLabel('Enter HEIGHTS m').first().fill('12');
+  await page.getByLabel('Enter HEIGHTS m').first().press('Enter');
   await page.waitForTimeout(300);
   // Deutsch wäre: 40 m²/ha · 240 fm/ha (Formzahl 0,50)
   pruefe('Punkt statt Komma, fm → m³',

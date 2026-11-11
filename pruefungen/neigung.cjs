@@ -38,6 +38,22 @@ const tippe = async (loc) => {
   await page.waitForTimeout(2600);
   pruefe('Winkel lassen sich eintippen', await page.getByLabel('Winkel zum Fuß').count(), 1);
 
+  console.log('\nOHNE ENTFERNUNG KEINE HÖHE');
+  // Früher stand hier eine 20 als Vorgabe - wer sie stehenließ, bekam die
+  // Höhe eines 20-m-Abstands, ohne dass irgendetwas darauf hinwies.
+  await page.getByLabel('Winkel zum Fuß').fill('-10');
+  await page.getByLabel('Winkel zur Spitze').fill('45');
+  await page.waitForTimeout(300);
+  pruefe('Höhe bleibt leer', await page.getByText('–',{exact:true}).count() >= 1, true);
+  pruefe('Übernehmen ist gesperrt',
+    await page.getByRole('button',{name:'Übernehmen'}).isDisabled(), true);
+  await page.getByLabel('Entfernung').fill('20'); await page.waitForTimeout(300);
+  pruefe('mit 20 m kommt die Höhe', await page.getByText('23.5 m').count(), 1);
+  await page.getByLabel('Entfernung').fill('');
+  await page.getByLabel('Winkel zum Fuß').fill('');
+  await page.getByLabel('Winkel zur Spitze').fill('');
+  await page.waitForTimeout(300);
+
   console.log('\nOHNE FUSSWINKEL KEIN VORSCHLAG');
   pruefe('kein Kasten', await page.getByLabel('Handyhöhe über dem Boden').count(), 0);
 
@@ -52,8 +68,9 @@ const tippe = async (loc) => {
   pruefe('Hangwarnung dabei', await page.getByText(/waagerechten Boden/).count(), 1);
 
   console.log('\nTRÄGT SICH NICHT VON SELBST EIN');
-  pruefe('Entfernungsfeld unverändert',
-    await page.getByLabel('Entfernung').inputValue(), '20');
+  // Das Feld faengt leer an: eine stille Vorgabe ginge unbemerkt in die Höhe ein.
+  pruefe('Entfernungsfeld bleibt leer',
+    await page.getByLabel('Entfernung').inputValue(), '');
   await tippe(page.getByRole('button',{name:'Als Entfernung übernehmen'}));
   await page.waitForTimeout(300);
   pruefe('erst auf Antippen', await page.getByLabel('Entfernung').inputValue(), '4,9');

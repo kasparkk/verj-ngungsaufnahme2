@@ -19,7 +19,6 @@ function WerteFeld({
   titel,
   einheit,
   werte,
-  platzhalter,
   entwurf,
   setEntwurf,
   onHinzu,
@@ -64,8 +63,8 @@ function WerteFeld({
           value={entwurf}
           onChange={(e) => setEntwurf(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onHinzu()}
-          placeholder={platzhalter}
           inputMode="decimal"
+          aria-label={t("{was} eintragen", { was: `${titel} ${einheit}` })}
         />
         <button
           onClick={onHinzu}
@@ -392,7 +391,6 @@ export default function Winkelzaehlprobe({
                 <WerteFeld
                   titel={t("HÖHEN")}
                   einheit="m"
-                  platzhalter="26"
                   werte={a.hoehen}
                   entwurf={neueHoehe[a.id] ?? ""}
                   setEntwurf={(w) =>
@@ -407,7 +405,6 @@ export default function Winkelzaehlprobe({
                 <WerteFeld
                   titel={t("BHD")}
                   einheit="cm"
-                  platzhalter="34"
                   werte={a.durchmesser ?? []}
                   entwurf={neuerDm[a.id] ?? ""}
                   setEntwurf={(w) =>

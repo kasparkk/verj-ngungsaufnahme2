@@ -164,7 +164,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
           <TextFeld wert={punkt.monitorer} setWert={setzeFeld("monitorer")} platzhalter={t("Vor- und Nachname")} />
         </Feld>
         <Feld titel={t("Untersuchungsgebiet")}>
-          <TextFeld wert={punkt.gebiet} setWert={setzeFeld("gebiet")} platzhalter="FB Gebersdorf" />
+          <TextFeld wert={punkt.gebiet} setWert={setzeFeld("gebiet")} platzhalter={t("z. B. {was}", { was: "FB Gebersdorf" })} />
         </Feld>
         <Feld titel={t("Datum")}>
           <input
@@ -182,7 +182,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
         <div style={{ display: "flex", gap: 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <Feld titel={t("Probekreis-Radius (m)")}>
-              <TextFeld wert={punkt.radius} setWert={setzeFeld("radius")} platzhalter="5" inputMode="decimal" />
+              <TextFeld wert={punkt.radius} setWert={setzeFeld("radius")} inputMode="decimal" />
             </Feld>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -336,17 +336,17 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
         <div style={{ display: "flex", gap: 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <Feld titel={t("BHD (cm)")}>
-              <TextFeld wert={punkt.referenz.bhd} setWert={setzeReferenz("bhd")} platzhalter="47,8" inputMode="decimal" />
+              <TextFeld wert={punkt.referenz.bhd} setWert={setzeReferenz("bhd")} inputMode="decimal" />
             </Feld>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <Feld titel={t("Winkel (gon)")} hinweis="0–400">
-              <TextFeld wert={punkt.referenz.winkel} setWert={setzeReferenz("winkel")} platzhalter="245" inputMode="decimal" />
+              <TextFeld wert={punkt.referenz.winkel} setWert={setzeReferenz("winkel")} inputMode="decimal" />
             </Feld>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <Feld titel={t("Abstand (m)")}>
-              <TextFeld wert={punkt.referenz.abstand} setWert={setzeReferenz("abstand")} platzhalter="4,64" inputMode="decimal" />
+              <TextFeld wert={punkt.referenz.abstand} setWert={setzeReferenz("abstand")} inputMode="decimal" />
             </Feld>
           </div>
         </div>

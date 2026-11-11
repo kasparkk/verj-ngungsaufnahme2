@@ -39,7 +39,14 @@ import Markiert from "../komponenten/Markiert.jsx";
    Messgeraets, aber es bleibt benutzbar. */
 export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
   const t = useT();
-  const [entfernung, setEntfernung] = useState("20");
+  /* Leer, nicht "20".
+     Die Entfernung ging vorher als Vorgabe ins Feld - eine Zahl, die aussah
+     wie ein Vorschlag, aber gerechnet wurde. Wer sie stehenliess, bekam die
+     Hoehe eines 20-m-Abstands, ohne Hinweis. Die Hoehe haengt linear daran,
+     also war das der teuerste stille Fehler im Messer. Jetzt bleibt die
+     Hoehe "-", bis eine Entfernung dasteht; innerhalb der Sitzung bleibt
+     die eingetippte erhalten. */
+  const [entfernung, setEntfernung] = useState("");
   /* Handyhoehe fuer die Schaetzung aus der Neigung. Gehoert zur Person,
      nicht zur Messung - deshalb aus dem eigenen Speicher. */
   const [handyhoehe, setHandyhoehe] = useState(STANDARD_HANDYHOEHE);
@@ -361,7 +368,6 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
           value={entfernung}
           onChange={(e) => setEntfernung(e.target.value)}
           inputMode="decimal"
-          placeholder="20"
           aria-label={t("Entfernung")}
         />
         {arKann && (
@@ -501,7 +507,6 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
               value={untenText}
               onChange={(e) => setUntenText(e.target.value)}
               inputMode="decimal"
-              placeholder="-10"
               aria-label={t("Winkel zum Fuß")}
             />
           </div>
@@ -514,7 +519,6 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
               value={obenText}
               onChange={(e) => setObenText(e.target.value)}
               inputMode="decimal"
-              placeholder="45"
               aria-label={t("Winkel zur Spitze")}
             />
           </div>

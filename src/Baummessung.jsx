@@ -265,7 +265,8 @@ export default function Baummessung() {
             style={feldStil}
             value={stand.ort}
             onChange={(e) => setzeFeld("ort")(e.target.value)}
-            placeholder="4138 b1"
+            placeholder={t("z. B. {was}", { was: "4138 b1" })}
+            aria-label={t("ORT / BESTAND")}
           />
         </div>
         <div style={{ flex: 1 }}>
@@ -274,8 +275,8 @@ export default function Baummessung() {
             style={feldStil}
             value={stand.alter}
             onChange={(e) => setzeFeld("alter")(e.target.value)}
-            placeholder="80"
             inputMode="numeric"
+            aria-label={t("ALTER Jahre")}
           />
         </div>
       </div>

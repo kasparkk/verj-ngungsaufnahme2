@@ -174,7 +174,6 @@ export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufe
                       alte.map((z, j) => (j === i ? { ...z, bis: e.target.value } : z)),
                     )
                   }
-                  placeholder="15"
                   inputMode="decimal"
                   aria-label={t("Stufe {n} bis Meter", { n: i + 1 })}
                 />
@@ -190,7 +189,6 @@ export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufe
                       alte.map((z, j) => (j === i ? { ...z, wert: e.target.value } : z)),
                     )
                   }
-                  placeholder="0,55"
                   inputMode="decimal"
                   aria-label={t("Stufe {n} Formzahl", { n: i + 1 })}
                 />

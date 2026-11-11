@@ -34,6 +34,12 @@ sprache.mjs     Die Übersetzung, ohne Browser.
                 vergessene Übersetzung fällt sonst niemandem auf: Es
                 steht einfach ein deutsches Wort im englischen Bild.
 
+felder.mjs      Keine Beispielzahlen in leeren Feldern.
+                  node pruefungen/felder.mjs
+                Ein graues "30" im leeren BHD-Feld sieht aus wie eine
+                eingetragene 30. Die Prüfung findet solche Platzhalter
+                und Felder ohne Bezeichnung.
+
 englisch.cjs    Die englische Fassung in der Oberfläche. Gleicher Aufruf
                 wie grenzstamm.cjs. Prüft neben den Texten vor allem,
                 dass die Sprache NICHT in die Daten durchschlägt:

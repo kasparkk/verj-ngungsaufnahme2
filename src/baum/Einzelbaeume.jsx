@@ -70,8 +70,8 @@ export default function Einzelbaeume({
           style={feldStil}
           value={flaeche}
           onChange={(e) => setFlaeche(e.target.value)}
-          placeholder="500"
           inputMode="decimal"
+          aria-label={t("FLÄCHE m²")}
         />
       </div>
 
@@ -107,8 +107,8 @@ export default function Einzelbaeume({
               value={bhd}
               onChange={(e) => setBhd(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && hinzufuegen()}
-              placeholder="30"
               inputMode="decimal"
+              aria-label={t("BHD cm")}
             />
           </div>
           <div style={{ flex: 1 }}>
@@ -119,8 +119,8 @@ export default function Einzelbaeume({
                 value={hoehe}
                 onChange={(e) => setHoehe(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && hinzufuegen()}
-                placeholder="25"
                 inputMode="decimal"
+                aria-label={t("HÖHE m")}
               />
               <button
                 onClick={() => setMisst(true)}

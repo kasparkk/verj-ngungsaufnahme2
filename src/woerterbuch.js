@@ -778,6 +778,12 @@ export const WOERTER = {
     "Summary",
   "Baumart aktivieren":
     "Activate a species",
+  // Beispiele in leeren Feldern - mit "z. B." davor, damit eine graue Zahl
+  // nicht wie ein eingetragener Wert aussieht.
+  "z. B. {was}":
+    "e.g. {was}",
+  "{was} eintragen":
+    "Enter {was}",
 };
 
 /* Werte des amtlichen Aufnahmebogens - ebenfalls nur fuer die ANZEIGE.
