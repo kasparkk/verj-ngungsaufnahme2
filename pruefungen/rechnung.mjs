@@ -12,7 +12,7 @@ import {
   entfernungAusNeigung, NEIGUNG_GRENZE_M,
 } from "../src/baum/hoehe.js";
 import { grenzRadius, zaehltMit, grundflaeche, volumen, formzahlFuer, wzpAuswerten } from "../src/baum/berechnung.js";
-import { stups, FESTGEHALTEN, FERTIG } from "../src/stups.js";
+import { stups, stupsMoeglich, FESTGEHALTEN, FERTIG, GEZAEHLT } from "../src/stups.js";
 
 let ok = 0;
 let schlecht = 0;
@@ -183,8 +183,17 @@ const gerufen = [];
 setzeNavigator({ vibrate: (m) => (gerufen.push(m), true) });
 pruefe("mit vibrate() wird gestupst", stups(FESTGEHALTEN), true);
 pruefe("und zwar genau einmal", gerufen.length, 1);
-pruefe("kurz beim Festhalten", FESTGEHALTEN, 30);
-pruefe("zweimal beim Fertigwerden", FERTIG.join(","), "30,70,30");
+pruefe("kurz beim Festhalten", FESTGEHALTEN, 40);
+pruefe("zweimal beim Fertigwerden", FERTIG.join(","), "40,90,40");
+/* Aus dem Feldtest: "da ist kein Stups". Sehr kurze Impulse schluckt die
+   Mechanik vieler Geraete - der Motor kommt gar nicht erst in Bewegung. */
+pruefe("nichts unter 20 ms, das spuert man nicht",
+  Math.min(GEZAEHLT, FESTGEHALTEN, ...FERTIG) >= 20, true);
+pruefe("Zaehlen bleibt kuerzer als Messen", GEZAEHLT < FESTGEHALTEN, true);
+
+pruefe("ohne Schnittstelle: nicht moeglich", (setzeNavigator({}), stupsMoeglich()), false);
+pruefe("mit Schnittstelle: moeglich",
+  (setzeNavigator({ vibrate: () => true }), stupsMoeglich()), true);
 
 setzeNavigator({ vibrate: () => false });
 pruefe("abgelehnter Stups meldet sich ehrlich", stups(FERTIG), false);

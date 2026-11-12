@@ -11,16 +11,35 @@
      FERTIG        zwei Stuepse - Hoehe steht, du kannst absetzen
 
    Es gibt das nicht ueberall: Auf dem iPhone kennt Safari vibrate()
-   nicht. Deshalb ist der Stups nirgends die einzige Rueckmeldung,
-   sondern kommt zu dem, was ohnehin auf dem Bildschirm steht. Faellt er
-   weg, faellt nichts aus. */
+   nicht, und auf Android unterdrueckt das System die Vibration, wenn
+   "Vibration bei Beruehrung" aus ist oder der Energiesparmodus laeuft -
+   der Browser nimmt den Auftrag dann an, zu spueren ist aber nichts.
+   Deshalb ist der Stups nirgends die einzige Rueckmeldung, sondern
+   kommt zu dem, was ohnehin auf dem Bildschirm steht. Faellt er weg,
+   faellt nichts aus. */
 
-export const FESTGEHALTEN = 30;
-export const FERTIG = [30, 70, 30];
-/* Beim Zaehlen deutlich kuerzer: ein Ticken, kein Brummen. Bei siebzig
-   Kiefern im Probekreis ist das der Unterschied zwischen Bestaetigung
-   und Belaestigung. */
-export const GEZAEHLT = 15;
+/* Die Laengen sind nach dem ersten Feldtest hochgesetzt worden: "da ist
+   kein Stups". Sehr kurze Impulse schluckt die Mechanik vieler Geraete
+   einfach - der Motor kommt in 15 ms gar nicht erst in Bewegung. Unter
+   etwa 20 ms ist deshalb nichts zu spueren, auch wenn der Browser den
+   Auftrag brav annimmt. */
+export const FESTGEHALTEN = 40;
+export const FERTIG = [40, 90, 40];
+/* Beim Zaehlen kuerzer als beim Messen: ein Ticken, kein Brummen. Bei
+   siebzig Kiefern im Probekreis ist das der Unterschied zwischen
+   Bestaetigung und Belaestigung. */
+export const GEZAEHLT = 25;
+
+/* Kennt das Geraet ueberhaupt eine Vibration?
+
+   Wichtig fuer die Probe in den Einstellungen: Ein Stups, der nicht
+   ankommt, hat zwei ganz verschiedene Ursachen - entweder gibt es die
+   Schnittstelle nicht (iPhone), oder das System unterdrueckt sie
+   (Vibration bei Beruehrung aus, Energiesparmodus). Das eine kann die
+   App sagen, das andere nicht. */
+export function stupsMoeglich() {
+  return typeof navigator !== "undefined" && typeof navigator.vibrate === "function";
+}
 
 export function stups(muster) {
   try {

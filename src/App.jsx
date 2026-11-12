@@ -7,6 +7,7 @@ import {
   useEinstellungen,
   useWachhalten,
 } from "./einstellungen.js";
+import { stups, stupsMoeglich, FERTIG } from "./stups.js";
 import Verjuengung from "./Verjuengung.jsx";
 import Baummessung from "./Baummessung.jsx";
 import Monitoring from "./Monitoring.jsx";
@@ -24,6 +25,9 @@ export default function App() {
   const [seite, setSeite] = useState("verjuengung");
   const [sprache, setSprache] = useState("de");
   const [einstellungenOffen, setEinstellungenOffen] = useState(false);
+  /* Was die Probe ergeben hat. Nicht gespeichert - sie gilt fuer den
+     Augenblick, in dem jemand danebensteht und hinspuert. */
+  const [probe, setProbe] = useState("");
   const einstellungen = useEinstellungen();
   useWachhalten(einstellungen.wach);
 
@@ -162,6 +166,7 @@ export default function App() {
               name: "stups",
               titel: t("Stups beim Zählen"),
               dazu: t("Kurzes Ticken, wenn eine Pflanze gezählt ist."),
+              probe: true,
             },
           ].map((s) => {
             const an = einstellungen[s.name];
@@ -213,6 +218,48 @@ export default function App() {
               </button>
             );
           })}
+
+          {/* Die Probe.
+
+              Ein ausbleibender Stups hat zwei ganz verschiedene Ursachen,
+              und von aussen sieht man ihnen nichts an: Entweder kennt das
+              Geraet keine Vibration, oder das System unterdrueckt sie
+              (Vibration bei Beruehrung aus, Energiesparmodus). Das erste
+              kann die App beantworten, das zweite nur der Mensch davor -
+              also sagt sie, was sie getan hat, und wo man weitersucht. */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, paddingTop: 2 }}>
+            <button
+              onClick={() => {
+                if (!stupsMoeglich()) {
+                  setProbe(t("Dieses Gerät kennt keine Vibration."));
+                  return;
+                }
+                setProbe(
+                  stups(FERTIG)
+                    ? t(
+                        "Gesendet. War nichts zu spüren, ist die Vibration beim Berühren in den Einstellungen des Handys aus – oder der Energiesparmodus an.",
+                      )
+                    : t("Das Gerät hat die Vibration abgelehnt."),
+                );
+              }}
+              style={{
+                background: "transparent",
+                border: `1px solid ${farben.line}`,
+                color: farben.text,
+                borderRadius: 10,
+                padding: "10px 16px",
+                fontSize: 13,
+                cursor: "pointer",
+              }}
+            >
+              {t("Probe")}
+            </button>
+            {probe && (
+              <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.4, minWidth: 0 }}>
+                {probe}
+              </div>
+            )}
+          </div>
         </div>
       )}
 

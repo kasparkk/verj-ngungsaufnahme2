@@ -83,7 +83,7 @@ const neige = async (page, grad) => {
   pruefe('der Fuß ist abgehakt',
     (await page.getByRole('button',{name:'Fuß festhalten'}).innerText()).includes('✓ -10,0°'), true);
   pruefe('Schritt 1 steht nicht mehr da', await page.getByText('1 · Stammfuß anpeilen').count(), 0);
-  pruefe('es hat gestupst', (await stupse()).join(" | "), '30');
+  pruefe('es hat gestupst', (await stupse()).join(" | "), '40');
 
   console.log('\nDANACH FEHLT DIE ENTFERNUNG - UND DAS STEHT AUCH DA');
   await neige(page, 45);
@@ -94,7 +94,7 @@ const neige = async (page, grad) => {
   pruefe('Höhe steht noch nicht', await page.getByText(/^\d+,\d m$/).count(), 0);
 
   pruefe('zweiter Winkel: wieder ein kurzer Stups',
-    (await stupse()).join(" | "), '30 | 30');
+    (await stupse()).join(" | "), '40 | 40');
 
   console.log('\nMIT ENTFERNUNG IST ES FERTIG');
   await page.getByLabel('Entfernung').fill('20'); await page.waitForTimeout(300);
@@ -105,7 +105,7 @@ const neige = async (page, grad) => {
     await page.getByRole('button',{name:'Übernehmen'}).isDisabled(), false);
   // Zwei Stüße zum Schluss - das spürt man, ohne hinzusehen.
   pruefe('und zwei Stüße zum Fertigwerden',
-    (await stupse()).join(" | "), '30 | 30 | 30,70,30');
+    (await stupse()).join(" | "), '40 | 40 | 40,90,40');
 
   console.log('\nVERTAUSCHT: DIE APP SAGT ES, STATT STUMM ZU BLEIBEN');
   await neige(page, 50);

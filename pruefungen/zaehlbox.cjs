@@ -99,9 +99,9 @@ const pruefe=(n,ist,soll)=>{const g=String(ist)===String(soll);g?ok++:schlecht++
   const stupse = () => page.evaluate(() => window.__stupse.slice());
   await page.evaluate(() => { window.__stupse.length = 0; });
   await box.click({position:{x:60,y:40}}); await page.waitForTimeout(200);
-  pruefe('ein Ticken je Pflanze', (await stupse()).join("|"), '15');
+  pruefe('ein Ticken je Pflanze', (await stupse()).join("|"), '25');
   await fuenf.click(); await page.waitForTimeout(200);
-  pruefe('auch bei "+5"', (await stupse()).join("|"), '15|15');
+  pruefe('auch bei "+5"', (await stupse()).join("|"), '25|25');
 
   console.log('\nBILDSCHIRM WACHHALTEN');
   pruefe('die Sperre wurde geholt', await page.evaluate(() => window.__wach) >= 1, true);
@@ -119,6 +119,25 @@ const pruefe=(n,ist,soll)=>{const g=String(ist)===String(soll);g?ok++:schlecht++
   await box.click({position:{x:60,y:40}}); await page.waitForTimeout(200);
   pruefe('und es tickt nicht mehr', (await stupse()).length, 0);
   pruefe('gezählt wird trotzdem', await stand(), '15');
+
+  console.log('\nDIE PROBE SAGT, WORAN ES LIEGT');
+  await page.evaluate(() => { window.__stupse.length = 0; });
+  await page.getByRole('button',{name:'Probe'}).click(); await page.waitForTimeout(300);
+  pruefe('sie stupst, auch wenn der Schalter aus ist',
+    (await stupse()).join("|"), '40,90,40');
+  pruefe('und sagt, wo man weitersucht',
+    await page.getByText(/Vibration beim Berühren in den Einstellungen des Handys aus/).count(), 1);
+
+  // Ein Gerät ohne Vibration muss es ehrlich sagen, statt stumm zu bleiben.
+  /* Nicht loeschen, sondern verdecken: vibrate() sitzt im Chrome auf dem
+     Prototyp, nach einem delete kaeme die echte Fassung wieder zum
+     Vorschein - und das Geraet haette wieder eine Vibration. */
+  await page.evaluate(() => {
+    Object.defineProperty(navigator, 'vibrate', { configurable: true, value: undefined });
+  });
+  await page.getByRole('button',{name:'Probe'}).click(); await page.waitForTimeout(300);
+  pruefe('ohne Schnittstelle sagt sie das',
+    await page.getByText('Dieses Gerät kennt keine Vibration.').count(), 1);
 
   console.log('\nDIE WAHL ÜBERLEBT DAS NEULADEN');
   await page.reload({waitUntil:'load'}); await page.waitForTimeout(800);

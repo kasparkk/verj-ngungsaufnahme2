@@ -821,6 +821,14 @@ export const WOERTER = {
     "Buzz when counting",
   "Kurzes Ticken, wenn eine Pflanze gezählt ist.":
     "A short tick when a plant has been counted.",
+  "Probe":
+    "Test it",
+  "Dieses Gerät kennt keine Vibration.":
+    "This device has no vibration.",
+  "Gesendet. War nichts zu spüren, ist die Vibration beim Berühren in den Einstellungen des Handys aus – oder der Energiesparmodus an.":
+    "Sent. If you felt nothing, touch vibration is switched off in your phone's settings – or battery saver is on.",
+  "Das Gerät hat die Vibration abgelehnt.":
+    "The device refused the vibration.",
   "{art} steht schon in der Liste":
     "{art} is already in the list",
   "{art} wird gerade benutzt – erst dort entfernen":
