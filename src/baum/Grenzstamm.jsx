@@ -90,6 +90,7 @@ export default function Grenzstamm({ zaehlfaktor }) {
                 value={bhd}
                 onChange={(e) => setBhd(e.target.value)}
                 inputMode="decimal"
+                placeholder={t("BHD in cm")}
                 aria-label={t("BHD des Grenzstamms")}
               />
             </div>
@@ -100,6 +101,7 @@ export default function Grenzstamm({ zaehlfaktor }) {
                 value={weite}
                 onChange={(e) => setWeite(e.target.value)}
                 inputMode="decimal"
+                placeholder={t("Entfernung in m")}
                 aria-label={t("Entfernung zum Grenzstamm")}
               />
             </div>

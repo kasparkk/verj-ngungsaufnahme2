@@ -201,6 +201,7 @@ export default function Formzahlen({
                     )
                   }
                   inputMode="decimal"
+                  placeholder={t("Höhe")}
                   aria-label={t("Stufe {n} bis Meter", { n: i + 1 })}
                 />
               </div>
@@ -216,6 +217,7 @@ export default function Formzahlen({
                     )
                   }
                   inputMode="decimal"
+                  placeholder={t("Formzahl")}
                   aria-label={t("Stufe {n} Formzahl", { n: i + 1 })}
                 />
               </div>

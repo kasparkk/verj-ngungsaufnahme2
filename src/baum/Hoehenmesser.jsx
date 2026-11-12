@@ -463,6 +463,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
                     handyhoeheSpeichern(e.target.value);
                   }}
                   inputMode="decimal"
+                  placeholder={t("Höhe in m")}
                   aria-label={t("Handyhöhe über dem Boden")}
                 />
               </div>
@@ -556,6 +557,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
               value={untenText}
               onChange={(e) => setUntenText(e.target.value)}
               inputMode="decimal"
+              placeholder={t("Winkel in Grad")}
               aria-label={t("Winkel zum Fuß")}
             />
           </div>
@@ -568,6 +570,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
               value={obenText}
               onChange={(e) => setObenText(e.target.value)}
               inputMode="decimal"
+              placeholder={t("Winkel in Grad")}
               aria-label={t("Winkel zur Spitze")}
             />
           </div>

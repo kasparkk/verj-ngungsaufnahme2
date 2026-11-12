@@ -74,6 +74,7 @@ export default function Einzelbaeume({
           value={flaeche}
           onChange={(e) => setFlaeche(e.target.value)}
           inputMode="decimal"
+          placeholder={t("Fläche in m²")}
           aria-label={t("FLÄCHE m²")}
         />
       </div>
@@ -102,6 +103,9 @@ export default function Einzelbaeume({
           ))}
         </div>
 
+        {/* Etwas Luft nach unten: Ohne sie klebt die Unterkante des Feldes
+            an der Beschriftung "BHD cm" darunter. */}
+        <div style={{ marginBottom: 14 }}>
         <ArtErgaenzen
           onHinzu={(name) => {
             const grund = onArtHinzu(name);
@@ -111,6 +115,7 @@ export default function Einzelbaeume({
           }}
           setHinweis={setHinweis}
         />
+        </div>
 
         <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
           <div style={{ flex: 1 }}>
@@ -121,6 +126,7 @@ export default function Einzelbaeume({
               onChange={(e) => setBhd(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && hinzufuegen()}
               inputMode="decimal"
+              placeholder={t("BHD in cm")}
               aria-label={t("BHD cm")}
             />
           </div>
@@ -133,6 +139,7 @@ export default function Einzelbaeume({
                 onChange={(e) => setHoehe(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && hinzufuegen()}
                 inputMode="decimal"
+                placeholder={t("Höhe in m")}
                 aria-label={t("HÖHE m")}
               />
               <button

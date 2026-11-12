@@ -786,6 +786,28 @@ export const WOERTER = {
     "Enter {was}",
   "hier Entfernung eintragen":
     "enter the distance here",
+  // Hinweise in leeren Feldern: ein Wort, das sagt, was hineingehört -
+  // nie eine Zahl, die wie ein eingetragener Wert aussieht.
+  "Alter in Jahren":
+    "age in years",
+  "Fläche in m²":
+    "area in m²",
+  "BHD in cm":
+    "DBH in cm",
+  "Höhe in m":
+    "height in m",
+  "Formzahl":
+    "form factor",
+  "Entfernung in m":
+    "distance in m",
+  "Winkel in Grad":
+    "angle in degrees",
+  "Radius in m":
+    "radius in m",
+  "Winkel in gon":
+    "angle in gon",
+  "Abstand in m":
+    "distance in m",
   "eigene Baumart":
     "own species",
   "{art} steht schon in der Liste":

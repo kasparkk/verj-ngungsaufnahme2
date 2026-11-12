@@ -167,6 +167,27 @@ if (ohneWert.length) {
   sage(`   ✓  alle ${new Set(werteImBogen).size} Werte des Aufnahmebogens sind übersetzt`);
 }
 
+/* Doppelte Schluessel.
+
+   In einem Objekt gewinnt der letzte, und der erste verschwindet
+   lautlos - nach dem Einlesen ist die Dublette nicht mehr zu sehen.
+   Deshalb wird hier der Quelltext gelesen, nicht das Objekt. Passiert
+   ist es beim Platzhalter "Höhe", der eine schon vorhandene Zeile
+   ueberschrieben hat. */
+const woerterbuchQuelle = readFileSync(join(QUELLE, "woerterbuch.js"), "utf8");
+const zaehler = new Map();
+for (const m of woerterbuchQuelle.matchAll(/^ {2}"((?:[^"\\]|\\.)*)":/gm)) {
+  zaehler.set(m[1], (zaehler.get(m[1]) ?? 0) + 1);
+}
+const doppelt = [...zaehler].filter(([, n]) => n > 1);
+if (doppelt.length) {
+  fehler += doppelt.length;
+  sage(`\n✗ ${doppelt.length} Schlüssel stehen doppelt im Wörterbuch:`);
+  for (const [k, n] of doppelt) sage(`     "${k}" (${n}×)`);
+} else {
+  sage("   ✓  kein Schlüssel steht doppelt");
+}
+
 const leer = Object.entries(WOERTER).filter(([, en]) => !String(en).trim());
 if (leer.length) {
   fehler += leer.length;

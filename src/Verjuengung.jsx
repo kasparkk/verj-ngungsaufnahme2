@@ -1096,6 +1096,7 @@ export default function Verjuengung() {
             value={kopf.radius}
             onChange={(e) => setRadius(e.target.value)}
             inputMode="decimal"
+            placeholder={t("Fläche in m²")}
             aria-label={t("FLÄCHE m²")}
           />
         </div>

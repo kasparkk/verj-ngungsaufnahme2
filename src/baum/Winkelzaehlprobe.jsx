@@ -65,6 +65,7 @@ function WerteFeld({
           onChange={(e) => setEntwurf(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onHinzu()}
           inputMode="decimal"
+          placeholder={t("{was} eintragen", { was: `${titel} ${einheit}` })}
           aria-label={t("{was} eintragen", { was: `${titel} ${einheit}` })}
         />
         <button

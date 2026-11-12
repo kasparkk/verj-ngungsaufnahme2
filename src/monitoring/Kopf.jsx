@@ -182,7 +182,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
         <div style={{ display: "flex", gap: 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <Feld titel={t("Probekreis-Radius (m)")}>
-              <TextFeld wert={punkt.radius} setWert={setzeFeld("radius")} inputMode="decimal" />
+              <TextFeld wert={punkt.radius} setWert={setzeFeld("radius")} platzhalter={t("Radius in m")} inputMode="decimal" />
             </Feld>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -336,17 +336,17 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
         <div style={{ display: "flex", gap: 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <Feld titel={t("BHD (cm)")}>
-              <TextFeld wert={punkt.referenz.bhd} setWert={setzeReferenz("bhd")} inputMode="decimal" />
+              <TextFeld wert={punkt.referenz.bhd} setWert={setzeReferenz("bhd")} platzhalter={t("BHD in cm")} inputMode="decimal" />
             </Feld>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <Feld titel={t("Winkel (gon)")} hinweis="0–400">
-              <TextFeld wert={punkt.referenz.winkel} setWert={setzeReferenz("winkel")} inputMode="decimal" />
+              <TextFeld wert={punkt.referenz.winkel} setWert={setzeReferenz("winkel")} platzhalter={t("Winkel in gon")} inputMode="decimal" />
             </Feld>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <Feld titel={t("Abstand (m)")}>
-              <TextFeld wert={punkt.referenz.abstand} setWert={setzeReferenz("abstand")} inputMode="decimal" />
+              <TextFeld wert={punkt.referenz.abstand} setWert={setzeReferenz("abstand")} platzhalter={t("Abstand in m")} inputMode="decimal" />
             </Feld>
           </div>
         </div>

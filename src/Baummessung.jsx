@@ -307,6 +307,7 @@ export default function Baummessung() {
             value={stand.alter}
             onChange={(e) => setzeFeld("alter")(e.target.value)}
             inputMode="numeric"
+            placeholder={t("Alter in Jahren")}
             aria-label={t("ALTER Jahre")}
           />
         </div>
