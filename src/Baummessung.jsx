@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { farben } from "./konfiguration.js";
-import { zahl, grundflaeche, volumen, mittel, wzpAuswerten } from "./baum/berechnung.js";
+import { zahl, grundflaeche, volumen, mittel, wzpAuswerten, alleArten } from "./baum/berechnung.js";
 import { laden, speichern, leererStand } from "./baum/speicher.js";
 import { baueXlsx } from "./xlsx.js";
 import Winkelzaehlprobe from "./baum/Winkelzaehlprobe.jsx";
@@ -63,6 +63,37 @@ export default function Baummessung() {
     const uhr = setTimeout(() => setHinweis(""), 2500);
     return () => clearTimeout(uhr);
   }, [hinweis]);
+
+  /* Die Artenliste gilt fuer beide Verfahren - wie Ort und Formzahlen
+     gehoert sie zum Bestand, nicht zum Verfahren. */
+  const arten = alleArten(stand.eigeneArten);
+
+  /* Gibt einen Grund zurueck, wenn es nicht geht, sonst nichts. So kann
+     das Eingabefeld selbst entscheiden, ob es sich leert. */
+  const artHinzu = (name) => {
+    if (arten.some((a) => a.name.toLowerCase() === name.toLowerCase())) {
+      return t("{art} steht schon in der Liste", { art: name });
+    }
+    setStand((alt) => ({ ...alt, eigeneArten: [...(alt.eigeneArten ?? []), name] }));
+    return "";
+  };
+
+  /* Eine eigene Art wieder loeschen - aber nur, solange niemand mit ihr
+     gezaehlt hat. Sonst stuenden Zahlen zu einer Art da, die es in der
+     Liste nicht mehr gibt. */
+  const artBenutzt = (name) =>
+    stand.wzp.arten.some((a) => a.name === name) || stand.baeume.some((b) => b.art === name);
+
+  const artWeg = (name) => {
+    if (artBenutzt(name)) {
+      setHinweis(t("{art} wird gerade benutzt – erst dort entfernen", { art: name }));
+      return;
+    }
+    setStand((alt) => ({
+      ...alt,
+      eigeneArten: (alt.eigeneArten ?? []).filter((a) => a !== name),
+    }));
+  };
 
   const setzeFeld = (feld) => (wert) => setStand((alt) => ({ ...alt, [feld]: wert }));
   const setWzp = (wie) =>
@@ -330,6 +361,8 @@ export default function Baummessung() {
 
       {stand.modus === "wzp" ? (
         <Winkelzaehlprobe
+          arten={arten}
+          onArtHinzu={artHinzu}
           alter={stand.alter}
           wzp={stand.wzp}
           setWzp={setWzp}
@@ -339,6 +372,8 @@ export default function Baummessung() {
         />
       ) : (
         <Einzelbaeume
+          arten={arten}
+          onArtHinzu={artHinzu}
           flaeche={stand.flaeche}
           setFlaeche={setzeFeld("flaeche")}
           formzahlen={stand.formzahlen}
@@ -368,6 +403,8 @@ export default function Baummessung() {
 
       {formzahlenOffen && (
         <Formzahlen
+          arten={arten}
+          onArtWeg={artWeg}
           formzahlen={stand.formzahlen}
           setFormzahlen={(wie) =>
             setStand((alt) => ({

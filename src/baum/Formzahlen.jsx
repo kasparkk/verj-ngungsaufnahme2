@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { farben } from "../konfiguration.js";
-import { BAUMARTEN, STANDARD_FORMZAHL, zahl } from "./berechnung.js";
+import { STANDARD_FORMZAHL, zahl } from "./berechnung.js";
 import { useT, artName, zahlOrt } from "../sprache.js";
 
 const nk = (wert, stellen = 2) =>
@@ -13,10 +13,17 @@ const nk = (wert, stellen = 2) =>
    gehoeren aus der Ertragstafel oder der Anweisung des Betriebs hierher,
    nicht aus der App: Erfundene Werte sahen aus wie richtige und wuerden
    jeden Vorrat still verschieben. */
-export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufen }) {
+export default function Formzahlen({
+  arten,
+  onArtWeg,
+  formzahlen,
+  setFormzahlen,
+  stufen,
+  setStufen,
+}) {
   const t = useT();
   const [staffelOffen, setStaffelOffen] = useState(false);
-  const [art, setArt] = useState(BAUMARTEN[0].name);
+  const [art, setArt] = useState(arten[0].name);
 
   const feldStil = {
     background: "transparent",
@@ -58,7 +65,7 @@ export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufe
         )}
       </div>
 
-      {BAUMARTEN.map((a) => {
+      {arten.map((a) => {
         const anzahl = (stufen?.[a.name] ?? []).length;
         return (
           <div key={a.name} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
@@ -79,8 +86,27 @@ export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufe
               value={formzahlen?.[a.name] ?? ""}
               onChange={(e) => setFormzahlen((alt) => ({ ...alt, [a.name]: e.target.value }))}
               inputMode="decimal"
+              placeholder={nk(STANDARD_FORMZAHL, 2)}
               aria-label={t("Formzahl {art}", { art: artName(a.name) })}
             />
+            {/* Nur die selbst eingetragenen lassen sich wieder loeschen -
+                die feste Liste gehoert nicht dem einzelnen Blatt. */}
+            {a.eigen && (
+              <button
+                onClick={() => onArtWeg(a.name)}
+                aria-label={t("{art} aus der Liste nehmen", { art: a.name })}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: farben.muted,
+                  fontSize: 16,
+                  cursor: "pointer",
+                  padding: "0 2px",
+                }}
+              >
+                ×
+              </button>
+            )}
           </div>
         );
       })}
@@ -124,7 +150,7 @@ export default function Formzahlen({ formzahlen, setFormzahlen, stufen, setStufe
 
           <div style={{ ...beschriftung, marginBottom: 6 }}>{t("BAUMART")}</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-            {BAUMARTEN.map((a) => {
+            {arten.map((a) => {
               const gewaehlt = art === a.name;
               const hat = (stufen?.[a.name] ?? []).length > 0;
               return (

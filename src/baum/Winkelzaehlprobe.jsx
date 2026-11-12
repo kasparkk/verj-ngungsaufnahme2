@@ -2,10 +2,11 @@ import { useState } from "react";
 import { farben } from "../konfiguration.js";
 import Hoehenmesser from "./Hoehenmesser.jsx";
 import Grenzstamm from "./Grenzstamm.jsx";
-import { BAUMARTEN, ZAEHLFAKTOREN, zahl, wzpAuswerten } from "./berechnung.js";
+import { ZAEHLFAKTOREN, zahl, wzpAuswerten } from "./berechnung.js";
 import { leereArt } from "./speicher.js";
 import ZaehlBox from "../komponenten/ZaehlBox.jsx";
 import { useT, artName, zahlOrt } from "../sprache.js";
+import ArtErgaenzen from "./ArtErgaenzen.jsx";
 
 const nk = (wert, stellen = 1) =>
   Number(wert).toLocaleString(zahlOrt(), {
@@ -135,6 +136,8 @@ function WerteFeld({
 /* Winkelzaehlprobe: am Standpunkt einmal im Kreis drehen und jeden Baum
    zaehlen, der breiter erscheint als der Spalt am Zaehlstab. */
 export default function Winkelzaehlprobe({
+  arten,
+  onArtHinzu,
   alter,
   wzp,
   setWzp,
@@ -232,9 +235,7 @@ export default function Winkelzaehlprobe({
     letterSpacing: 0.6,
   };
 
-  const offeneArten = BAUMARTEN.filter(
-    (b) => !wzp.arten.some((a) => a.name === b.name),
-  );
+  const offeneArten = arten.filter((b) => !wzp.arten.some((a) => a.name === b.name));
 
   return (
     <>
@@ -539,11 +540,9 @@ export default function Winkelzaehlprobe({
         );
       })}
 
-      {offeneArten.length > 0 && (
-        <div style={{ marginTop: 4 }}>
-          <div style={{ ...beschriftung, marginBottom: 6 }}>
-            {t("BAUMART ERGÄNZEN")}
-          </div>
+      <div style={{ marginTop: 4 }}>
+        <div style={{ ...beschriftung, marginBottom: 6 }}>{t("BAUMART ERGÄNZEN")}</div>
+        {offeneArten.length > 0 && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
             {offeneArten.map((b) => (
               <button
@@ -568,8 +567,17 @@ export default function Winkelzaehlprobe({
               </button>
             ))}
           </div>
-        </div>
-      )}
+        )}
+        <ArtErgaenzen
+          onHinzu={(name) => {
+            const grund = onArtHinzu(name);
+            // Gleich mitzaehlen koennen: Wer sie eintraegt, hat sie vor sich.
+            if (!grund) setWzp((alt) => ({ ...alt, arten: [...alt.arten, leereArt(name)] }));
+            return grund;
+          }}
+          setHinweis={setHinweis}
+        />
+      </div>
 
       <a
         href="https://brandenburg-forst.de/ertragstafel/"

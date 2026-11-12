@@ -132,7 +132,24 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
 
       <Strichliste n={wert} color={farbe} />
 
-      <div style={{ display: "flex", gap: 6, justifyContent: "flex-end", marginTop: "auto", paddingTop: 8 }}>
+      {/* Der Stift steht allein in der anderen Ecke.
+
+          Aus dem Feldtest: Man kommt beim Zaehlen zu leicht darauf. Er sass
+          als innerster der drei Knoepfe am naechsten zur Mitte der Box - und
+          die ganze Box ist der Plus-Knopf, ein Tipp landet also oft dort.
+          Jetzt sitzt er am weitesten vom Daumenweg entfernt, ist kleiner
+          und nicht mehr in der Farbe der Box, sondern grau: ein Knopf fuer
+          den Ausnahmefall, nicht fuer die Aufnahme. */}
+      <div
+        style={{
+          display: "flex",
+          gap: 6,
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginTop: "auto",
+          paddingTop: 8,
+        }}
+      >
         <div
           onClick={(e) => {
             e.stopPropagation();
@@ -140,11 +157,19 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
           }}
           role="button"
           aria-label={t("Zahl eingeben")}
-          style={{ ...kleinerKnopf, border: `1px solid ${farbe}`, color: farbe, fontSize: 13 }}
+          style={{
+            ...kleinerKnopf,
+            width: 22,
+            height: 22,
+            border: `1px solid ${farben.line}`,
+            color: farben.muted,
+            fontSize: 11,
+          }}
         >
           ✎
         </div>
 
+        <div style={{ display: "flex", gap: 6 }}>
         <div
           onClick={(e) => {
             e.stopPropagation();
@@ -180,6 +205,7 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
           }}
         >
           +5
+        </div>
         </div>
       </div>
     </div>

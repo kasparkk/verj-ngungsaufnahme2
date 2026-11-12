@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { farben } from "../konfiguration.js";
 import Hoehenmesser from "./Hoehenmesser.jsx";
-import { BAUMARTEN, zahl, volumen, auswerten, formzahlFuer } from "./berechnung.js";
+import { zahl, volumen, auswerten, formzahlFuer } from "./berechnung.js";
 import { useT, artName, zahlOrt } from "../sprache.js";
+import ArtErgaenzen from "./ArtErgaenzen.jsx";
 
 const nk = (wert, stellen = 2) =>
   Number(wert).toLocaleString(zahlOrt(), { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
@@ -11,6 +12,8 @@ const nk = (wert, stellen = 2) =>
    Flaeche erfasst. Aufwendiger als die Winkelzaehlprobe, dafuer hat man die
    Einzelwerte. */
 export default function Einzelbaeume({
+  arten,
+  onArtHinzu,
   flaeche,
   setFlaeche,
   formzahlen,
@@ -20,7 +23,7 @@ export default function Einzelbaeume({
   setHinweis,
 }) {
   const t = useT();
-  const [art, setArt] = useState(BAUMARTEN[0].name);
+  const [art, setArt] = useState(arten[0].name);
   const [bhd, setBhd] = useState("");
   // Offen oder nicht; der gemessene Wert landet im Hoehenfeld darunter.
   const [misst, setMisst] = useState(false);
@@ -78,7 +81,7 @@ export default function Einzelbaeume({
       <div style={{ background: farben.surface, borderRadius: 14, padding: "12px 14px", marginBottom: 14 }}>
         <div style={{ ...beschriftung, marginBottom: 6 }}>{t("BAUMART")}</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
-          {BAUMARTEN.map((a) => (
+          {arten.map((a) => (
             <button
               key={a.name}
               onClick={() => setArt(a.name)}
@@ -98,6 +101,16 @@ export default function Einzelbaeume({
             </button>
           ))}
         </div>
+
+        <ArtErgaenzen
+          onHinzu={(name) => {
+            const grund = onArtHinzu(name);
+            // Gleich ausgewaehlt: Wer sie eintraegt, will sie als Naechstes messen.
+            if (!grund) setArt(name);
+            return grund;
+          }}
+          setHinweis={setHinweis}
+        />
 
         <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
           <div style={{ flex: 1 }}>

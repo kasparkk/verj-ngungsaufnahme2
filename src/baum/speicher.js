@@ -32,6 +32,10 @@ export const leererStand = () => ({
   lon: null,
   genauigkeit: null,
   formzahlen: Object.fromEntries(BAUMARTEN.map((a) => [a.name, String(a.formzahl)])),
+  /* Selbst eingetragene Baumarten. Sie gelten fuer beide Verfahren und
+     ueberdauern die Messung - wer einmal "Robinie" braucht, braucht sie
+     meist wieder. */
+  eigeneArten: [],
   /* Hoehenstufen der Formzahl, je Baumart. Absichtlich leer: Werte dafuer
      kommen aus der Ertragstafel oder der Anweisung des Betriebs, nicht aus
      der App. Solange hier nichts steht, gilt der Grundwert oben. */
@@ -86,6 +90,9 @@ export function laden() {
       formzahlen: { ...standard.formzahlen, ...(daten.formzahlen ?? {}) },
       // Aeltere Staende kannten die Hoehenstufen noch nicht.
       formzahlStufen: stufenLaden(daten.formzahlStufen),
+      eigeneArten: Array.isArray(daten.eigeneArten)
+        ? daten.eigeneArten.map((a) => String(a ?? "").trim()).filter(Boolean)
+        : [],
       wzp: {
         zaehlfaktor: daten.wzp?.zaehlfaktor ?? 4,
         // Fehlende Listen ergaenzen - aeltere Staende kannten die Durchmesser noch nicht.

@@ -28,6 +28,27 @@ export const BAUMARTEN = [
 
 export const STANDARD_FORMZAHL = 0.5;
 
+/* Die Liste oben deckt ab, was in Brandenburg im Bestand steht - aber eben
+   nicht alles. Eigene Arten kommen hinten dran und bekommen die
+   Standard-Formzahl, bis jemand eine eintraegt: Eine erfundene Zahl fuer
+   eine Art, die ich nicht kenne, waere schlechter als die offen
+   erkennbare 0,5.
+
+   Gleiche Namen fallen weg (ohne Ruecksicht auf Gross- und
+   Kleinschreibung), damit "Robinie" nicht zweimal in der Liste steht und
+   zwei getrennte Zaehlungen fuehrt. */
+export function alleArten(eigene) {
+  const bekannt = new Set(BAUMARTEN.map((a) => a.name.toLowerCase()));
+  const dazu = [];
+  for (const roh of eigene ?? []) {
+    const name = String(roh ?? "").trim();
+    if (!name || bekannt.has(name.toLowerCase())) continue;
+    bekannt.add(name.toLowerCase());
+    dazu.push({ name, formzahl: STANDARD_FORMZAHL, eigen: true });
+  }
+  return [...BAUMARTEN, ...dazu];
+}
+
 // Nimmt Komma wie Punkt als Dezimaltrenner - im Feld tippt niemand Punkte.
 export function zahl(wert) {
   const n = parseFloat(String(wert ?? "").replace(",", "."));

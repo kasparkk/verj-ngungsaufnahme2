@@ -786,6 +786,14 @@ export const WOERTER = {
     "Enter {was}",
   "hier Entfernung eintragen":
     "enter the distance here",
+  "eigene Baumart":
+    "own species",
+  "{art} steht schon in der Liste":
+    "{art} is already in the list",
+  "{art} wird gerade benutzt – erst dort entfernen":
+    "{art} is in use – remove it there first",
+  "{art} aus der Liste nehmen":
+    "Take {art} out of the list",
   // Der gefuehrte Ablauf beim Peilen
   "1 · Stammfuß anpeilen":
     "1 · Sight the base of the trunk",
