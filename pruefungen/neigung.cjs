@@ -60,6 +60,11 @@ const tippe = async (loc) => {
 
   console.log('\nNAH DRAN: VORSCHLAG MIT SPANNE');
   await page.getByLabel('Winkel zum Fuß').fill('-17'); await page.waitForTimeout(300);
+  // Sie klappt nur auf Antippen auf - von selbst schöbe sie den Knopf weg.
+  pruefe('von selbst klappt nichts auf',
+    await page.getByLabel('Handyhöhe über dem Boden').count(), 0);
+  await tippe(page.getByRole('button',{name:'Kein Maßband? Entfernung aus der Neigung schätzen'}));
+  await page.waitForTimeout(300);
   pruefe('Handyhöhe steht voreingestellt da',
     await page.getByLabel('Handyhöhe über dem Boden').inputValue(), '1,50');
   // 1,50 / tan(17°) = 4,906...
@@ -79,6 +84,8 @@ const tippe = async (loc) => {
   console.log('\nMIT ENTFERNUNG IM FELD IST DER KASTEN WEG');
   pruefe('kein Vorschlag mehr', await page.getByText(/AUS DER NEIGUNG/).count(), 0);
   await page.getByLabel('Entfernung').fill(''); await page.waitForTimeout(300);
+  await tippe(page.getByRole('button',{name:'Kein Maßband? Entfernung aus der Neigung schätzen'}));
+  await page.waitForTimeout(300);
   pruefe('und wieder da, sobald das Feld leer ist',
     await page.getByText(/AUS DER NEIGUNG/).count(), 1);
 
@@ -101,6 +108,8 @@ const tippe = async (loc) => {
   await page.getByRole('button',{name:'Baummessung'}).click(); await page.waitForTimeout(400);
   await tippe(page.getByRole('button',{name:'HÖHE messen'})); await page.waitForTimeout(2600);
   await page.getByLabel('Winkel zum Fuß').fill('-17'); await page.waitForTimeout(300);
+  await tippe(page.getByRole('button',{name:'Kein Maßband? Entfernung aus der Neigung schätzen'}));
+  await page.waitForTimeout(300);
   pruefe('1,80 m steht noch da',
     await page.getByLabel('Handyhöhe über dem Boden').inputValue(), '1,80');
 

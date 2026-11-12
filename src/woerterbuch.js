@@ -786,6 +786,12 @@ export const WOERTER = {
     "Enter {was}",
   "hier Entfernung eintragen":
     "enter the distance here",
+  "Kein Maßband? Entfernung aus der Neigung schätzen":
+    "No tape measure? Estimate the distance from the tilt",
+  "Schätzung ausblenden":
+    "Hide the estimate",
+  "Dafür erst den Stammfuß anpeilen – aus diesem Winkel kommt die Schätzung.":
+    "Sight the base of the trunk first – the estimate comes from that angle.",
   // Hinweise in leeren Feldern: ein Wort, das sagt, was hineingehört -
   // nie eine Zahl, die wie ein eingetragener Wert aussieht.
   "Alter in Jahren":

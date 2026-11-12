@@ -61,6 +61,15 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
      gibt es kein WebXR - dort soll kein Knopf stehen, der nichts tut. */
   const [arKann, setArKann] = useState(false);
   const [arOffen, setArOffen] = useState(false);
+  /* Die Entfernungsschaetzung klappt nur auf Wunsch auf.
+
+     Vorher erschien sie von selbst, sobald der Fuss angepeilt war - und
+     schob dabei alles darunter um 127 px nach unten, genau in dem
+     Moment, in dem der Daumen auf dem Knopf lag. Gemeldet als "immer
+     wenn man auf den Knopf drückt, bewegt sich der Bildschirm nach
+     unten". Jetzt bewegt sich nichts, was man nicht selbst angetippt
+     hat. */
+  const [schaetzungOffen, setSchaetzungOffen] = useState(false);
   const [unten, setUnten] = useState(null);
   const [oben, setOben] = useState(null);
   const [sensor, setSensor] = useState("unbekannt"); // unbekannt|laeuft|nein|gesperrt
@@ -229,6 +238,14 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
     if (jetztDa && !hatteHoehe.current) stups(FERTIG);
     hatteHoehe.current = jetztDa;
   }, [offen, hoehe]);
+
+  /* Steht eine Entfernung im Feld, ist die Schaetzung erledigt - und
+     bleibt es auch. Ohne dieses Zuklappen kaeme sie beim Loeschen des
+     Feldes von selbst wieder hoch und schoebe alles darunter nach unten,
+     mitten im Neueintragen. */
+  useEffect(() => {
+    if (Number(String(entfernung).replace(",", ".")) > 0) setSchaetzungOffen(false);
+  }, [entfernung]);
 
   if (!offen) return null;
 
@@ -433,15 +450,38 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
           </button>
         )}
 
-        {/* Schaetzung aus dem Fusswinkel. Steht bewusst UNTER dem Feld und
-            traegt sich nicht von selbst ein: Sie ist ein Vorschlag, und
-            jenseits weniger Meter ein schlechter.
+        {/* Die Zeile dazu haelt ihren Platz, auch wenn sie leer ist:
+            Sobald eine Entfernung dasteht, hat sie nichts mehr zu sagen -
+            verschwaende sie dann ihre 27 px, ruckte alles darunter nach
+            oben, mitten im Eintragen. Was aufklappt, klappt nur auf
+            Antippen auf. */}
+        <div style={{ minHeight: 27 }}>
+          {!hatEntfernung && (
+            <button
+              onClick={() => setSchaetzungOffen((o) => !o)}
+              style={{
+                width: "100%",
+                background: "transparent",
+                border: "none",
+                color: farben.muted,
+                fontSize: 11,
+                textAlign: "left",
+                padding: "8px 0 0",
+                cursor: "pointer",
+              }}
+            >
+              {schaetzungOffen
+                ? t("Schätzung ausblenden")
+                : t("Kein Maßband? Entfernung aus der Neigung schätzen")}
+            </button>
+          )}
+        </div>
 
-            Nur sichtbar, solange keine Entfernung dasteht. Wer geschritten
-            oder gemessen hat, braucht keinen Vorschlag - und erst recht
-            keine rote Warnung darueber, dass der Vorschlag nicht taugt,
-            den er gar nicht benutzt. */}
-        {schaetzung && !hatEntfernung && (
+        {/* Schaetzung aus dem Fusswinkel. Traegt sich nicht von selbst
+            ein: Sie ist ein Vorschlag, und jenseits weniger Meter ein
+            schlechter. Verschwindet, sobald eine Entfernung dasteht - wer
+            geschritten oder gemessen hat, braucht keinen Vorschlag. */}
+        {schaetzungOffen && !hatEntfernung && (
           <div
             style={{
               background: farben.surface,
@@ -472,7 +512,11 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
               </div>
             </div>
 
-            {schaetzung.brauchbar ? (
+            {!schaetzung ? (
+              <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5 }}>
+                {t("Dafür erst den Stammfuß anpeilen – aus diesem Winkel kommt die Schätzung.")}
+              </div>
+            ) : schaetzung.brauchbar ? (
               <>
                 <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
                   {t("AUS DER NEIGUNG ({grad}° nach unten)", {
@@ -584,7 +628,11 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
               borderRadius: 14,
               overflow: "hidden",
               marginBottom: 12,
-              aspectRatio: kamera === "laeuft" ? "3 / 4" : undefined,
+              /* Auch schon, waehrend die Kamera startet: Sonst waechst der
+                 Kasten eine Sekunde nach dem Oeffnen und schiebt alles
+                 darunter weg. Erst wenn feststeht, dass es keine Kamera
+                 gibt, faellt der Platz weg. */
+              aspectRatio: kamera === "nein" ? undefined : "3 / 4",
               maxWidth: "100%",
             }}
           >

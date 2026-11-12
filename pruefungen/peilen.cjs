@@ -66,8 +66,21 @@ const neige = async (page, grad) => {
   // Sofort Ereignisse schicken, damit der Messer nicht auf Eintippen umstellt.
   await neige(page, 0);
   await page.waitForTimeout(400);
-  pruefe('der Sensor gilt als da', await page.getByText('NEIGUNG').count(), 1);
+  /* exact: true - sonst findet ein schlichtes getByText('NEIGUNG') auch
+     die Zeile "... aus der Neigung schätzen": Playwright sucht bei einem
+     String ohne exact nach Teilstrings, und das ohne Rücksicht auf
+     Groß- und Kleinschreibung. */
+  pruefe('der Sensor gilt als da',
+    await page.getByText('NEIGUNG',{exact:true}).count(), 1);
   pruefe('die Peilknöpfe sind da', await page.getByRole('button',{name:'Fuß festhalten'}).count(), 1);
+
+  /* Gemeldet aus dem Feldtest: "immer wenn man auf den Knopf drückt,
+     bewegt sich der Bildschirm nach unten". Ursache war die
+     Entfernungsschätzung, die beim Festhalten des Fußes von selbst
+     aufklappte - 127 px, genau unter dem Daumen. */
+  const knopfY = () =>
+    page.getByRole('button',{name:'Fuß festhalten'}).evaluate(
+      (el) => Math.round(el.getBoundingClientRect().top));
 
   console.log('\nSCHRITT 1');
   pruefe('sagt, was dran ist', await page.getByText('1 · Stammfuß anpeilen').count(), 1);
@@ -77,6 +90,7 @@ const neige = async (page, grad) => {
   console.log('\nSCHRITT 2');
   const stupse = () => page.evaluate(() => window.__stupse.slice());
   await neige(page, -10);
+  const vorFuss = await knopfY();
   await tippe(page.getByRole('button',{name:'Fuß festhalten'}));
   await page.waitForTimeout(200);
   pruefe('jetzt die Spitze', await page.getByText('2 · Spitze anpeilen').count(), 1);
@@ -84,11 +98,14 @@ const neige = async (page, grad) => {
     (await page.getByRole('button',{name:'Fuß festhalten'}).innerText()).includes('✓ -10,0°'), true);
   pruefe('Schritt 1 steht nicht mehr da', await page.getByText('1 · Stammfuß anpeilen').count(), 0);
   pruefe('es hat gestupst', (await stupse()).join(" | "), '40');
+  pruefe('und nichts ist unter dem Daumen weggerutscht', (await knopfY()) - vorFuss, 0);
 
   console.log('\nDANACH FEHLT DIE ENTFERNUNG - UND DAS STEHT AUCH DA');
   await neige(page, 45);
+  const vorSpitze = await knopfY();
   await tippe(page.getByRole('button',{name:'Spitze festhalten'}));
   await page.waitForTimeout(200);
+  pruefe('auch beim zweiten Winkel bleibt alles stehen', (await knopfY()) - vorSpitze, 0);
   pruefe('sagt, woran es liegt',
     await page.getByText('Jetzt fehlt nur noch die Entfernung oben').count(), 1);
   pruefe('Höhe steht noch nicht', await page.getByText(/^\d+,\d m$/).count(), 0);
@@ -97,7 +114,9 @@ const neige = async (page, grad) => {
     (await stupse()).join(" | "), '40 | 40');
 
   console.log('\nMIT ENTFERNUNG IST ES FERTIG');
+  const vorEntfernung = await knopfY();
   await page.getByLabel('Entfernung').fill('20'); await page.waitForTimeout(300);
+  pruefe('und beim Eintragen der Entfernung auch', (await knopfY()) - vorEntfernung, 0);
   pruefe('meldet fertig', await page.getByText('✓ Fertig – die Höhe steht unten').count(), 1);
   // 20 · (tan 45° + tan 10°) = 23,53
   pruefe('und die Höhe stimmt', await page.getByText('23,5 m').count(), 1);
