@@ -61,6 +61,9 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
      gibt es kein WebXR - dort soll kein Knopf stehen, der nichts tut. */
   const [arKann, setArKann] = useState(false);
   const [arOffen, setArOffen] = useState(false);
+  /* Die Handyhoehe und die Begruendung liegen hinter einer Zeile: im
+     Bestand braucht man beides einmal, nicht bei jedem Baum. */
+  const [schaetzungDetails, setSchaetzungDetails] = useState(false);
   const [unten, setUnten] = useState(null);
   const [oben, setOben] = useState(null);
   const [sensor, setSensor] = useState("unbekannt"); // unbekannt|laeuft|nein|gesperrt
@@ -649,131 +652,148 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
         </>
       )}
 
-      {/* Entfernung aus der Neigung.
+      {/* Entfernung aus der Neigung - so schmal wie moeglich.
 
-          Steht von selbst da, solange nichts im Entfernungsfeld steht -
-          ohne sie bliebe die Hoehenmessung ohne Massband stecken, und
-          ein Knopf, den man erst suchen muss, hilft im Bestand nicht.
+          Sie rechnet von selbst mit, solange nichts im Entfernungsfeld
+          steht: eine Zeile, der Wert, ein Knopf. Die Handyhoehe und die
+          Begruendung dazu liegen dahinter - beides braucht man einmal am
+          Tag, nicht bei jedem Baum.
 
-          Jeder Teil hat eine feste Hoehe. Das ist der eigentliche
-          Trick: Der Vorschlag aendert sich staendig, waehrend man das
-          Handy bewegt - duerfte er dabei wachsen und schrumpfen,
-          ruckte die halbe Seite mit, genau wie beim alten
-          Aufklappen. */}
+          Die Zeile hat eine feste Hoehe. Der Wert aendert sich staendig,
+          waehrend man das Handy bewegt; duerfte die Zeile dabei wachsen
+          und schrumpfen, ruckte alles darunter mit. */}
       {!hatEntfernung && (
-        <div
-          style={{
-            background: farben.surface,
-            borderRadius: 12,
-            padding: "10px 12px",
-            marginTop: 10,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "flex-end", gap: 12, marginBottom: 8 }}>
-            <div style={{ width: 92 }}>
-              <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
-                {t("HANDYHÖHE m")}
-              </div>
-              <input
-                style={{ ...feld, fontSize: 16 }}
-                value={handyhoehe}
-                onChange={(e) => {
-                  setHandyhoehe(e.target.value);
-                  handyhoeheSpeichern(e.target.value);
-                }}
-                inputMode="decimal"
-                placeholder={t("Höhe in m")}
-                aria-label={t("Handyhöhe über dem Boden")}
-              />
-            </div>
-            <div style={{ flex: 1, fontSize: 11, color: farben.muted, lineHeight: 1.4 }}>
-              {t("über dem Boden, beim Peilen – 10 cm daneben sind 6 % Fehler.")}
-            </div>
-          </div>
-
-          {/* Der Platz fuer den Vorschlag: immer gleich hoch, egal was
-              gerade darin steht. */}
-          <div style={{ minHeight: 58 }}>
-            {schaetzung?.brauchbar ? (
-              <>
-                <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
-                  {schaetzungFest
-                    ? t("AUS DER NEIGUNG ({grad}° nach unten)", {
-                        grad: nk1(schaetzung.neigung),
-                      })
-                    : t("AUS DER NEIGUNG ({grad}° nach unten) · läuft mit", {
-                        grad: nk1(schaetzung.neigung),
-                      })}
-                </div>
+        <div style={{ marginBottom: 12 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              minHeight: 44,
+              background: farben.surface,
+              borderRadius: 12,
+              padding: "0 10px 0 12px",
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              {schaetzung?.brauchbar ? (
                 <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                  <div style={{ fontSize: 26, fontWeight: 800, color: farben.text }}>
-                    {nk1(schaetzung.d)} m
+                  <div style={{ fontSize: 19, fontWeight: 800, color: farben.text }}>
+                    {t("≈ {m} m", { m: nk1(schaetzung.d) })}
                   </div>
-                  <div style={{ fontSize: 12, color: farben.muted }}>
+                  <div style={{ fontSize: 11, color: farben.muted }}>
                     {schaetzung.max == null
                       ? t("mindestens {m} m", { m: nk1(schaetzung.min) })
                       : t("{von} – {bis} m", {
                           von: nk1(schaetzung.min),
                           bis: nk1(schaetzung.max),
                         })}
+                    {!schaetzungFest && t(" · läuft mit")}
                   </div>
                 </div>
-              </>
-            ) : schaetzung ? (
-              <div style={{ fontSize: 11, color: farben.verb, lineHeight: 1.5 }}>
-                {t(
-                  "Der Fuß liegt nur {grad}° unter waagerecht. So flach lässt sich die Entfernung nicht mehr schätzen",
-                  { grad: nk1(schaetzung.neigung) },
-                )}
-                {schaetzung.max == null
-                  ? t(" – nach oben ist alles offen.")
-                  : t(": ein Grad Sensorfehler macht daraus {von} bis {bis} m.", {
-                      von: nk1(schaetzung.min),
-                      bis: nk1(schaetzung.max),
-                    })}{" "}
-                {t("Über {grenze} m hilft nur schreiten oder messen.", {
-                  grenze: NEIGUNG_GRENZE_M,
-                })}
-              </div>
-            ) : (
-              <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5 }}>
-                {t(
-                  "Kein Maßband? Das Fadenkreuz auf den Stammfuß halten – aus dieser Neigung kommt die Entfernung von selbst.",
-                )}
-              </div>
-            )}
+              ) : schaetzung ? (
+                <div style={{ fontSize: 11, color: farben.verb, lineHeight: 1.4, padding: "6px 0" }}>
+                  {t("Zu flach für eine Schätzung")}
+                  {schaetzung.max == null
+                    ? t(" – nach oben ist alles offen.")
+                    : t(": {von} bis {bis} m.", {
+                        von: nk1(schaetzung.min),
+                        bis: nk1(schaetzung.max),
+                      })}{" "}
+                  {t("Über {grenze} m hilft nur schreiten oder messen.", {
+                    grenze: NEIGUNG_GRENZE_M,
+                  })}
+                </div>
+              ) : (
+                <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.4, padding: "6px 0" }}>
+                  {t("Kein Maßband? Fadenkreuz auf den Stammfuß halten.")}
+                </div>
+              )}
+            </div>
+            {/* Steht immer da, nur gesperrt, wenn es nichts zu
+                uebernehmen gibt: ein Knopf, der kommt und geht,
+                verschiebt die Zeile. */}
+            <button
+              onClick={() => schaetzung?.brauchbar && setEntfernung(nk1(schaetzung.d))}
+              disabled={!schaetzung?.brauchbar}
+              /* Nicht "Als Entfernung übernehmen": Dieser Name enthielte
+                 das Wort Entfernung und waere damit von dem Feld
+                 darueber nicht mehr zu unterscheiden - weder fuer eine
+                 Vorlesehilfe noch in den Pruefungen. */
+              aria-label={t("Schätzung übernehmen")}
+              style={{
+                flexShrink: 0,
+                background: "transparent",
+                border: `1px solid ${schaetzung?.brauchbar ? farben.line : "transparent"}`,
+                color: schaetzung?.brauchbar ? farben.text : farben.surfaceHi,
+                borderRadius: 9,
+                padding: "9px 11px",
+                fontSize: 12,
+                cursor: schaetzung?.brauchbar ? "pointer" : "default",
+              }}
+            >
+              {t("übernehmen")}
+            </button>
           </div>
 
-          {/* Der Knopf steht immer an derselben Stelle und ist nur
-              dann gesperrt, wenn es nichts zu uebernehmen gibt. Ein
-              Knopf, der erscheint und verschwindet, verschiebt alles
-              darunter - und man tippt daneben. */}
+          {/* Eine Zeile, die beides tut: Sie nennt die Handyhoehe, mit
+              der gerechnet wird, und sie sagt, worauf die Rechnung
+              steht. Antippen oeffnet beides zum Aendern und Nachlesen. */}
           <button
-            onClick={() => schaetzung?.brauchbar && setEntfernung(nk1(schaetzung.d))}
-            disabled={!schaetzung?.brauchbar}
+            onClick={() => setSchaetzungDetails((o) => !o)}
             style={{
               width: "100%",
               background: "transparent",
-              border: `1px solid ${schaetzung?.brauchbar ? farben.line : farben.surfaceHi}`,
-              color: schaetzung?.brauchbar ? farben.text : farben.muted,
-              borderRadius: 10,
-              padding: "11px 0",
-              fontSize: 13,
-              marginTop: 8,
-              cursor: schaetzung?.brauchbar ? "pointer" : "default",
+              border: "none",
+              color: farben.muted,
+              fontSize: 11,
+              textAlign: "left",
+              /* Gross genug, um sie zu treffen: 19 px waren es vorher, und
+               das ist kein Ziel, sondern eine Zeile. */
+            padding: "12px 2px 10px",
+              cursor: "pointer",
             }}
           >
-            {t("Als Entfernung übernehmen")}
+            {t("Handyhöhe {m} m · setzt waagerechten Boden voraus", { m: handyhoehe })}
           </button>
-          {/* Kurz gehalten: Der Kasten steht zwischen den Peilknoepfen
-              und dem Ergebnis. Jede Zeile hier schiebt die Hoehe und das
-              Uebernehmen weiter aus dem Bild. Die ausfuehrliche Fassung
-              steht in "So geht's". */}
-          <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, marginTop: 8 }}>
-            <Markiert
-              text={t("Setzt *waagerechten Boden* voraus – am Hang ist sie falsch, nicht ungenau.")}
-            />
-          </div>
+
+          {schaetzungDetails && (
+            <div
+              style={{
+                background: farben.surface,
+                borderRadius: 12,
+                padding: "10px 12px",
+                marginTop: 8,
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 12 }}>
+                <div style={{ width: 92 }}>
+                  <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
+                    {t("HANDYHÖHE m")}
+                  </div>
+                  <input
+                    style={{ ...feld, fontSize: 16 }}
+                    value={handyhoehe}
+                    onChange={(e) => {
+                      setHandyhoehe(e.target.value);
+                      handyhoeheSpeichern(e.target.value);
+                    }}
+                    inputMode="decimal"
+                    placeholder={t("Höhe in m")}
+                    aria-label={t("Handyhöhe über dem Boden")}
+                  />
+                </div>
+                <div style={{ flex: 1, fontSize: 11, color: farben.muted, lineHeight: 1.4 }}>
+                  {t("über dem Boden, beim Peilen – 10 cm daneben sind 6 % Fehler.")}
+                </div>
+              </div>
+              <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, marginTop: 8 }}>
+                <Markiert
+                  text={t("Setzt *waagerechten Boden* voraus – am Hang ist sie falsch, nicht ungenau.")}
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 

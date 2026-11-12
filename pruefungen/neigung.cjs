@@ -61,48 +61,56 @@ const tippe = async (loc) => {
      nennen, die es noch nicht gibt. Und der Knopf bleibt an seinem
      Platz, nur gesperrt: Ein Knopf, der erscheint, verschiebt alles
      darunter. */
-  pruefe('der Kasten ist da', await page.getByLabel('Handyhöhe über dem Boden').count(), 1);
-  pruefe('aber keine Zahl', await page.getByText(/AUS DER NEIGUNG/).count(), 0);
+  pruefe('die Zeile ist da',
+    await page.getByText(/setzt waagerechten Boden voraus/).count(), 1);
+  pruefe('aber keine Zahl', await page.getByText(/^≈ /).count(), 0);
   pruefe('und sagt, was zu tun ist',
     await page.getByText(/Fadenkreuz auf den Stammfuß halten/).count(), 1);
+  // Die Handyhöhe liegt hinter der Zeile - einmal am Tag, nicht je Baum.
+  pruefe('die Handyhöhe steht nicht im Weg',
+    await page.getByLabel('Handyhöhe über dem Boden').count(), 0);
   pruefe('Übernehmen ist gesperrt',
-    await page.getByRole('button',{name:'Als Entfernung übernehmen'}).isDisabled(), true);
+    await page.getByRole('button',{name:'Schätzung übernehmen'}).isDisabled(), true);
 
   console.log('\nNAH DRAN: VORSCHLAG MIT SPANNE');
   await page.getByLabel('Winkel zum Fuß').fill('-17'); await page.waitForTimeout(300);
+  await tippe(page.getByRole('button',{name:/setzt waagerechten Boden voraus/}));
+  await page.waitForTimeout(250);
   pruefe('Handyhöhe steht voreingestellt da',
     await page.getByLabel('Handyhöhe über dem Boden').inputValue(), '1,50');
   // 1,50 / tan(17°) = 4,906...
-  pruefe('4,9 m vorgeschlagen', await page.getByText('4,9 m',{exact:true}).count(), 1);
+  pruefe('4,9 m vorgeschlagen', await page.getByText('≈ 4,9 m',{exact:true}).count(), 1);
   // 1,50/tan(18°) = 4,62 und 1,50/tan(16°) = 5,23
   pruefe('Spanne dabei', await page.getByText(/4,6 – 5,2 m/).count(), 1);
-  pruefe('Hangwarnung dabei', await page.getByText(/waagerechten Boden/).count(), 1);
+  // Einmal in der Zeile, einmal ausfuehrlich darunter - beides zaehlt.
+  pruefe('Hangwarnung dabei',
+    await page.getByText(/waagerechten Boden/).count() >= 1, true);
 
   console.log('\nTRÄGT SICH NICHT VON SELBST EIN');
   // Das Feld faengt leer an: eine stille Vorgabe ginge unbemerkt in die Höhe ein.
   pruefe('Entfernungsfeld bleibt leer',
     await page.getByLabel('Entfernung').inputValue(), '');
-  await tippe(page.getByRole('button',{name:'Als Entfernung übernehmen'}));
+  await tippe(page.getByRole('button',{name:'Schätzung übernehmen'}));
   await page.waitForTimeout(300);
   pruefe('erst auf Antippen', await page.getByLabel('Entfernung').inputValue(), '4,9');
 
   console.log('\nMIT ENTFERNUNG IM FELD IST DER KASTEN WEG');
-  pruefe('kein Vorschlag mehr', await page.getByText(/AUS DER NEIGUNG/).count(), 0);
-  await page.getByLabel('Entfernung').fill(''); await page.waitForTimeout(300);
+  pruefe('kein Vorschlag mehr', await page.getByText(/^≈ /).count(), 0);
+  await page.getByLabel('Entfernung',{exact:true}).fill(''); await page.waitForTimeout(300);
   pruefe('und wieder da, sobald das Feld leer ist',
-    await page.getByText(/AUS DER NEIGUNG/).count(), 1);
+    await page.getByText(/^≈ /).count(), 1);
 
   console.log('\nHANDYHÖHE GEHT IN DIE RECHNUNG');
   await page.getByLabel('Handyhöhe über dem Boden').fill('1,80'); await page.waitForTimeout(300);
   // 1,80 / tan(17°) = 5,888...
-  pruefe('1,80 m → 5,9 m', await page.getByText('5,9 m',{exact:true}).count(), 1);
+  pruefe('1,80 m → 5,9 m', await page.getByText('≈ 5,9 m',{exact:true}).count(), 1);
 
   console.log('\nWEIT WEG: KEINE ZAHL MEHR');
   await page.getByLabel('Winkel zum Fuß').fill('-4'); await page.waitForTimeout(300);
   pruefe('sagt, dass es zu flach ist',
-    await page.getByText(/So\s+flach lässt sich die Entfernung nicht mehr schätzen/).count(), 1);
+    await page.getByText(/Zu\s+flach für eine Schätzung/).count(), 1);
   pruefe('Übernehmen bleibt stehen, aber gesperrt',
-    await page.getByRole('button',{name:'Als Entfernung übernehmen'}).isDisabled(), true);
+    await page.getByRole('button',{name:'Schätzung übernehmen'}).isDisabled(), true);
   // Handyhöhe steht hier auf 1,80: 1,80/tan(5°) = 20,6 und 1,80/tan(3°) = 34,3
   pruefe('aber die Spanne wird gezeigt', await page.getByText(/20,6 bis 34,3 m/).count(), 1);
 
@@ -111,6 +119,8 @@ const tippe = async (loc) => {
   await page.getByRole('button',{name:'Baummessung'}).click(); await page.waitForTimeout(400);
   await tippe(page.getByRole('button',{name:'HÖHE messen'})); await page.waitForTimeout(2600);
   await page.getByLabel('Winkel zum Fuß').fill('-17'); await page.waitForTimeout(300);
+  await tippe(page.getByRole('button',{name:/setzt waagerechten Boden voraus/}));
+  await page.waitForTimeout(250);
   pruefe('1,80 m steht noch da',
     await page.getByLabel('Handyhöhe über dem Boden').inputValue(), '1,80');
 

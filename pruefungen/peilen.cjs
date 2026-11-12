@@ -94,9 +94,9 @@ const neige = async (page, grad) => {
   await neige(page, -25);
   pruefe('sie läuft mit', await page.getByText(/läuft mit/).count(), 1);
   pruefe('und nennt schon eine Entfernung',
-    await page.getByText('3,2 m',{exact:true}).count(), 1);
+    await page.getByText('≈ 3,2 m',{exact:true}).count(), 1);
   pruefe('Übernehmen ist frei, ohne dass der Fuß festgehalten wäre',
-    await page.getByRole('button',{name:'Als Entfernung übernehmen'}).isDisabled(), false);
+    await page.getByRole('button',{name:'Schätzung übernehmen'}).isDisabled(), false);
 
   console.log('\nSCHRITT 2');
   const stupse = () => page.evaluate(() => window.__stupse.slice());

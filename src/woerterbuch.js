@@ -354,8 +354,6 @@ export const WOERTER = {
     "Phone height above the ground",
   "über dem Boden, beim Peilen – 10 cm daneben sind 6 % Fehler.":
     "above the ground, while sighting – 10 cm off means a 6 % error.",
-  "AUS DER NEIGUNG ({grad}° nach unten)":
-    "FROM THE TILT ({grad}° downwards)",
   "mindestens {m} m":
     "at least {m} m",
   "{von} – {bis} m":
@@ -364,12 +362,8 @@ export const WOERTER = {
     "Use as the distance",
   "Setzt *waagerechten Boden* voraus – am Hang ist sie falsch, nicht ungenau.":
     "Assumes *level ground* – on a slope it is wrong, not merely imprecise.",
-  "Der Fuß liegt nur {grad}° unter waagerecht. So flach lässt sich die Entfernung nicht mehr schätzen":
-    "The base is only {grad}° below horizontal. That is too shallow to estimate the distance",
   " – nach oben ist alles offen.":
     " – and there is no upper bound at all.",
-  ": ein Grad Sensorfehler macht daraus {von} bis {bis} m.":
-    ": one degree of sensor error turns it into anything from {von} to {bis} m.",
   "Über {grenze} m hilft nur schreiten oder messen.":
     "Beyond {grenze} m, only pacing or measuring will do.",
   "Neigungssensor freigeben":
@@ -784,16 +778,28 @@ export const WOERTER = {
     "e.g. {was}",
   "{was} eintragen":
     "Enter {was}",
+  "≈ {m} m":
+    "≈ {m} m",
+  " · läuft mit":
+    " · live",
+  "Zu flach für eine Schätzung":
+    "Too flat to estimate",
+  ": {von} bis {bis} m.":
+    ": anything from {von} to {bis} m.",
+  "Kein Maßband? Fadenkreuz auf den Stammfuß halten.":
+    "No tape measure? Hold the crosshair on the base of the trunk.",
+  "Schätzung übernehmen":
+    "Use the estimate",
+  "übernehmen":
+    "use it",
+  "Handyhöhe {m} m · setzt waagerechten Boden voraus":
+    "Phone height {m} m · assumes level ground",
   "hier Entfernung eintragen":
     "enter the distance here",
   "📐 Höhe messen":
     "📐 Measure the height",
   "+ Baum aufnehmen":
     "+ Record this tree",
-  "Kein Maßband? Das Fadenkreuz auf den Stammfuß halten – aus dieser Neigung kommt die Entfernung von selbst.":
-    "No tape measure? Hold the crosshair on the base of the trunk – the distance follows from that tilt.",
-  "AUS DER NEIGUNG ({grad}° nach unten) · läuft mit":
-    "FROM THE TILT ({grad}° downwards) · live",
   // Hinweise in leeren Feldern: ein Wort, das sagt, was hineingehört -
   // nie eine Zahl, die wie ein eingetragener Wert aussieht.
   "Alter in Jahren":
