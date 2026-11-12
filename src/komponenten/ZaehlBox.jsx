@@ -2,6 +2,8 @@ import { useState, useRef } from "react";
 import { farben } from "../konfiguration.js";
 import Strichliste from "./Strichliste.jsx";
 import { useT } from "../sprache.js";
+import { useEinstellungen } from "../einstellungen.js";
+import { stups, GEZAEHLT } from "../stups.js";
 
 /* Eine Zaehlbox (verbissen bzw. unverbissen) fuer eine Baumart.
 
@@ -18,7 +20,13 @@ import { useT } from "../sprache.js";
    Eingabe). */
 export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, gross }) {
   const t = useT();
+  const { stups: stupsAn } = useEinstellungen();
   const [eingabe, setEingabe] = useState(false);
+
+  /* Ein Ticken, wenn gezaehlt ist. Mit Handschuh und Blick im Bestand
+     merkt man sonst erst an der Zahl, ob der Tipp ankam - und dafuer
+     muss man hinsehen. Abschaltbar, weil es bei siebzig Kiefern im
+     Probekreis auch nerven kann. */
   // Verhindert, dass das Wegtippen aus dem Zahlenfeld zusaetzlich als Plus zaehlt:
   // Blur- und Klick-Ereignis derselben Beruehrung folgen kurz hintereinander.
   const klickUnterdruecken = useRef(false);
@@ -59,6 +67,7 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
     <div
       onClick={() => {
         if (klickUnterdruecken.current) return;
+        if (stupsAn) stups(GEZAEHLT);
         onPlus();
       }}
       role="button"
@@ -173,7 +182,9 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
         <div
           onClick={(e) => {
             e.stopPropagation();
-            if (wert !== 0) onMinus();
+            if (wert === 0) return;
+            if (stupsAn) stups(GEZAEHLT);
+            onMinus();
           }}
           role="button"
           aria-label={t("Eins abziehen")}
@@ -191,6 +202,7 @@ export default function ZaehlBox({ label, wert, farbe, onPlus, onMinus, onSet, g
         <div
           onClick={(e) => {
             e.stopPropagation();
+            if (stupsAn) stups(GEZAEHLT);
             onSet(wert + 5);
           }}
           role="button"

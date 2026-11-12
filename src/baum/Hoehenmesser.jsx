@@ -16,7 +16,7 @@ import {
 import HoeheSkizze from "./HoeheSkizze.jsx";
 import ArEntfernung, { arMoeglich } from "./ArEntfernung.jsx";
 import { useT, zahlOrt } from "../sprache.js";
-import { stups, FESTGEHALTEN, FERTIG } from "./stups.js";
+import { stups, FESTGEHALTEN, FERTIG } from "../stups.js";
 import Markiert from "../komponenten/Markiert.jsx";
 
 /* Hoehenmessung mit dem Neigungssensor des Handys.

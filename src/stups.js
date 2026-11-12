@@ -5,7 +5,8 @@
    dahin hat man das Handy schon bewegt. Spueren kann man es, ohne
    wegzuschauen.
 
-   Zwei Muster, mehr nicht:
+   Drei Muster, mehr nicht:
+     GEZAEHLT      ein Ticken - die Pflanze ist drin
      FESTGEHALTEN  ein kurzer Stups - der Winkel ist drin
      FERTIG        zwei Stuepse - Hoehe steht, du kannst absetzen
 
@@ -16,6 +17,10 @@
 
 export const FESTGEHALTEN = 30;
 export const FERTIG = [30, 70, 30];
+/* Beim Zaehlen deutlich kuerzer: ein Ticken, kein Brummen. Bei siebzig
+   Kiefern im Probekreis ist das der Unterschied zwischen Bestaetigung
+   und Belaestigung. */
+export const GEZAEHLT = 15;
 
 export function stups(muster) {
   try {

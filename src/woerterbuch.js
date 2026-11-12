@@ -810,6 +810,17 @@ export const WOERTER = {
     "distance in m",
   "eigene Baumart":
     "own species",
+  // Zwei Schalter fuers Geraet, nicht fuer die Aufnahme
+  "Einstellungen":
+    "Settings",
+  "Bildschirm wachhalten":
+    "Keep the screen awake",
+  "Solange die App offen ist. Kostet Akku.":
+    "While the app is open. Costs battery.",
+  "Stups beim Zählen":
+    "Buzz when counting",
+  "Kurzes Ticken, wenn eine Pflanze gezählt ist.":
+    "A short tick when a plant has been counted.",
   "{art} steht schon in der Liste":
     "{art} is already in the list",
   "{art} wird gerade benutzt – erst dort entfernen":

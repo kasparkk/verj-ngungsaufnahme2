@@ -27,6 +27,20 @@ const pruefe=(n,ist,soll)=>{const g=String(ist)===String(soll);g?ok++:schlecht++
   const page=await ctx.newPage();
   page.on('pageerror',e=>console.log('PAGEERROR:',e.message));
   await page.route('**/rest/v1/**',r=>r.fulfill({status:200,body:'[]'}));
+  await page.addInitScript(()=>{
+    /* vibrate() und wakeLock sitzen auf dem Prototyp - schlichtes Zuweisen
+       ginge ins Leere, deshalb defineProperty. */
+    window.__stupse = [];
+    Object.defineProperty(navigator, 'vibrate', {
+      configurable: true,
+      value: (m) => { window.__stupse.push(String(m)); return true; },
+    });
+    window.__wach = 0;
+    Object.defineProperty(navigator, 'wakeLock', {
+      configurable: true,
+      value: { request: async () => { window.__wach++; return { release: async () => {} }; } },
+    });
+  });
   await page.goto('http://127.0.0.1:8919/index.html',{waitUntil:'load'});
   await page.waitForTimeout(800);
 
@@ -80,6 +94,37 @@ const pruefe=(n,ist,soll)=>{const g=String(ist)===String(soll);g?ok++:schlecht++
   console.log('\nUND DIE NACHBARBOX BLEIBT UNBERÜHRT');
   const verbissen = page.getByRole('button',{name:'verbissen',exact:true}).first();
   pruefe('daneben steht weiter 0', (await verbissen.innerText()).split("\n")[1], '0');
+
+  console.log('\nSTUPS BEIM ZÄHLEN');
+  const stupse = () => page.evaluate(() => window.__stupse.slice());
+  await page.evaluate(() => { window.__stupse.length = 0; });
+  await box.click({position:{x:60,y:40}}); await page.waitForTimeout(200);
+  pruefe('ein Ticken je Pflanze', (await stupse()).join("|"), '15');
+  await fuenf.click(); await page.waitForTimeout(200);
+  pruefe('auch bei "+5"', (await stupse()).join("|"), '15|15');
+
+  console.log('\nBILDSCHIRM WACHHALTEN');
+  pruefe('die Sperre wurde geholt', await page.evaluate(() => window.__wach) >= 1, true);
+
+  console.log('\nBEIDES LÄSST SICH ABSCHALTEN');
+  await page.getByRole('button',{name:'Einstellungen'}).click(); await page.waitForTimeout(300);
+  const schalter = page.getByRole('switch');
+  pruefe('zwei Schalter', await schalter.count(), 2);
+  pruefe('beide stehen auf an',
+    (await schalter.nth(0).getAttribute('aria-checked')) + "/" +
+    (await schalter.nth(1).getAttribute('aria-checked')), 'true/true');
+  await schalter.nth(1).click(); await page.waitForTimeout(300);
+  pruefe('Stups ist aus', await schalter.nth(1).getAttribute('aria-checked'), 'false');
+  await page.evaluate(() => { window.__stupse.length = 0; });
+  await box.click({position:{x:60,y:40}}); await page.waitForTimeout(200);
+  pruefe('und es tickt nicht mehr', (await stupse()).length, 0);
+  pruefe('gezählt wird trotzdem', await stand(), '15');
+
+  console.log('\nDIE WAHL ÜBERLEBT DAS NEULADEN');
+  await page.reload({waitUntil:'load'}); await page.waitForTimeout(800);
+  await page.getByRole('button',{name:'Einstellungen'}).click(); await page.waitForTimeout(300);
+  pruefe('Stups immer noch aus',
+    await page.getByRole('switch').nth(1).getAttribute('aria-checked'), 'false');
 
   console.log(`\nERGEBNIS: ${ok} in Ordnung, ${schlecht} Fehler`);
   await b.close();

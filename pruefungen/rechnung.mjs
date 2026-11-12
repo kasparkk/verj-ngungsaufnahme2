@@ -12,7 +12,7 @@ import {
   entfernungAusNeigung, NEIGUNG_GRENZE_M,
 } from "../src/baum/hoehe.js";
 import { grenzRadius, zaehltMit, grundflaeche, volumen, formzahlFuer, wzpAuswerten } from "../src/baum/berechnung.js";
-import { stups, FESTGEHALTEN, FERTIG } from "../src/baum/stups.js";
+import { stups, FESTGEHALTEN, FERTIG } from "../src/stups.js";
 
 let ok = 0;
 let schlecht = 0;
@@ -191,6 +191,43 @@ pruefe("abgelehnter Stups meldet sich ehrlich", stups(FERTIG), false);
 
 setzeNavigator({ vibrate: () => { throw new Error("Hintergrund"); } });
 pruefe("ein werfender Browser bricht nichts ab", stups(FERTIG), false);
+
+titel("EINSTELLUNGEN");
+{
+  let abgelegt = null;
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    value: {
+      getItem: () => abgelegt,
+      setItem: (_, w) => { abgelegt = w; },
+    },
+  });
+  const { einstellungenLaden, setzeEinstellung, holeEinstellungen } =
+    await import("../src/einstellungen.js");
+
+  abgelegt = null;
+  const start = einstellungenLaden();
+  pruefe("ohne gemerkte Wahl: Bildschirm wachhalten an", start.wach, true);
+  pruefe("und Stups an", start.stups, true);
+
+  setzeEinstellung("stups", false);
+  pruefe("abgeschaltet bleibt abgeschaltet", holeEinstellungen().stups, false);
+  pruefe("das andere bleibt unberührt", holeEinstellungen().wach, true);
+  pruefe("und es wird gemerkt", JSON.parse(abgelegt).stups, false);
+
+  abgelegt = JSON.stringify({ wach: false, stups: true });
+  pruefe("Gemerktes gewinnt beim Laden", einstellungenLaden().wach, false);
+
+  abgelegt = "{kaputt";
+  pruefe("kaputter Eintrag wirft nichts um", einstellungenLaden().wach, true);
+
+  abgelegt = JSON.stringify({ wach: "ja" });
+  pruefe("Unsinn statt Schalter: Standard", einstellungenLaden().wach, true);
+
+  setzeEinstellung("unbekannt", true);
+  pruefe("ein unbekannter Schalter wird nicht angelegt",
+    "unbekannt" in holeEinstellungen(), false);
+}
 
 console.log(`\nERGEBNIS: ${ok} in Ordnung, ${schlecht} Fehler`);
 process.exit(schlecht ? 1 : 0);

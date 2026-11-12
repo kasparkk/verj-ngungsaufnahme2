@@ -55,8 +55,9 @@ arten.cjs       Eigene Baumart in der Baummessung. Gleicher Aufruf wie
                 verschwindet, während jemand mit ihr zählt.
 
 zaehlbox.cjs    Die Zählbox der Verjüngungsaufnahme. Prüft die
-                Geometrie: Der Stift gehört in die andere Ecke, weg vom
-                Daumenweg, und soll der kleinste der drei Knöpfe sein.
+                Geometrie (der Stift gehört in die andere Ecke, weg vom
+                Daumenweg) sowie Stups beim Zählen, Bildschirm
+                wachhalten und die beiden Schalter dazu.
 
 peilen.cjs      Der geführte Ablauf beim Peilen, mit nachgestelltem
                 Sensor. Gleicher Aufruf wie grenzstamm.cjs. Prüft, dass
