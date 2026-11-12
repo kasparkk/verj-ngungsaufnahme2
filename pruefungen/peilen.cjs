@@ -87,6 +87,17 @@ const neige = async (page, grad) => {
   pruefe('Fuß steht auf "anpeilen"',
     (await page.getByRole('button',{name:'Fuß festhalten'}).innerText()).includes('anpeilen'), true);
 
+  console.log('\nDIE SCHÄTZUNG RECHNET MIT, OHNE DASS MAN ETWAS ANTIPPT');
+  /* Gewuenscht: "auto enable tilt thing". Wer das Fadenkreuz auf den
+     Stammfuss haelt, soll die Entfernung sehen, bevor er irgendetwas
+     antippt. 1,50 m / tan(25°) = 3,2 m. */
+  await neige(page, -25);
+  pruefe('sie läuft mit', await page.getByText(/läuft mit/).count(), 1);
+  pruefe('und nennt schon eine Entfernung',
+    await page.getByText('3,2 m',{exact:true}).count(), 1);
+  pruefe('Übernehmen ist frei, ohne dass der Fuß festgehalten wäre',
+    await page.getByRole('button',{name:'Als Entfernung übernehmen'}).isDisabled(), false);
+
   console.log('\nSCHRITT 2');
   const stupse = () => page.evaluate(() => window.__stupse.slice());
   await neige(page, -10);
@@ -121,7 +132,7 @@ const neige = async (page, grad) => {
   // 20 · (tan 45° + tan 10°) = 23,53
   pruefe('und die Höhe stimmt', await page.getByText('23,5 m').count(), 1);
   pruefe('Übernehmen ist frei',
-    await page.getByRole('button',{name:'Übernehmen'}).isDisabled(), false);
+    await page.getByRole('button',{name:'Übernehmen',exact:true}).isDisabled(), false);
   // Zwei Stüße zum Schluss - das spürt man, ohne hinzusehen.
   pruefe('und zwei Stüße zum Fertigwerden',
     (await stupse()).join(" | "), '40 | 40 | 40,90,40');
@@ -134,7 +145,7 @@ const neige = async (page, grad) => {
     await page.getByText('Die Spitze liegt unter dem Fuß – einen der beiden neu anpeilen').count(), 1);
   pruefe('keine Höhe', await page.getByText(/^\d+,\d m$/).count(), 0);
   pruefe('Übernehmen gesperrt',
-    await page.getByRole('button',{name:'Übernehmen'}).isDisabled(), true);
+    await page.getByRole('button',{name:'Übernehmen',exact:true}).isDisabled(), true);
 
   console.log('\nNEU ANPEILEN HEILT ES');
   await neige(page, -8);

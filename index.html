@@ -41,6 +41,16 @@
         font-size: 13px;
         opacity: 0.75;
       }
+      /* Die drei Reiter oben teilen sich die Breite mit DE/EN und dem
+         Zahnrad. Auf dem kleinsten Geraet (320 px) ging "Baummessung"
+         sonst ueber seinen Knopf hinaus und klebte an "Verjüngung". */
+      .reiter { font-size: 14px; }
+      @media (max-width: 380px) {
+        .reiter { font-size: 12px; letter-spacing: -0.2px; }
+      }
+      @media (max-width: 345px) {
+        .reiter { font-size: 10.5px; }
+      }
       /* Nur die Ergebnis-Ansicht kommt in den Ausdruck bzw. ins PDF,
          und zwar schwarz auf weiss statt im dunklen Bildschirm-Design. */
       @media print {

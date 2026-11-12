@@ -143,7 +143,11 @@ export function KnopfWahl({ wert, setWert, werte, spalten }) {
               border: `1px solid ${gewaehlt ? farben.unverb : farben.line}`,
               color: gewaehlt ? farben.bg : farben.muted,
               borderRadius: 10,
-              padding: "10px 12px",
+              /* In einem Raster teilen sich die Knoepfe die Breite
+                 gleichmaessig - dort muss der Innenabstand schmaler
+                 sein, sonst steht das laengste Wort ("dominant" bei vier
+                 Spalten auf 320 px) breiter da als sein Knopf. */
+              padding: spalten ? "10px 4px" : "10px 12px",
               fontSize: 14,
               fontWeight: gewaehlt ? 700 : 400,
               cursor: "pointer",

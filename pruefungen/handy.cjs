@@ -52,6 +52,14 @@ const ABSICHTLICH_KLEIN = [
   const pruefeSeite = async (seite) => {
     await page.getByRole('button',{name:seite,exact:true}).click();
     await page.waitForTimeout(500);
+    await pruefeAnsicht(seite);
+  };
+
+  /* Misst, was gerade auf dem Bildschirm steht. Getrennt vom Umschalten,
+     weil die beiden wichtigsten Ansichten der Baummessung gar keine
+     eigene Seite sind: Die Einzelbaumeingabe und der Hoehenmesser liegen
+     zwei Tipps tief - und genau dort wird im Bestand getippt. */
+  const pruefeAnsicht = async (titel) => {
     const bericht = await page.evaluate((klein) => {
       const zuKlein = [], zuFein = [];
       document.querySelectorAll('button,[role="button"],a,input,textarea,select').forEach(el => {
@@ -67,13 +75,27 @@ const ABSICHTLICH_KLEIN = [
       return { zuKlein: [...new Set(zuKlein)], zuFein: [...new Set(zuFein)] };
     }, ABSICHTLICH_KLEIN);
 
-    console.log(`\n${seite.toUpperCase()}`);
+    console.log(`\n${titel.toUpperCase()}`);
     pruefe('kein Eingabefeld unter 16 px', bericht.zuFein.join(" | ") || 'keins', 'keins');
     pruefe('kein Ziel unter 32 px hoch', bericht.zuKlein.join(" | ") || 'keins', 'keins');
     for (const breite of [320, 390]) {
       await page.setViewportSize({width:breite,height:844}); await page.waitForTimeout(250);
       pruefe(`${breite} px ohne Seitwärtsscrollen`,
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), true);
+      /* Kein Text laeuft ueber seinen Knopf hinaus. Auf 320 px stand
+         "Baummessung" breiter da als sein Reiter und klebte an
+         "Verjüngung" - von aussen sieht das aus wie ein Wort. Die Seite
+         scrollt deshalb nicht seitwaerts; die Pruefung darueber findet
+         so etwas also nicht. */
+      pruefe(`${breite} px: nichts quillt aus seinem Knopf`,
+        await page.evaluate(() => {
+          const raus = [];
+          document.querySelectorAll('button,[role="button"]').forEach((el) => {
+            if (el.scrollWidth > el.clientWidth + 1 && el.clientWidth > 0)
+              raus.push(`${(el.textContent||'').trim().slice(0,18)} ${el.scrollWidth}>${el.clientWidth}`);
+          });
+          return [...new Set(raus)].join(" | ") || 'keins';
+        }), 'keins');
     }
     await page.setViewportSize({width:390,height:844}); await page.waitForTimeout(250);
   };
@@ -81,6 +103,17 @@ const ABSICHTLICH_KLEIN = [
   await pruefeSeite('Verjüngung');
   await pruefeSeite('Baummessung');
   await pruefeSeite('Monitoring');
+
+  /* Zwei Tipps tief: die Eingabe fuer Einzelbaeume und der Hoehenmesser.
+     Hier standen BHD, Höhe, der Weg zur Hoehenmessung und das Aufnehmen
+     bis vor Kurzem alle in einer Zeile - auf 320 px blieb vom Hoehenfeld
+     ein Streifen uebrig. */
+  await page.getByRole('button',{name:'Baummessung',exact:true}).click(); await page.waitForTimeout(400);
+  await page.getByRole('button',{name:'Einzelbäume'}).click(); await page.waitForTimeout(400);
+  await pruefeAnsicht('Einzelbäume');
+  await page.getByRole('button',{name:'HÖHE messen'}).click(); await page.waitForTimeout(2700);
+  await pruefeAnsicht('Höhe messen');
+  await page.getByRole('button',{name:'Schließen'}).click(); await page.waitForTimeout(300);
 
   console.log('\nWAS ABSICHTLICH KLEIN BLEIBT');
   await page.getByRole('button',{name:'Verjüngung',exact:true}).click(); await page.waitForTimeout(400);

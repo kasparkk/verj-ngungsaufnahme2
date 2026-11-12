@@ -57,14 +57,18 @@ export default function App() {
   const reiter = (ziel, text) => (
     <button
       onClick={() => wechseln(ziel)}
+      className="reiter"
       style={{
         flex: 1,
+        minWidth: 0,
         background: seite === ziel ? farben.surfaceHi : "transparent",
         border: "none",
         borderBottom: `2px solid ${seite === ziel ? farben.unverb : "transparent"}`,
         color: seite === ziel ? farben.text : farben.muted,
         padding: "12px 0",
-        fontSize: 14,
+        /* Groesse steht in index.html: Ein Wert hier gewaenne gegen jede
+           Regel im Stylesheet, und die drei Reiter brauchen auf schmalen
+           Geraeten eine kleinere Schrift. */
         fontWeight: seite === ziel ? 700 : 400,
         cursor: "pointer",
         WebkitTapHighlightColor: "transparent",

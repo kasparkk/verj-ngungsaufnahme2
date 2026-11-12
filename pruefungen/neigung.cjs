@@ -46,7 +46,7 @@ const tippe = async (loc) => {
   await page.waitForTimeout(300);
   pruefe('Höhe bleibt leer', await page.getByText('–',{exact:true}).count() >= 1, true);
   pruefe('Übernehmen ist gesperrt',
-    await page.getByRole('button',{name:'Übernehmen'}).isDisabled(), true);
+    await page.getByRole('button',{name:'Übernehmen',exact:true}).isDisabled(), true);
   await page.getByLabel('Entfernung').fill('20'); await page.waitForTimeout(300);
   // Seit der Höhenmesser die Sprache kennt: Komma, nicht Punkt.
   pruefe('mit 20 m kommt die Höhe', await page.getByText('23,5 m').count(), 1);
@@ -55,16 +55,21 @@ const tippe = async (loc) => {
   await page.getByLabel('Winkel zur Spitze').fill('');
   await page.waitForTimeout(300);
 
-  console.log('\nOHNE FUSSWINKEL KEIN VORSCHLAG');
-  pruefe('kein Kasten', await page.getByLabel('Handyhöhe über dem Boden').count(), 0);
+  console.log('\nOHNE FUSSWINKEL: DER KASTEN STEHT DA, ABER OHNE ZAHL');
+  /* Der Kasten steht von selbst da - sonst bliebe, wer kein Maßband
+     dabei hat, vor einem leeren Feld stehen. Was er NICHT tut: eine Zahl
+     nennen, die es noch nicht gibt. Und der Knopf bleibt an seinem
+     Platz, nur gesperrt: Ein Knopf, der erscheint, verschiebt alles
+     darunter. */
+  pruefe('der Kasten ist da', await page.getByLabel('Handyhöhe über dem Boden').count(), 1);
+  pruefe('aber keine Zahl', await page.getByText(/AUS DER NEIGUNG/).count(), 0);
+  pruefe('und sagt, was zu tun ist',
+    await page.getByText(/Fadenkreuz auf den Stammfuß halten/).count(), 1);
+  pruefe('Übernehmen ist gesperrt',
+    await page.getByRole('button',{name:'Als Entfernung übernehmen'}).isDisabled(), true);
 
   console.log('\nNAH DRAN: VORSCHLAG MIT SPANNE');
   await page.getByLabel('Winkel zum Fuß').fill('-17'); await page.waitForTimeout(300);
-  // Sie klappt nur auf Antippen auf - von selbst schöbe sie den Knopf weg.
-  pruefe('von selbst klappt nichts auf',
-    await page.getByLabel('Handyhöhe über dem Boden').count(), 0);
-  await tippe(page.getByRole('button',{name:'Kein Maßband? Entfernung aus der Neigung schätzen'}));
-  await page.waitForTimeout(300);
   pruefe('Handyhöhe steht voreingestellt da',
     await page.getByLabel('Handyhöhe über dem Boden').inputValue(), '1,50');
   // 1,50 / tan(17°) = 4,906...
@@ -84,8 +89,6 @@ const tippe = async (loc) => {
   console.log('\nMIT ENTFERNUNG IM FELD IST DER KASTEN WEG');
   pruefe('kein Vorschlag mehr', await page.getByText(/AUS DER NEIGUNG/).count(), 0);
   await page.getByLabel('Entfernung').fill(''); await page.waitForTimeout(300);
-  await tippe(page.getByRole('button',{name:'Kein Maßband? Entfernung aus der Neigung schätzen'}));
-  await page.waitForTimeout(300);
   pruefe('und wieder da, sobald das Feld leer ist',
     await page.getByText(/AUS DER NEIGUNG/).count(), 1);
 
@@ -98,8 +101,8 @@ const tippe = async (loc) => {
   await page.getByLabel('Winkel zum Fuß').fill('-4'); await page.waitForTimeout(300);
   pruefe('sagt, dass es zu flach ist',
     await page.getByText(/So\s+flach lässt sich die Entfernung nicht mehr schätzen/).count(), 1);
-  pruefe('kein Übernehmen-Knopf',
-    await page.getByRole('button',{name:'Als Entfernung übernehmen'}).count(), 0);
+  pruefe('Übernehmen bleibt stehen, aber gesperrt',
+    await page.getByRole('button',{name:'Als Entfernung übernehmen'}).isDisabled(), true);
   // Handyhöhe steht hier auf 1,80: 1,80/tan(5°) = 20,6 und 1,80/tan(3°) = 34,3
   pruefe('aber die Spanne wird gezeigt', await page.getByText(/20,6 bis 34,3 m/).count(), 1);
 
@@ -108,8 +111,6 @@ const tippe = async (loc) => {
   await page.getByRole('button',{name:'Baummessung'}).click(); await page.waitForTimeout(400);
   await tippe(page.getByRole('button',{name:'HÖHE messen'})); await page.waitForTimeout(2600);
   await page.getByLabel('Winkel zum Fuß').fill('-17'); await page.waitForTimeout(300);
-  await tippe(page.getByRole('button',{name:'Kein Maßband? Entfernung aus der Neigung schätzen'}));
-  await page.waitForTimeout(300);
   pruefe('1,80 m steht noch da',
     await page.getByLabel('Handyhöhe über dem Boden').inputValue(), '1,80');
 

@@ -338,8 +338,8 @@ export const WOERTER = {
     "The height appears → “Use value”, then + to add it to the list.",
   "Warum zwei Winkel: So fallen Augenhöhe und Hangneigung von selbst heraus – du musst weder deine Körpergröße eintragen noch am Hang nachrechnen.":
     "Why two angles: eye height and slope cancel out by themselves – you need neither enter your body height nor do any extra arithmetic on a slope.",
-  "*Bei kleinen Bäumen* – bis etwa {grenze} m Entfernung – kann die App die Entfernung aus dem Fußwinkel schätzen, sobald der Fuß angepeilt ist. Dafür muss die Handyhöhe stimmen und der Boden waagerecht sein. Weiter weg peilt man zu flach: dort macht ein Grad Sensorfehler aus 25 m alles zwischen 20 und 34 m, und die App bietet deshalb gar keine Zahl mehr an.":
-    "*For small trees* – up to about {grenze} m away – the app can estimate the distance from the angle to the base, as soon as the base has been sighted. For that the phone height must be right and the ground level. Further away the angle gets too shallow: at 25 m one degree of sensor error turns it into anything between 20 and 34 m, so the app offers no number at all there.",
+  "*Bei kleinen Bäumen* – bis etwa {grenze} m Entfernung – schätzt die App die Entfernung von selbst aus der Neigung, sobald das Fadenkreuz auf dem Stammfuß liegt. Dafür muss die Handyhöhe stimmen – einmal messen, 10 cm daneben sind 6 % Fehler – und der Boden zwischen dir und dem Stammfuß waagerecht sein; am Hang ist diese Rechnung nicht ungenau, sondern falsch. Weiter weg peilt man zu flach: dort macht ein Grad Sensorfehler aus 25 m alles zwischen 20 und 34 m, und die App bietet deshalb gar keine Zahl mehr an.":
+    "*For small trees* – out to roughly {grenze} m – the app estimates the distance from the tilt by itself, as soon as the crosshair sits on the base of the trunk. That needs the phone height to be right – measure it once, 10 cm off means a 6 % error – and level ground between you and the base; on a slope this calculation is wrong, not merely imprecise. Further out you sight too flat: there one degree of sensor error turns 25 m into anything between 20 and 34 m, which is why the app then offers no number at all.",
   "*Zur Probe:* denselben Baum aus zwei verschiedenen Entfernungen messen. Kommt zweimal dasselbe heraus, stimmt die Entfernung. Weichen die Werte ab, lag es daran und nicht am Sensor.":
     "*As a check:* measure the same tree from two different distances. If you get the same result twice, the distance was right. If the values differ, that was the reason – not the sensor.",
   "Häufigster Fehler im Bestand: ein Seitenast wird für die Spitze gehalten. Bei Laubholz mit breiter Krone lieber einen Schritt zur Seite gehen und noch einmal schauen.":
@@ -352,8 +352,8 @@ export const WOERTER = {
     "PHONE HEIGHT m",
   "Handyhöhe über dem Boden":
     "Phone height above the ground",
-  "über dem Boden, beim Peilen. Einmal messen – 10 cm daneben sind 6 % Fehler.":
-    "above the ground, as you sight. Measure it once – 10 cm out is a 6 % error.",
+  "über dem Boden, beim Peilen – 10 cm daneben sind 6 % Fehler.":
+    "above the ground, while sighting – 10 cm off means a 6 % error.",
   "AUS DER NEIGUNG ({grad}° nach unten)":
     "FROM THE TILT ({grad}° downwards)",
   "mindestens {m} m":
@@ -362,8 +362,8 @@ export const WOERTER = {
     "{von} – {bis} m",
   "Als Entfernung übernehmen":
     "Use as the distance",
-  "Setzt *waagerechten Boden* zwischen dir und dem Stammfuß voraus – am Hang ist diese Rechnung nicht ungenau, sondern falsch. Dann schreiten oder messen.":
-    "Assumes *level ground* between you and the base of the trunk – on a slope this calculation is not imprecise but wrong. Pace it out or measure it instead.",
+  "Setzt *waagerechten Boden* voraus – am Hang ist sie falsch, nicht ungenau.":
+    "Assumes *level ground* – on a slope it is wrong, not merely imprecise.",
   "Der Fuß liegt nur {grad}° unter waagerecht. So flach lässt sich die Entfernung nicht mehr schätzen":
     "The base is only {grad}° below horizontal. That is too shallow to estimate the distance",
   " – nach oben ist alles offen.":
@@ -786,12 +786,14 @@ export const WOERTER = {
     "Enter {was}",
   "hier Entfernung eintragen":
     "enter the distance here",
-  "Kein Maßband? Entfernung aus der Neigung schätzen":
-    "No tape measure? Estimate the distance from the tilt",
-  "Schätzung ausblenden":
-    "Hide the estimate",
-  "Dafür erst den Stammfuß anpeilen – aus diesem Winkel kommt die Schätzung.":
-    "Sight the base of the trunk first – the estimate comes from that angle.",
+  "📐 Höhe messen":
+    "📐 Measure the height",
+  "+ Baum aufnehmen":
+    "+ Record this tree",
+  "Kein Maßband? Das Fadenkreuz auf den Stammfuß halten – aus dieser Neigung kommt die Entfernung von selbst.":
+    "No tape measure? Hold the crosshair on the base of the trunk – the distance follows from that tilt.",
+  "AUS DER NEIGUNG ({grad}° nach unten) · läuft mit":
+    "FROM THE TILT ({grad}° downwards) · live",
   // Hinweise in leeren Feldern: ein Wort, das sagt, was hineingehört -
   // nie eine Zahl, die wie ein eingetragener Wert aussieht.
   "Alter in Jahren":

@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { farben } from "../konfiguration.js";
 import Hoehenmesser from "./Hoehenmesser.jsx";
 import { zahl, volumen, auswerten, formzahlFuer } from "./berechnung.js";
 import { useT, artName, zahlOrt } from "../sprache.js";
 import ArtErgaenzen from "./ArtErgaenzen.jsx";
+import { useEinstellungen } from "../einstellungen.js";
+import { stups, FESTGEHALTEN } from "../stups.js";
 
 const nk = (wert, stellen = 2) =>
   Number(wert).toLocaleString(zahlOrt(), { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
@@ -28,6 +30,12 @@ export default function Einzelbaeume({
   // Offen oder nicht; der gemessene Wert landet im Hoehenfeld darunter.
   const [misst, setMisst] = useState(false);
   const [hoehe, setHoehe] = useState("");
+  /* Der zuletzt aufgenommene Baum wird kurz hervorgehoben. Im Bestand
+     schaut man beim Antippen auf den Baum, nicht auf den Bildschirm -
+     der Stups sagt "drin", die Markierung zeigt beim naechsten Blick,
+     was drin ist. */
+  const [frisch, setFrisch] = useState(null);
+  const { stups: stupsAn } = useEinstellungen();
 
   /* Formzahl des Baums - mit seiner eigenen Hoehe nachgeschlagen, falls fuer
      die Art Hoehenstufen eingetragen sind. Ohne Stufen kommt der Grundwert
@@ -40,14 +48,20 @@ export default function Einzelbaeume({
       setHinweis(t("BHD eintragen"));
       return;
     }
-    setBaeume((alle) => [
-      ...alle,
-      { id: `b${Date.now()}`, art, bhd, hoehe, formzahl: String(formzahlVon(art, hoehe)) },
-    ]);
+    const id = `b${Date.now()}`;
+    setBaeume((alle) => [...alle, { id, art, bhd, hoehe, formzahl: String(formzahlVon(art, hoehe)) }]);
+    if (stupsAn) stups(FESTGEHALTEN);
+    setFrisch(id);
     // Baumart stehen lassen - meist misst man mehrere derselben Art nacheinander.
     setBhd("");
     setHoehe("");
   };
+
+  useEffect(() => {
+    if (frisch == null) return;
+    const uhr = setTimeout(() => setFrisch(null), 1400);
+    return () => clearTimeout(uhr);
+  }, [frisch]);
 
   const erg = auswerten(baeume, flaeche);
 
@@ -91,8 +105,12 @@ export default function Einzelbaeume({
                 border: `1px solid ${art === a.name ? farben.unverb : farben.line}`,
                 color: art === a.name ? farben.bg : farben.muted,
                 borderRadius: 999,
-                padding: "9px 12px",
-                fontSize: 13,
+                /* Gross genug fuer einen Daumen (38 px hoch), schmal
+                   genug, dass auf 320 px noch mehrere Arten in eine
+                   Zeile passen - bei zwoelf Arten sind das sonst sieben
+                   Reihen ueber der Eingabe. */
+                padding: "10px 13px",
+                fontSize: 14,
                 fontWeight: art === a.name ? 700 : 400,
                 cursor: "pointer",
                 WebkitTapHighlightColor: "transparent",
@@ -117,11 +135,19 @@ export default function Einzelbaeume({
         />
         </div>
 
-        <div style={{ display: "flex", gap: 12, alignItems: "flex-end" }}>
-          <div style={{ flex: 1 }}>
+        {/* BHD und Hoehe nebeneinander, darunter die beiden Knoepfe in
+            voller Breite.
+
+            Vorher standen BHD, Hoehe, ein 📐-Knopf und ein "+" in EINER
+            Zeile. Auf 320 px blieb vom Hoehenfeld ein Streifen uebrig
+            ("Höhe in r"), und der Weg zur Hoehenmessung war das
+            kleinste Ziel auf dem Bildschirm - obwohl er zum
+            meistgebrauchten gehoert. */}
+        <div style={{ display: "flex", gap: 14 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={beschriftung}>{t("BHD cm")}</div>
             <input
-              style={{ ...feldStil, fontSize: 22, fontWeight: 700 }}
+              style={{ ...feldStil, fontSize: 26, fontWeight: 700 }}
               value={bhd}
               onChange={(e) => setBhd(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && hinzufuegen()}
@@ -130,52 +156,60 @@ export default function Einzelbaeume({
               aria-label={t("BHD cm")}
             />
           </div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <div style={beschriftung}>{t("HÖHE m")}</div>
-            <div style={{ display: "flex", gap: 6, alignItems: "flex-end" }}>
-              <input
-                style={{ ...feldStil, fontSize: 22, fontWeight: 700, flex: 1, minWidth: 0 }}
-                value={hoehe}
-                onChange={(e) => setHoehe(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && hinzufuegen()}
-                inputMode="decimal"
-                placeholder={t("Höhe in m")}
-                aria-label={t("HÖHE m")}
-              />
-              <button
-                onClick={() => setMisst(true)}
-                aria-label={t("HÖHE messen")}
-                style={{
-                  background: farben.surface,
-                  border: `1px solid ${farben.line}`,
-                  color: farben.text,
-                  borderRadius: 8,
-                  padding: "4px 9px",
-                  fontSize: 15,
-                  cursor: "pointer",
-                }}
-              >
-                📐
-              </button>
-            </div>
+            <input
+              style={{ ...feldStil, fontSize: 26, fontWeight: 700 }}
+              value={hoehe}
+              onChange={(e) => setHoehe(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && hinzufuegen()}
+              inputMode="decimal"
+              placeholder={t("Höhe in m")}
+              aria-label={t("HÖHE m")}
+            />
           </div>
-          <button
-            onClick={hinzufuegen}
-            style={{
-              background: farben.unverb,
-              border: "none",
-              color: farben.bg,
-              borderRadius: 12,
-              padding: "12px 18px",
-              fontSize: 14,
-              fontWeight: 700,
-              cursor: "pointer",
-            }}
-          >
-            +
-          </button>
         </div>
-        <div style={{ fontSize: 10, color: farben.muted, marginTop: 8 }}>
+
+        <button
+          onClick={() => setMisst(true)}
+          aria-label={t("HÖHE messen")}
+          style={{
+            width: "100%",
+            background: "transparent",
+            border: `1px solid ${farben.line}`,
+            color: farben.text,
+            borderRadius: 12,
+            padding: "13px 0",
+            fontSize: 15,
+            marginTop: 12,
+            cursor: "pointer",
+          }}
+        >
+          {t("📐 Höhe messen")}
+        </button>
+
+        {/* Der Knopf, der am haeufigsten getroffen werden muss, ist der
+            groesste - und er sagt, was er tut. Ein blosses "+" am Rand
+            war beides nicht. */}
+        <button
+          onClick={hinzufuegen}
+          style={{
+            width: "100%",
+            background: farben.unverb,
+            border: "none",
+            color: farben.bg,
+            borderRadius: 14,
+            padding: "16px 0",
+            fontSize: 17,
+            fontWeight: 700,
+            marginTop: 10,
+            cursor: "pointer",
+          }}
+        >
+          {t("+ Baum aufnehmen")}
+        </button>
+
+        <div style={{ fontSize: 11, color: farben.muted, marginTop: 10, lineHeight: 1.5 }}>
           {t("Formzahl {wert} für {art}", {
             wert: nk(formzahlVon(art, hoehe), 2),
             art: artName(art),
@@ -239,13 +273,16 @@ export default function Einzelbaeume({
                 display: "flex",
                 alignItems: "center",
                 gap: 10,
-                padding: "8px 10px",
+                padding: "12px 10px",
                 borderTop: i === 0 ? "none" : `1px solid ${farben.line}`,
-                fontSize: 13,
+                fontSize: 14,
+                /* Der zuletzt aufgenommene Baum bleibt kurz markiert. */
+                background: b.id === frisch ? farben.surfaceHi : "transparent",
+                transition: "background 400ms",
               }}
             >
               <div style={{ width: 22, color: farben.muted, fontVariantNumeric: "tabular-nums" }}>{i + 1}</div>
-              <div style={{ flex: 1, fontWeight: 600 }}>{artName(b.art)}</div>
+              <div style={{ flex: 1, fontWeight: 600, minWidth: 0 }}>{artName(b.art)}</div>
               <div style={{ fontVariantNumeric: "tabular-nums", color: farben.muted }}>
                 {nk(zahl(b.bhd), 0)} cm · {nk(zahl(b.hoehe), 0)} m
               </div>
