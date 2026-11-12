@@ -75,7 +75,7 @@ function WerteFeld({
             border: `1px solid ${farben.line}`,
             color: farben.text,
             borderRadius: 8,
-            padding: "0 12px",
+            padding: "8px 14px",
             fontSize: 16,
             cursor: "pointer",
           }}
@@ -357,6 +357,7 @@ export default function Winkelzaehlprobe({
                       ? farben.line
                       : farben.muted,
                   fontSize: 12,
+                  padding: "9px 4px",
                   cursor:
                     a.anzahl > 0 ||
                     a.hoehen.length ||
@@ -497,14 +498,15 @@ export default function Winkelzaehlprobe({
                         inputMode="numeric"
                         aria-label={t("Alter {art}", { art: artName(a.name) })}
                         style={{
-                          width: 42,
+                          width: 52,
                           background: "transparent",
                           border: "none",
                           borderBottom: `1px solid ${farben.line}`,
                           color: z.alterJahre ? farben.text : farben.verb,
-                          fontSize: 13,
+                          // 16 px, sonst zoomt iOS beim Antippen hinein.
+                          fontSize: 16,
                           fontWeight: 700,
-                          padding: 0,
+                          padding: "6px 0",
                           outline: "none",
                         }}
                       />
@@ -559,7 +561,7 @@ export default function Winkelzaehlprobe({
                   border: `1px solid ${farben.line}`,
                   color: farben.muted,
                   borderRadius: 999,
-                  padding: "6px 11px",
+                  padding: "9px 12px",
                   fontSize: 13,
                   cursor: "pointer",
                 }}

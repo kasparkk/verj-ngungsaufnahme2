@@ -41,8 +41,8 @@ export default function ArtErgaenzen({ onHinzu, setHinweis }) {
           border: "none",
           borderBottom: `1px solid ${farben.line}`,
           color: farben.text,
-          padding: "4px 0",
-          fontSize: 14,
+          padding: "9px 0",
+          fontSize: 16,
           outline: "none",
         }}
       />

@@ -250,13 +250,14 @@ export default function Baummessung() {
     await weitergeben(baueXlsx(zeilen, "Baummessung"), name, "Baummessung", t("Excel-Datei gespeichert"));
   };
 
+  // 16 px: darunter zoomt iOS beim Antippen in das Feld hinein.
   const feldStil = {
     background: "transparent",
     border: "none",
     borderBottom: `1px solid ${farben.line}`,
     color: farben.text,
-    padding: "4px 0",
-    fontSize: 14,
+    padding: "9px 0",
+    fontSize: 16,
     width: "100%",
     outline: "none",
   };
@@ -270,7 +271,7 @@ export default function Baummessung() {
         border: `1px solid ${farben.line}`,
         color: stand.modus === ziel ? farben.text : farben.muted,
         borderRadius: 10,
-        padding: "9px 0",
+        padding: "12px 0",
         fontSize: 13,
         fontWeight: stand.modus === ziel ? 700 : 400,
         cursor: "pointer",
@@ -324,7 +325,7 @@ export default function Baummessung() {
             border: `1px solid ${farben.line}`,
             color: stand.lat == null ? farben.muted : farben.text,
             borderRadius: 10,
-            padding: "7px 10px",
+            padding: "11px 12px",
             fontSize: 12,
             cursor: gpsLaeuft ? "default" : "pointer",
           }}
@@ -393,7 +394,7 @@ export default function Baummessung() {
           border: `1px solid ${farben.line}`,
           color: farben.muted,
           borderRadius: 10,
-          padding: "8px 0",
+          padding: "11px 0",
           fontSize: 13,
           marginTop: 18,
           cursor: "pointer",
@@ -436,7 +437,8 @@ export default function Baummessung() {
           bottom: 0,
           background: farben.surface,
           borderTop: `1px solid ${farben.line}`,
-          padding: "10px 14px",
+          // Platz fuer die Gestenleiste des Geraets, siehe Verjuengung.jsx.
+          padding: "10px 14px calc(10px + env(safe-area-inset-bottom, 0px))",
           maxWidth: 560,
           margin: "0 auto",
         }}

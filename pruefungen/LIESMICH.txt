@@ -42,6 +42,13 @@ felder.mjs      Keine Beispielzahlen in leeren Feldern.
                 eingetragene 30. Die Prüfung findet solche Platzhalter
                 und Felder ohne Bezeichnung.
 
+handy.cjs       Bedienbarkeit auf dem Handy, über alle drei Seiten.
+                Gleicher Aufruf wie grenzstamm.cjs. Misst: kein
+                Eingabefeld unter 16 px (darunter zoomt iOS beim
+                Antippen hinein), kein Ziel unter 32 px hoch, nichts
+                läuft seitwärts aus dem Bild. Was absichtlich klein
+                bleibt, steht namentlich in der Datei.
+
 arten.cjs       Eigene Baumart in der Baummessung. Gleicher Aufruf wie
                 grenzstamm.cjs. Prüft, dass sie in beiden Verfahren
                 auftaucht, das Neuladen übersteht und nicht

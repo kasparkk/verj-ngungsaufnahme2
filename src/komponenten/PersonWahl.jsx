@@ -43,7 +43,9 @@ export default function PersonWahl({ wert, setWert, warnen }) {
     fontSize: 24,
     lineHeight: 1,
     cursor: "pointer",
-    padding: "0 14px",
+    // 24 px hoch war zu wenig fuer einen Knopf, der bei jeder Person zweimal
+    // getroffen werden muss.
+    padding: "10px 16px",
     WebkitTapHighlightColor: "transparent",
   };
 

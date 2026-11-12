@@ -459,7 +459,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
                       background: gewaehlt ? farben.unverb : "transparent",
                       border: `1px solid ${gewaehlt ? farben.unverb : farben.line}`,
                       color: gewaehlt ? farben.bg : farben.muted,
-                      borderRadius: 8, padding: "7px 8px", fontSize: 12,
+                      borderRadius: 8, padding: "10px 9px", fontSize: 12,
                       fontWeight: gewaehlt ? 700 : 400, cursor: "pointer",
                     }}
                   >
@@ -473,7 +473,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
               aria-label={t("{art} deaktivieren", { art: artName(a.name) })}
               style={{
                 background: "none", border: "none", color: farben.muted,
-                fontSize: 18, cursor: "pointer", padding: "0 2px",
+                fontSize: 18, cursor: "pointer", padding: "6px 8px",
               }}
             >
               ×

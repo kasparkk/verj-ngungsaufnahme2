@@ -798,13 +798,17 @@ export default function Verjuengung() {
     ergebnisLaden(false);
   };
 
+  /* 16 px ist keine Geschmacksfrage: Darunter zoomt iOS beim Antippen in
+     das Feld hinein, und man steht im Bestand erst einmal in einer
+     vergroesserten Seite. Mit der Hoehe kommt das Feld ausserdem auf ein
+     Ziel, das man mit Handschuh trifft. */
   const feldStil = {
     background: "transparent",
     border: "none",
     borderBottom: `1px solid ${farben.line}`,
     color: farben.text,
-    padding: "4px 0",
-    fontSize: 14,
+    padding: "9px 0",
+    fontSize: 16,
     width: "100%",
     outline: "none",
   };
@@ -1063,7 +1067,7 @@ export default function Verjuengung() {
           border: `1px solid ${farben.line}`,
           color: farben.text,
           borderRadius: 10,
-          padding: "10px 0",
+          padding: "12px 0",
           fontSize: 14,
           marginBottom: 14,
           cursor: "pointer",
@@ -1122,7 +1126,7 @@ export default function Verjuengung() {
                 border: `1px solid ${farben.line}`,
                 color: farben.text,
                 borderRadius: 10,
-                padding: "8px 10px",
+                padding: "11px 12px",
                 fontSize: 12,
                 cursor: "pointer",
               }}
@@ -1139,7 +1143,8 @@ export default function Verjuengung() {
                 color: farben.line,
                 fontSize: 26,
                 cursor: "default",
-                padding: "0 10px",
+                // Dieselbe Hoehe wie der aktive Pfeil, sonst springt die Zeile.
+                padding: "10px 12px",
               }}
             >
               ‹
@@ -1155,7 +1160,7 @@ export default function Verjuengung() {
               color: farben.text,
               fontSize: 26,
               cursor: "pointer",
-              padding: "0 10px",
+              padding: "10px 12px",
             }}
           >
             ‹
@@ -1179,9 +1184,9 @@ export default function Verjuengung() {
               background: "none",
               border: "none",
               color: aktuellerKreis?.lat != null ? farben.unverb : farben.muted,
-              fontSize: 10,
+              fontSize: 12,
               cursor: "pointer",
-              padding: "3px 0 0",
+              padding: "11px 10px 9px",
               fontVariantNumeric: "tabular-nums",
             }}
           >
@@ -1206,7 +1211,7 @@ export default function Verjuengung() {
               border: `1px solid ${farben.line}`,
               color: farben.text,
               borderRadius: 10,
-              padding: "8px 12px",
+              padding: "11px 14px",
               fontSize: 13,
               cursor: "pointer",
             }}
@@ -1223,7 +1228,7 @@ export default function Verjuengung() {
               color: farben.text,
               fontSize: 26,
               cursor: "pointer",
-              padding: "0 10px",
+              padding: "10px 12px",
             }}
           >
             ›
@@ -1243,7 +1248,7 @@ export default function Verjuengung() {
             border: `1px solid ${farben.line}`,
             color: farben.muted,
             borderRadius: 10,
-            padding: "8px 0",
+            padding: "11px 0",
             fontSize: 13,
             marginBottom: 14,
             cursor: holtBlatt ? "default" : "pointer",
@@ -1304,7 +1309,7 @@ export default function Verjuengung() {
           border: `1px solid ${farben.line}`,
           color: farben.text,
           borderRadius: 10,
-          padding: "8px 0",
+          padding: "11px 0",
           fontSize: 13,
           marginBottom: uebersichtOffen ? 10 : 14,
           cursor: "pointer",
@@ -1323,7 +1328,7 @@ export default function Verjuengung() {
           border: `1px solid ${farben.line}`,
           color: farben.text,
           borderRadius: 10,
-          padding: "8px 0",
+          padding: "11px 0",
           fontSize: 13,
           marginBottom: standorteOffen ? 10 : 14,
           cursor: "pointer",
@@ -1360,6 +1365,7 @@ export default function Verjuengung() {
                 border: "none",
                 color: hatZahlen(art.id) ? farben.line : farben.muted,
                 fontSize: 12,
+                padding: "9px 4px",
                 cursor: hatZahlen(art.id) ? "default" : "pointer",
               }}
             >
@@ -1433,7 +1439,7 @@ export default function Verjuengung() {
                     border: `1px solid ${farben.line}`,
                     color: farben.muted,
                     borderRadius: 999,
-                    padding: "6px 11px",
+                    padding: "9px 12px",
                     fontSize: 13,
                     cursor: "pointer",
                     WebkitTapHighlightColor: "transparent",
@@ -1525,7 +1531,11 @@ export default function Verjuengung() {
           bottom: 0,
           background: farben.surface,
           borderTop: `1px solid ${farben.line}`,
-          padding: "8px 14px 10px",
+          /* Die untere Zeile des Geraets (Gestenleiste, Home-Indikator)
+             liegt ueber der Seite. Ohne diesen Zuschlag sitzt der unterste
+             Knopf darunter - gemessen wird die Leiste ohnehin, der Inhalt
+             rueckt also mit. */
+          padding: "8px 14px calc(10px + env(safe-area-inset-bottom, 0px))",
           maxWidth: 560,
           margin: "0 auto",
         }}

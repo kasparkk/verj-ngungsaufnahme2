@@ -30,8 +30,8 @@ export default function Formzahlen({
     border: "none",
     borderBottom: `1px solid ${farben.line}`,
     color: farben.text,
-    padding: "4px 0",
-    fontSize: 14,
+    padding: "8px 0",
+    fontSize: 16,
     outline: "none",
   };
   const beschriftung = { fontSize: 10, color: farben.muted, letterSpacing: 0.6 };
@@ -162,7 +162,7 @@ export default function Formzahlen({
                     border: `1px solid ${gewaehlt ? farben.unverb : hat ? farben.muted : farben.line}`,
                     color: gewaehlt ? farben.bg : hat ? farben.text : farben.muted,
                     borderRadius: 999,
-                    padding: "6px 11px",
+                    padding: "9px 12px",
                     fontSize: 13,
                     fontWeight: gewaehlt ? 700 : 400,
                     cursor: "pointer",

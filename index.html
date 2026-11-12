@@ -16,6 +16,23 @@
     <style>
       html, body, #root { margin: 0; height: 100%; background: #12160F; }
       * { -webkit-tap-highlight-color: transparent; }
+
+      /* Rueckmeldung beim Antippen.
+
+         Die App hat ueberall die blaue Antipp-Flaeche des Browsers
+         abgeschaltet - damit war aber auch die einzige Rueckmeldung weg,
+         dass ein Tipp ueberhaupt angekommen ist. Mit Handschuhen und ohne
+         Ton merkt man sonst erst am Ergebnis, ob man getroffen hat. */
+      button:active, [role="button"]:active, a:active, label:active {
+        opacity: 0.55;
+      }
+      button, [role="button"], a, label { transition: opacity 0.06s linear; }
+
+      /* Kein Warten auf einen moeglichen Doppeltipp, kein Zoom beim
+         schnellen Zaehlen. */
+      button, [role="button"], a, label, input, textarea, select {
+        touch-action: manipulation;
+      }
       /* Ein Platzhalter ist ein Hinweis, kein Wert. Die Eingabefelder sind
          teils gross und fett - der Hinweis darin soll das nicht sein, sonst
          liest man ihn im Vorbeigehen als Inhalt. */

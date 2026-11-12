@@ -57,7 +57,7 @@ export default function Grenzstamm({ zaehlfaktor }) {
           border: `1px solid ${farben.line}`,
           color: farben.muted,
           borderRadius: 10,
-          padding: "8px 0",
+          padding: "11px 0",
           fontSize: 13,
           marginTop: 10,
           cursor: "pointer",

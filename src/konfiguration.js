@@ -5,7 +5,10 @@ export const farben = {
   surfaceHi: "#2A3225",
   line: "#3A4434",
   text: "#F2F0E6",
-  muted: "#8A9280",
+  /* Etwas heller als zuerst: Auf der Flaeche kam das alte #8A9280 nur auf
+     4,9:1, und die kleinen Hinweise stehen genau darauf. Jetzt 6,7:1 -
+     im Gegenlicht ist das der Unterschied zwischen lesen und raten. */
+  muted: "#A3AC98",
   verb: "#E2574C",
   /* Bernstein fuer Hinweise. Bewusst nicht das Verbiss-Rot: einen alten
      Zettel nachzutragen ist richtig und soll nicht wie ein Fehler
