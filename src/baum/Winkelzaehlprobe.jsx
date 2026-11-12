@@ -7,6 +7,8 @@ import { leereArt } from "./speicher.js";
 import ZaehlBox from "../komponenten/ZaehlBox.jsx";
 import { useT, artName, zahlOrt } from "../sprache.js";
 import ArtErgaenzen from "./ArtErgaenzen.jsx";
+import { useEinstellungen } from "../einstellungen.js";
+import { stups, FESTGEHALTEN, GEZAEHLT } from "../stups.js";
 
 const nk = (wert, stellen = 1) =>
   Number(wert).toLocaleString(zahlOrt(), {
@@ -15,7 +17,18 @@ const nk = (wert, stellen = 1) =>
   });
 
 /* Liste gemessener Werte (Hoehen bzw. Durchmesser) mit Mittelwert.
-   Eintippen, mit + oder Eingabetaste uebernehmen, Wert antippen loescht ihn. */
+
+   Eintippen genuegt: Der Wert wandert in die Liste, sobald das Feld die
+   Eingabe verlaesst - beim Tippen irgendwohin, beim Schliessen der
+   Tastatur, beim Wechsel ins Nachbarfeld. Das + und die Eingabetaste tun
+   dasselbe und bleiben fuer alle, die sie gewohnt sind.
+
+   Gemeldet als "man muss das Plus druecken, um den Wert zu speichern" -
+   und auf dem Handy ist das kein Nebensaechliches: Eine Zahlentastatur
+   hat gar keine Eingabetaste, das + war also der einzige Weg.
+
+   Ein versehentlich eingetragener Wert kostet einen Tipp: Jeder Wert in
+   der Liste ist ein Knopf, der ihn wieder herausnimmt. */
 function WerteFeld({
   titel,
   einheit,
@@ -34,7 +47,7 @@ function WerteFeld({
     border: "none",
     borderBottom: `1px solid ${farben.line}`,
     color: farben.text,
-    padding: "4px 0",
+    padding: "9px 0",
     fontSize: 18,
     fontWeight: 700,
     outline: "none",
@@ -64,12 +77,17 @@ function WerteFeld({
           value={entwurf}
           onChange={(e) => setEntwurf(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && onHinzu()}
+          onBlur={() => onHinzu()}
           inputMode="decimal"
-          placeholder={t("{was} eintragen", { was: `${titel} ${einheit}` })}
+          /* Kurz: Die Spalte ist auf einem Handy keine 180 px breit, und
+             darueber steht ohnehin, was hier hineingehoert. Der lange
+             Hinweis wurde mittendrin abgeschnitten. */
+          placeholder={t("eintragen")}
           aria-label={t("{was} eintragen", { was: `${titel} ${einheit}` })}
         />
         <button
           onClick={onHinzu}
+          aria-label={t("{was} eintragen", { was: `${titel} ${einheit}` }) + " +"}
           style={{
             background: farben.surface,
             border: `1px solid ${farben.line}`,
@@ -82,24 +100,30 @@ function WerteFeld({
         >
           +
         </button>
-        {onMessen && (
-          <button
-            onClick={onMessen}
-            aria-label={t("{was} messen", { was: titel })}
-            style={{
-              background: farben.surface,
-              border: `1px solid ${farben.line}`,
-              color: farben.text,
-              borderRadius: 8,
-              padding: "0 10px",
-              fontSize: 15,
-              cursor: "pointer",
-            }}
-          >
-            📐
-          </button>
-        )}
       </div>
+
+      {/* Der Weg zum Hoehenmesser steht in voller Breite unter dem Feld:
+          neben dem + blieben dem Eingabefeld keine 90 px, und der
+          Platzhalter wurde mittendrin abgeschnitten. */}
+      {onMessen && (
+        <button
+          onClick={onMessen}
+          aria-label={t("{was} messen", { was: titel })}
+          style={{
+            width: "100%",
+            marginTop: 8,
+            background: farben.surface,
+            border: `1px solid ${farben.line}`,
+            color: farben.text,
+            borderRadius: 8,
+            padding: "10px 0",
+            fontSize: 13,
+            cursor: "pointer",
+          }}
+        >
+          {t("📐 messen")}
+        </button>
+      )}
 
       {werte.length > 0 && (
         <div
@@ -114,8 +138,10 @@ function WerteFeld({
                 border: `1px solid ${farben.line}`,
                 color: farben.muted,
                 borderRadius: 999,
-                padding: "3px 8px",
-                fontSize: 12,
+                /* Man tippt sie nicht nur aus Versehen an, sondern auch
+                   absichtlich: Ein Vertipper wird hier geheilt. */
+                padding: "7px 11px",
+                fontSize: 13,
                 cursor: "pointer",
               }}
             >
@@ -126,7 +152,7 @@ function WerteFeld({
       )}
 
       {mittelwert > 0 && (
-        <div style={{ fontSize: 11, color: farben.muted, marginTop: 6 }}>
+        <div style={{ fontSize: 12, color: farben.muted, marginTop: 7 }}>
           {mittelText}
         </div>
       )}
@@ -150,10 +176,12 @@ export default function Winkelzaehlprobe({
   const [neueHoehe, setNeueHoehe] = useState({});
   const [neuerDm, setNeuerDm] = useState({});
   /* Fuer welche Baumart der Hoehenmesser offen ist. Der gemessene Wert
-     landet im Entwurfsfeld dieser Art - von dort uebernimmt ihn der
-     gewohnte Weg mit +, statt dass der Messer selbst in die Liste
-     schreibt. Ein Messfehler laesst sich so noch verwerfen. */
+     geht direkt in die Liste dieser Art: "Übernehmen" IST die
+     Bestaetigung, ein zweites Antippen von + war nur ein zweiter Weg,
+     dasselbe zu sagen. Verworfen wird er wie jeder andere Wert - der
+     Wert in der Liste ist ein Knopf, der ihn herausnimmt. */
   const [messenFuer, setMessenFuer] = useState(null);
+  const { stups: stupsAn } = useEinstellungen();
 
   /* Das Alter oben gilt als Vorgabe; je Baumart laesst es sich ueberschreiben. */
   const erg = wzpAuswerten(wzp.arten, wzp.zaehlfaktor, formzahlen, alter, formzahlStufen);
@@ -188,6 +216,7 @@ export default function Winkelzaehlprobe({
     if (zahl(wert) <= 0) return;
     aendere(id, (a) => ({ ...a, hoehen: [...a.hoehen, wert] }));
     setNeueHoehe((alt) => ({ ...alt, [id]: "" }));
+    if (stupsAn) stups(GEZAEHLT);
   };
 
   const hoeheWeg = (id, i) =>
@@ -201,6 +230,7 @@ export default function Winkelzaehlprobe({
       durchmesser: [...(a.durchmesser ?? []), wert],
     }));
     setNeuerDm((alt) => ({ ...alt, [id]: "" }));
+    if (stupsAn) stups(GEZAEHLT);
   };
 
   const dmWeg = (id, i) =>
@@ -628,8 +658,17 @@ export default function Winkelzaehlprobe({
       <Hoehenmesser
         offen={messenFuer != null}
         onSchliessen={() => setMessenFuer(null)}
+        /* Nach dem Scrollen durch vier Baumarten ist nicht mehr
+           selbstverstaendlich, fuer welche man gerade misst. */
+        titelZusatz={artName(wzp.arten.find((a) => a.id === messenFuer)?.name ?? "")}
+        uebernehmenText={t("Übernehmen & eintragen")}
         onUebernehmen={(hoehe) => {
-          setNeueHoehe((alt) => ({ ...alt, [messenFuer]: String(hoehe) }));
+          const id = messenFuer;
+          /* In der Schreibweise der Sprache ablegen - sonst steht in der
+             deutschen Liste zwischen "28,5" und "31,0" ploetzlich ein
+             "23.5" mit Punkt. Gerechnet wird ohnehin mit zahl(). */
+          aendere(id, (a) => ({ ...a, hoehen: [...a.hoehen, nk(hoehe, 1)] }));
+          if (stupsAn) stups(FESTGEHALTEN);
           setMessenFuer(null);
         }}
       />

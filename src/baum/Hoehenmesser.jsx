@@ -38,7 +38,7 @@ import Markiert from "../komponenten/Markiert.jsx";
    Ohne Sensor - am Rechner, oder wenn das Geraet nichts liefert - lassen
    sich die Winkel eintippen. Dann ist es ein Rechner statt eines
    Messgeraets, aber es bleibt benutzbar. */
-export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
+export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, uebernehmenText, titelZusatz }) {
   const t = useT();
   /* Leer, nicht "20".
      Die Entfernung ging vorher als Vorgabe ins Feld - eine Zahl, die aussah
@@ -308,7 +308,12 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: farben.text }}>{t("Höhe messen")}</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: farben.text }}>
+          {t("Höhe messen")}
+          {titelZusatz ? (
+            <span style={{ color: farben.muted, fontWeight: 400 }}>{` · ${titelZusatz}`}</span>
+          ) : null}
+        </div>
         <button
           onClick={onSchliessen}
           aria-label={t("Schließen")}
@@ -851,7 +856,10 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
             cursor: hoehe == null ? "default" : "pointer",
           }}
         >
-          {t("Übernehmen")}
+          {/* Wo der Wert gleich dort landet, wo er hingehoert, sagt der
+              Knopf das auch - sonst sucht man anschliessend nach dem
+              zweiten Schritt, den es nicht mehr gibt. */}
+          {uebernehmenText ?? t("Übernehmen")}
         </button>
       </div>
 

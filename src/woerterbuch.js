@@ -358,8 +358,6 @@ export const WOERTER = {
     "at least {m} m",
   "{von} – {bis} m":
     "{von} – {bis} m",
-  "Als Entfernung übernehmen":
-    "Use as the distance",
   "Setzt *waagerechten Boden* voraus – am Hang ist sie falsch, nicht ungenau.":
     "Assumes *level ground* – on a slope it is wrong, not merely imprecise.",
   " – nach oben ist alles offen.":
@@ -788,6 +786,10 @@ export const WOERTER = {
     ": anything from {von} to {bis} m.",
   "Kein Maßband? Fadenkreuz auf den Stammfuß halten.":
     "No tape measure? Hold the crosshair on the base of the trunk.",
+  "Übernehmen & aufnehmen":
+    "Use it & record the tree",
+  "Übernehmen & eintragen":
+    "Use it & add to the list",
   "Schätzung übernehmen":
     "Use the estimate",
   "übernehmen":
@@ -796,6 +798,10 @@ export const WOERTER = {
     "Phone height {m} m · assumes level ground",
   "hier Entfernung eintragen":
     "enter the distance here",
+  "eintragen":
+    "enter",
+  "📐 messen":
+    "📐 measure",
   "📐 Höhe messen":
     "📐 Measure the height",
   "+ Baum aufnehmen":

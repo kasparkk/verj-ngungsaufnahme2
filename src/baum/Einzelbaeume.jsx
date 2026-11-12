@@ -43,13 +43,19 @@ export default function Einzelbaeume({
   const formzahlVon = (name, hoeheM) => formzahlFuer(name, hoeheM, formzahlen, formzahlStufen);
   const gestaffelt = (formzahlStufen?.[art] ?? []).length > 0;
 
-  const hinzufuegen = () => {
+  /* Die Hoehe kommt als Wert herein, nicht aus dem Zustand: Wird der Baum
+     direkt aus dem Hoehenmesser heraus aufgenommen, steht die frisch
+     gemessene Hoehe noch gar nicht im Feld. */
+  const hinzufuegen = (hoeheWert = hoehe) => {
     if (zahl(bhd) <= 0) {
       setHinweis(t("BHD eintragen"));
       return;
     }
     const id = `b${Date.now()}`;
-    setBaeume((alle) => [...alle, { id, art, bhd, hoehe, formzahl: String(formzahlVon(art, hoehe)) }]);
+    setBaeume((alle) => [
+      ...alle,
+      { id, art, bhd, hoehe: hoeheWert, formzahl: String(formzahlVon(art, hoeheWert)) },
+    ]);
     if (stupsAn) stups(FESTGEHALTEN);
     setFrisch(id);
     // Baumart stehen lassen - meist misst man mehrere derselben Art nacheinander.
@@ -192,7 +198,7 @@ export default function Einzelbaeume({
             groesste - und er sagt, was er tut. Ein blosses "+" am Rand
             war beides nicht. */}
         <button
-          onClick={hinzufuegen}
+          onClick={() => hinzufuegen()}
           style={{
             width: "100%",
             background: farben.unverb,
@@ -309,12 +315,20 @@ export default function Einzelbaeume({
       )}
     </div>
 
+      {/* Steht der BHD schon da, ist der Baum mit dem Übernehmen fertig -
+          das zweite Antippen von "+ Baum aufnehmen" sagte nichts mehr
+          dazu. Fehlt der BHD, landet die Höhe wie bisher nur im Feld:
+          Ohne ihn gibt es keinen Baum, den man aufnehmen koennte. */}
       <Hoehenmesser
         offen={misst}
         onSchliessen={() => setMisst(false)}
+        uebernehmenText={zahl(bhd) > 0 ? t("Übernehmen & aufnehmen") : undefined}
         onUebernehmen={(wert) => {
-          setHoehe(String(wert));
+          // Mit Komma, wie alles andere im deutschen Bildschirm auch.
+          const text = nk(wert, 1);
+          setHoehe(text);
           setMisst(false);
+          if (zahl(bhd) > 0) hinzufuegen(text);
         }}
       />
     </>
