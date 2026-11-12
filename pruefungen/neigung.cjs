@@ -48,7 +48,8 @@ const tippe = async (loc) => {
   pruefe('Übernehmen ist gesperrt',
     await page.getByRole('button',{name:'Übernehmen'}).isDisabled(), true);
   await page.getByLabel('Entfernung').fill('20'); await page.waitForTimeout(300);
-  pruefe('mit 20 m kommt die Höhe', await page.getByText('23.5 m').count(), 1);
+  // Seit der Höhenmesser die Sprache kennt: Komma, nicht Punkt.
+  pruefe('mit 20 m kommt die Höhe', await page.getByText('23,5 m').count(), 1);
   await page.getByLabel('Entfernung').fill('');
   await page.getByLabel('Winkel zum Fuß').fill('');
   await page.getByLabel('Winkel zur Spitze').fill('');
@@ -74,6 +75,12 @@ const tippe = async (loc) => {
   await tippe(page.getByRole('button',{name:'Als Entfernung übernehmen'}));
   await page.waitForTimeout(300);
   pruefe('erst auf Antippen', await page.getByLabel('Entfernung').inputValue(), '4,9');
+
+  console.log('\nMIT ENTFERNUNG IM FELD IST DER KASTEN WEG');
+  pruefe('kein Vorschlag mehr', await page.getByText(/AUS DER NEIGUNG/).count(), 0);
+  await page.getByLabel('Entfernung').fill(''); await page.waitForTimeout(300);
+  pruefe('und wieder da, sobald das Feld leer ist',
+    await page.getByText(/AUS DER NEIGUNG/).count(), 1);
 
   console.log('\nHANDYHÖHE GEHT IN DIE RECHNUNG');
   await page.getByLabel('Handyhöhe über dem Boden').fill('1,80'); await page.waitForTimeout(300);

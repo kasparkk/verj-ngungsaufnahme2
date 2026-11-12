@@ -213,6 +213,16 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
   const hoehe = baumHoehe(entfernung.replace(",", "."), u, o);
   const eintippen = vonHand || sensor === "nein";
 
+  /* Welcher Schritt ist gerade dran.
+
+     Zwei gleich aussehende Knoepfe zwingen dazu, sich die Reihenfolge zu
+     merken, und sagen nicht, warum unten nichts steht. Im Bestand, mit
+     kalten Haenden, ist das genau die Stelle, an der man zweimal dasselbe
+     festhaelt. Deshalb fuehrt die App jetzt: Sie sagt, was dran ist, und
+     hebt den Knopf hervor, der gemeint ist. */
+  const hatEntfernung = Number(String(entfernung).replace(",", ".")) > 0;
+  const schritt = u == null ? "fuss" : o == null ? "spitze" : "fertig";
+
   /* Vorschlag fuer die Entfernung aus dem Fusswinkel. Erscheint erst, wenn
      der Fuss angepeilt ist - vorher gibt es nichts zu rechnen. */
   const schaetzung = entfernungAusNeigung(handyhoehe.replace(",", "."), u);
@@ -238,6 +248,20 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
     borderRadius: 12,
     padding: "14px 0",
     fontSize: 14,
+    cursor: "pointer",
+  });
+
+  /* Gefuellt heisst "jetzt tippen", umrandet heisst "steht schon" - dieselbe
+     Sprache wie beim "+5" in den Zaehlboxen. */
+  const peilKnopf = (dran) => ({
+    flex: 1,
+    background: dran ? farben.unverb : "transparent",
+    border: `1px solid ${dran ? farben.unverb : farben.line}`,
+    color: dran ? farben.bg : farben.text,
+    borderRadius: 12,
+    padding: "14px 0",
+    fontSize: 14,
+    fontWeight: dran ? 700 : 400,
     cursor: "pointer",
   });
 
@@ -392,8 +416,13 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
 
         {/* Schaetzung aus dem Fusswinkel. Steht bewusst UNTER dem Feld und
             traegt sich nicht von selbst ein: Sie ist ein Vorschlag, und
-            jenseits weniger Meter ein schlechter. */}
-        {schaetzung && (
+            jenseits weniger Meter ein schlechter.
+
+            Nur sichtbar, solange keine Entfernung dasteht. Wer geschritten
+            oder gemessen hat, braucht keinen Vorschlag - und erst recht
+            keine rote Warnung darueber, dass der Vorschlag nicht taugt,
+            den er gar nicht benutzt. */}
+        {schaetzung && !hatEntfernung && (
           <div
             style={{
               background: farben.surface,
@@ -595,7 +624,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
                 {t("NEIGUNG")}
               </div>
               <div style={{ fontSize: 40, fontWeight: 800, color: farben.text, lineHeight: 1.1 }}>
-                {winkel == null ? "–" : `${winkel.toFixed(1)}°`}
+                {winkel == null ? "–" : `${nk1(winkel)}°`}
               </div>
               {/* Sagt, wann sich das Antippen lohnt. Ohne das taeuscht die
                   geglaettete Zahl Ruhe vor, die gar nicht da ist. */}
@@ -610,23 +639,59 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
                   {zittern <= 1
                     ? t("ruhig")
                     : t("wackelt ±{grad}° – ruhiger halten", {
-                        grad: (zittern / 2).toFixed(1),
+                        grad: nk1(zittern / 2),
                       })}
                 </div>
               )}
             </div>
           </div>
+          {/* Was jetzt dran ist - direkt ueber den Knoepfen, dort schaut
+              man ohnehin hin, wenn man vom Fadenkreuz herunterblickt. */}
+          <div
+            style={{
+              textAlign: "center",
+              fontSize: 13,
+              fontWeight: 700,
+              marginBottom: 8,
+              lineHeight: 1.4,
+              color:
+                schritt === "fertig" && hoehe != null
+                  ? farben.unverb
+                  : schritt === "fertig"
+                    ? farben.verb
+                    : farben.text,
+            }}
+          >
+            {schritt === "fuss"
+              ? t("1 · Stammfuß anpeilen")
+              : schritt === "spitze"
+                ? t("2 · Spitze anpeilen")
+                : hoehe != null
+                  ? t("✓ Fertig – die Höhe steht unten")
+                  : hatEntfernung
+                    ? t("Die Spitze liegt unter dem Fuß – einen der beiden neu anpeilen")
+                    : t("Jetzt fehlt nur noch die Entfernung oben")}
+          </div>
+
           <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-            <button onClick={() => setUnten(winkel)} style={knopf(unten != null)}>
+            <button
+              onClick={() => setUnten(winkel)}
+              aria-label={t("Fuß festhalten")}
+              style={peilKnopf(schritt === "fuss")}
+            >
               {t("Fuß")}
-              <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>
-                {unten == null ? t("anpeilen") : `${unten.toFixed(1)}°`}
+              <div style={{ fontSize: 11, opacity: 0.75, marginTop: 2 }}>
+                {unten == null ? t("anpeilen") : `✓ ${nk1(unten)}°`}
               </div>
             </button>
-            <button onClick={() => setOben(winkel)} style={knopf(oben != null)}>
+            <button
+              onClick={() => setOben(winkel)}
+              aria-label={t("Spitze festhalten")}
+              style={peilKnopf(schritt === "spitze")}
+            >
               {t("Spitze")}
-              <div style={{ fontSize: 11, opacity: 0.7, marginTop: 2 }}>
-                {oben == null ? t("anpeilen") : `${oben.toFixed(1)}°`}
+              <div style={{ fontSize: 11, opacity: 0.75, marginTop: 2 }}>
+                {oben == null ? t("anpeilen") : `✓ ${nk1(oben)}°`}
               </div>
             </button>
           </div>
@@ -651,12 +716,12 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
             lineHeight: 1.1,
           }}
         >
-          {hoehe == null ? "–" : `${hoehe.toFixed(1)} m`}
+          {hoehe == null ? "–" : `${nk1(hoehe)} m`}
         </div>
         {hoehe != null && (
           <div style={{ fontSize: 11, color: farben.muted, marginTop: 4 }}>
             {t("±{m} m bei 5 % Fehler in der Entfernung", {
-              m: (hoehe * 0.05).toFixed(1),
+              m: nk1(hoehe * 0.05),
             })}
           </div>
         )}

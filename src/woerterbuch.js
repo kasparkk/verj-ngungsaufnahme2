@@ -786,6 +786,21 @@ export const WOERTER = {
     "Enter {was}",
   "hier Entfernung eintragen":
     "enter the distance here",
+  // Der gefuehrte Ablauf beim Peilen
+  "1 · Stammfuß anpeilen":
+    "1 · Sight the base of the trunk",
+  "2 · Spitze anpeilen":
+    "2 · Sight the top",
+  "✓ Fertig – die Höhe steht unten":
+    "✓ Done – the height is below",
+  "Die Spitze liegt unter dem Fuß – einen der beiden neu anpeilen":
+    "The top is below the base – sight one of the two again",
+  "Jetzt fehlt nur noch die Entfernung oben":
+    "Only the distance above is missing now",
+  "Fuß festhalten":
+    "Hold the base",
+  "Spitze festhalten":
+    "Hold the top",
 };
 
 /* Werte des amtlichen Aufnahmebogens - ebenfalls nur fuer die ANZEIGE.

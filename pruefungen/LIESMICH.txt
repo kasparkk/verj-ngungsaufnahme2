@@ -42,6 +42,12 @@ felder.mjs      Keine Beispielzahlen in leeren Feldern.
                 eingetragene 30. Die Prüfung findet solche Platzhalter
                 und Felder ohne Bezeichnung.
 
+peilen.cjs      Der geführte Ablauf beim Peilen, mit nachgestelltem
+                Sensor. Gleicher Aufruf wie grenzstamm.cjs. Prüft, dass
+                die App in jeder Lage sagt, was dran ist - auch in den
+                beiden Fällen, in denen vorher nur ein stummes "-"
+                stand: Entfernung fehlt, Spitze unter dem Fuß.
+
 englisch.cjs    Die englische Fassung in der Oberfläche. Gleicher Aufruf
                 wie grenzstamm.cjs. Prüft neben den Texten vor allem,
                 dass die Sprache NICHT in die Daten durchschlägt:
