@@ -368,6 +368,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
           value={entfernung}
           onChange={(e) => setEntfernung(e.target.value)}
           inputMode="decimal"
+          placeholder={t("hier Entfernung eintragen")}
           aria-label={t("Entfernung")}
         />
         {arKann && (

@@ -784,6 +784,8 @@ export const WOERTER = {
     "e.g. {was}",
   "{was} eintragen":
     "Enter {was}",
+  "hier Entfernung eintragen":
+    "enter the distance here",
 };
 
 /* Werte des amtlichen Aufnahmebogens - ebenfalls nur fuer die ANZEIGE.

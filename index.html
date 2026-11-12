@@ -16,6 +16,14 @@
     <style>
       html, body, #root { margin: 0; height: 100%; background: #12160F; }
       * { -webkit-tap-highlight-color: transparent; }
+      /* Ein Platzhalter ist ein Hinweis, kein Wert. Die Eingabefelder sind
+         teils gross und fett - der Hinweis darin soll das nicht sein, sonst
+         liest man ihn im Vorbeigehen als Inhalt. */
+      input::placeholder, textarea::placeholder {
+        font-weight: 400;
+        font-size: 13px;
+        opacity: 0.75;
+      }
       /* Nur die Ergebnis-Ansicht kommt in den Ausdruck bzw. ins PDF,
          und zwar schwarz auf weiss statt im dunklen Bildschirm-Design. */
       @media print {
