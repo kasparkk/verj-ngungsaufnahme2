@@ -12,6 +12,7 @@ import {
   entfernungAusNeigung, NEIGUNG_GRENZE_M,
 } from "../src/baum/hoehe.js";
 import { grenzRadius, zaehltMit, grundflaeche, volumen, formzahlFuer, wzpAuswerten } from "../src/baum/berechnung.js";
+import { stups, FESTGEHALTEN, FERTIG } from "../src/baum/stups.js";
 
 let ok = 0;
 let schlecht = 0;
@@ -165,6 +166,31 @@ pruefe("Müll statt Stufen wirft nichts um", JSON.stringify(laden().formzahlStuf
 roh = JSON.stringify({ formzahlStufen: { Fichte: [null, 5, { bis: 15, wert: 0.55 }] } });
 pruefe("kaputte Zeilen fallen heraus",
   JSON.stringify(laden().formzahlStufen), '{"Fichte":[{"bis":"15","wert":"0.55"}]}');
+
+titel("STUPS");
+/* Der Stups darf nie etwas abbrechen: Auf dem iPhone gibt es ihn nicht,
+   und manche Browser werfen, wenn die Seite im Hintergrund liegt. */
+/* navigator hat in Node wie im Browser nur einen Getter - schlichtes
+   Zuweisen laeuft ins Leere bzw. wirft. Dieselbe Falle wie damals bei
+   navigator.xr. */
+const setzeNavigator = (wert) =>
+  Object.defineProperty(globalThis, "navigator", { configurable: true, value: wert });
+
+setzeNavigator({});
+pruefe("ohne vibrate() still und ohne Fehler", stups(FESTGEHALTEN), false);
+
+const gerufen = [];
+setzeNavigator({ vibrate: (m) => (gerufen.push(m), true) });
+pruefe("mit vibrate() wird gestupst", stups(FESTGEHALTEN), true);
+pruefe("und zwar genau einmal", gerufen.length, 1);
+pruefe("kurz beim Festhalten", FESTGEHALTEN, 30);
+pruefe("zweimal beim Fertigwerden", FERTIG.join(","), "30,70,30");
+
+setzeNavigator({ vibrate: () => false });
+pruefe("abgelehnter Stups meldet sich ehrlich", stups(FERTIG), false);
+
+setzeNavigator({ vibrate: () => { throw new Error("Hintergrund"); } });
+pruefe("ein werfender Browser bricht nichts ab", stups(FERTIG), false);
 
 console.log(`\nERGEBNIS: ${ok} in Ordnung, ${schlecht} Fehler`);
 process.exit(schlecht ? 1 : 0);

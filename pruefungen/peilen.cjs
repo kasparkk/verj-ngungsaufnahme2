@@ -48,7 +48,16 @@ const neige = async (page, grad) => {
   const page=await ctx.newPage();
   page.on('pageerror',e=>console.log('PAGEERROR:',e.message));
   await page.route('**/rest/v1/**',r=>r.fulfill({status:200,body:'[]'}));
-  await page.addInitScript(()=>localStorage.setItem('app:seite','verjuengung'));
+  await page.addInitScript(()=>{
+    localStorage.setItem('app:seite','verjuengung');
+    /* vibrate() sitzt auf dem Prototyp - schlichtes Zuweisen geht ins
+       Leere, deshalb defineProperty. (Dieselbe Falle wie bei navigator.xr.) */
+    window.__stupse = [];
+    Object.defineProperty(navigator, 'vibrate', {
+      configurable: true,
+      value: (m) => { window.__stupse.push(String(m)); return true; },
+    });
+  });
   await page.goto('http://127.0.0.1:8919/index.html',{waitUntil:'load'});
   await page.waitForTimeout(700);
   await page.getByRole('button',{name:'Baummessung'}).click(); await page.waitForTimeout(400);
@@ -66,6 +75,7 @@ const neige = async (page, grad) => {
     (await page.getByRole('button',{name:'Fuß festhalten'}).innerText()).includes('anpeilen'), true);
 
   console.log('\nSCHRITT 2');
+  const stupse = () => page.evaluate(() => window.__stupse.slice());
   await neige(page, -10);
   await tippe(page.getByRole('button',{name:'Fuß festhalten'}));
   await page.waitForTimeout(200);
@@ -73,6 +83,7 @@ const neige = async (page, grad) => {
   pruefe('der Fuß ist abgehakt',
     (await page.getByRole('button',{name:'Fuß festhalten'}).innerText()).includes('✓ -10,0°'), true);
   pruefe('Schritt 1 steht nicht mehr da', await page.getByText('1 · Stammfuß anpeilen').count(), 0);
+  pruefe('es hat gestupst', (await stupse()).join(" | "), '30');
 
   console.log('\nDANACH FEHLT DIE ENTFERNUNG - UND DAS STEHT AUCH DA');
   await neige(page, 45);
@@ -82,6 +93,9 @@ const neige = async (page, grad) => {
     await page.getByText('Jetzt fehlt nur noch die Entfernung oben').count(), 1);
   pruefe('Höhe steht noch nicht', await page.getByText(/^\d+,\d m$/).count(), 0);
 
+  pruefe('zweiter Winkel: wieder ein kurzer Stups',
+    (await stupse()).join(" | "), '30 | 30');
+
   console.log('\nMIT ENTFERNUNG IST ES FERTIG');
   await page.getByLabel('Entfernung').fill('20'); await page.waitForTimeout(300);
   pruefe('meldet fertig', await page.getByText('✓ Fertig – die Höhe steht unten').count(), 1);
@@ -89,6 +103,9 @@ const neige = async (page, grad) => {
   pruefe('und die Höhe stimmt', await page.getByText('23,5 m').count(), 1);
   pruefe('Übernehmen ist frei',
     await page.getByRole('button',{name:'Übernehmen'}).isDisabled(), false);
+  // Zwei Stüße zum Schluss - das spürt man, ohne hinzusehen.
+  pruefe('und zwei Stüße zum Fertigwerden',
+    (await stupse()).join(" | "), '30 | 30 | 30,70,30');
 
   console.log('\nVERTAUSCHT: DIE APP SAGT ES, STATT STUMM ZU BLEIBEN');
   await neige(page, 50);

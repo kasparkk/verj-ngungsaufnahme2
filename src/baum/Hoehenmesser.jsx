@@ -16,6 +16,7 @@ import {
 import HoeheSkizze from "./HoeheSkizze.jsx";
 import ArEntfernung, { arMoeglich } from "./ArEntfernung.jsx";
 import { useT, zahlOrt } from "../sprache.js";
+import { stups, FESTGEHALTEN, FERTIG } from "./stups.js";
 import Markiert from "../komponenten/Markiert.jsx";
 
 /* Hoehenmessung mit dem Neigungssensor des Handys.
@@ -206,12 +207,30 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
     }
   };
 
-  if (!offen) return null;
-
+  /* Vor dem fruehen Ausstieg, nicht danach: Der Stups-Effekt weiter unten
+     braucht die Hoehe, und Haken duerfen nicht hinter einem return stehen -
+     React zaehlt sie sonst je nach Durchlauf verschieden. */
   const u = vonHand || sensor === "nein" ? Number(untenText.replace(",", ".")) : unten;
   const o = vonHand || sensor === "nein" ? Number(obenText.replace(",", ".")) : oben;
-  const hoehe = baumHoehe(entfernung.replace(",", "."), u, o);
+  const hoehe = baumHoehe(String(entfernung).replace(",", "."), u, o);
   const eintippen = vonHand || sensor === "nein";
+
+  /* Zwei Stuepse, sobald die Hoehe zum ersten Mal dasteht - egal, was
+     zuletzt gefehlt hat: der zweite Winkel oder die Entfernung. Als
+     Wirkung eines Zustands, nicht im Knopf, sonst muesste jeder Weg
+     dorthin es einzeln melden. */
+  const hatteHoehe = useRef(false);
+  useEffect(() => {
+    if (!offen) {
+      hatteHoehe.current = false;
+      return;
+    }
+    const jetztDa = hoehe != null;
+    if (jetztDa && !hatteHoehe.current) stups(FERTIG);
+    hatteHoehe.current = jetztDa;
+  }, [offen, hoehe]);
+
+  if (!offen) return null;
 
   /* Welcher Schritt ist gerade dran.
 
@@ -675,7 +694,10 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
 
           <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
             <button
-              onClick={() => setUnten(winkel)}
+              onClick={() => {
+                setUnten(winkel);
+                if (winkel != null) stups(FESTGEHALTEN);
+              }}
               aria-label={t("Fuß festhalten")}
               style={peilKnopf(schritt === "fuss")}
             >
@@ -685,7 +707,10 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen }) {
               </div>
             </button>
             <button
-              onClick={() => setOben(winkel)}
+              onClick={() => {
+                setOben(winkel);
+                if (winkel != null) stups(FESTGEHALTEN);
+              }}
               aria-label={t("Spitze festhalten")}
               style={peilKnopf(schritt === "spitze")}
             >
