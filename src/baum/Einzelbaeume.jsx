@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { farben } from "../konfiguration.js";
 import Hoehenmesser from "./Hoehenmesser.jsx";
-import { zahl, volumen, auswerten, formzahlFuer } from "./berechnung.js";
+import { zahl, volumen, auswerten, formzahlFuer, flaechenGesamt } from "./berechnung.js";
 import { useT, artName, zahlOrt } from "../sprache.js";
 import ArtErgaenzen from "./ArtErgaenzen.jsx";
+import { leereFlaeche } from "./speicher.js";
 import { useEinstellungen } from "../einstellungen.js";
 import { stups, FESTGEHALTEN } from "../stups.js";
 
@@ -16,15 +17,31 @@ const nk = (wert, stellen = 2) =>
 export default function Einzelbaeume({
   arten,
   onArtHinzu,
-  flaeche,
-  setFlaeche,
+  flaechen,
+  setFlaechen,
+  aktiv,
+  setAktiv,
   formzahlen,
   formzahlStufen,
-  baeume,
-  setBaeume,
   setHinweis,
 }) {
   const t = useT();
+  /* Mit welcher Flaeche gerade gearbeitet wird. Alles darunter - Groesse,
+     Baumliste, Ergebnis - gehoert zu dieser einen; die anderen liegen
+     daneben und warten. */
+  const dran = flaechen[aktiv] ?? flaechen[0];
+  const flaeche = dran.groesse;
+  const baeume = dran.baeume;
+  const setFlaeche = (wert) =>
+    setFlaechen((alle) => alle.map((f) => (f.id === dran.id ? { ...f, groesse: wert } : f)));
+  const setBaeume = (wie) =>
+    setFlaechen((alle) =>
+      alle.map((f) =>
+        f.id === dran.id
+          ? { ...f, baeume: typeof wie === "function" ? wie(f.baeume) : wie }
+          : f,
+      ),
+    );
   const [art, setArt] = useState(arten[0].name);
   const [bhd, setBhd] = useState("");
   // Offen oder nicht; der gemessene Wert landet im Hoehenfeld darunter.
@@ -70,6 +87,11 @@ export default function Einzelbaeume({
   }, [frisch]);
 
   const erg = auswerten(baeume, flaeche);
+  /* Alle Flaechen zusammen - die Zahl, die am Ende zaehlt. Gerechnet
+     wird mit der Summe der Flaechen, nicht als Mittel der einzelnen
+     Hochrechnungen. */
+  const ges = flaechenGesamt(flaechen);
+  const mehrere = flaechen.length > 1;
 
   const feldStil = {
     background: "transparent",
@@ -87,16 +109,93 @@ export default function Einzelbaeume({
   return (
     <>
     <div>
-      <div style={{ marginBottom: 14, maxWidth: 140 }}>
-        <div style={beschriftung}>{t("FLÄCHE m²")}</div>
-        <input
-          style={feldStil}
-          value={flaeche}
-          onChange={(e) => setFlaeche(e.target.value)}
-          inputMode="decimal"
-          placeholder={t("Fläche in m²")}
-          aria-label={t("FLÄCHE m²")}
-        />
+      {/* Die Flaechen der Aufnahme. Eine Einzelbaumaufnahme besteht
+          selten aus einer Probeflaeche; man steckt zwei oder drei ab und
+          rechnet sie zusammen hoch.
+
+          Der Knopf zeigt mit, wie viele Baeume darauf stehen - sonst
+          sieht man nicht, auf welcher man gerade zaehlt. */}
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ ...beschriftung, marginBottom: 6 }}>{t("FLÄCHEN")}</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {flaechen.map((f, i) => {
+            const dabei = i === aktiv;
+            return (
+              <button
+                key={f.id}
+                onClick={() => setAktiv(i)}
+                aria-pressed={dabei}
+                style={{
+                  background: dabei ? farben.unverb : "transparent",
+                  border: `1px solid ${dabei ? farben.unverb : farben.line}`,
+                  color: dabei ? farben.bg : farben.muted,
+                  borderRadius: 999,
+                  padding: "10px 14px",
+                  fontSize: 14,
+                  fontWeight: dabei ? 700 : 400,
+                  cursor: "pointer",
+                  WebkitTapHighlightColor: "transparent",
+                }}
+              >
+                {t("Fläche {n}", { n: i + 1 })}
+                <span style={{ opacity: 0.7, fontWeight: 400 }}>{` · ${f.baeume.length}`}</span>
+              </button>
+            );
+          })}
+          <button
+            onClick={() => {
+              setFlaechen((alle) => [...alle, leereFlaeche(flaeche)]);
+              setAktiv(flaechen.length);
+            }}
+            style={{
+              background: "transparent",
+              border: `1px dashed ${farben.line}`,
+              color: farben.text,
+              borderRadius: 999,
+              padding: "10px 14px",
+              fontSize: 14,
+              cursor: "pointer",
+            }}
+          >
+            {t("+ Fläche")}
+          </button>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 12, marginBottom: 14 }}>
+        <div style={{ maxWidth: 140, flex: 1 }}>
+          <div style={beschriftung}>{t("FLÄCHE m²")}</div>
+          <input
+            style={feldStil}
+            value={flaeche}
+            onChange={(e) => setFlaeche(e.target.value)}
+            inputMode="decimal"
+            placeholder={t("Fläche in m²")}
+            aria-label={t("FLÄCHE m²")}
+          />
+        </div>
+        {/* Herausnehmen geht nur, solange kein Baum darauf steht: Eine
+            Flaeche mit Baeumen zu loeschen waere ein Tipp, der eine
+            halbe Aufnahme kostet, und es gibt kein Zurueck. */}
+        {flaechen.length > 1 && baeume.length === 0 && (
+          <button
+            onClick={() => {
+              setFlaechen((alle) => alle.filter((f) => f.id !== dran.id));
+              setAktiv(Math.max(0, aktiv - 1));
+            }}
+            aria-label={t("Diese Fläche entfernen")}
+            style={{
+              background: "transparent",
+              border: "none",
+              color: farben.muted,
+              fontSize: 12,
+              padding: "8px 0",
+              cursor: "pointer",
+            }}
+          >
+            {t("Fläche entfernen")}
+          </button>
+        )}
       </div>
 
       <div style={{ background: farben.surface, borderRadius: 14, padding: "12px 14px", marginBottom: 14 }}>
@@ -230,6 +329,10 @@ export default function Einzelbaeume({
       {erg.anzahl > 0 && (
         <div style={{ background: farben.surface, borderRadius: 14, padding: "12px 14px", marginBottom: 14 }}>
           <div style={{ ...beschriftung, marginBottom: 8 }}>
+            {/* Bei mehreren Flaechen muss dabeistehen, von welcher die
+                Zahlen sind - sonst liest man das Ergebnis der einen als
+                das der ganzen Aufnahme. */}
+            {mehrere ? `${t("Fläche {n}", { n: aktiv + 1 })} · ` : ""}
             {erg.anzahl === 1
               ? t("ERGEBNIS · {n} Baum", { n: erg.anzahl })
               : t("ERGEBNIS · {n} Bäume", { n: erg.anzahl })}
@@ -267,6 +370,65 @@ export default function Einzelbaeume({
               d: nk(erg.dg, 1),
             })}
           </div>
+        </div>
+      )}
+
+      {/* Alle Flaechen zusammen. Das ist die Zahl, die am Ende in den
+          Bogen kommt - die einzelne Flaeche ist nur eine Stichprobe
+          davon. Steht deshalb hervorgehoben darunter. */}
+      {mehrere && ges.anzahl > 0 && (
+        <div
+          style={{
+            border: `1px solid ${farben.unverb}`,
+            borderRadius: 14,
+            padding: "12px 14px",
+            marginBottom: 14,
+          }}
+        >
+          <div style={{ ...beschriftung, marginBottom: 8, color: farben.unverb }}>
+            {ges.anzahl === 1
+              ? t("ALLE FLÄCHEN · {n} Baum auf {m} m²", {
+                  n: ges.anzahl,
+                  m: nk(ges.flaecheGesamt, 0),
+                })
+              : t("ALLE FLÄCHEN · {n} Bäume auf {m} m²", {
+                  n: ges.anzahl,
+                  m: nk(ges.flaecheGesamt, 0),
+                })}
+          </div>
+
+          {ges.jeHektar ? (
+            <div style={{ display: "flex", gap: 14 }}>
+              <div style={{ flex: 1 }}>
+                <div style={kennzahl}>{nk(ges.jeHektar.vorrat, 1)}</div>
+                <div style={{ fontSize: 10, color: farben.muted }}>{t("Vorrat fm/ha")}</div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={kennzahl}>{nk(ges.jeHektar.grundflaeche, 1)}</div>
+                <div style={{ fontSize: 10, color: farben.muted }}>{t("Grundfläche m²/ha")}</div>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={kennzahl}>{nk(ges.jeHektar.staemme, 0)}</div>
+                <div style={{ fontSize: 10, color: farben.muted }}>{t("Stämme/ha")}</div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ fontSize: 12, color: farben.verb }}>
+              {t("Fläche eintragen, dann wird auf Hektar hochgerechnet.")}
+            </div>
+          )}
+
+          {/* Wird gerechnet, ohne es zu sagen, stimmt die Zahl nicht und
+              niemand sieht warum. */}
+          {ges.ohneGroesse > 0 && (
+            <div style={{ fontSize: 11, color: farben.verb, marginTop: 8, lineHeight: 1.5 }}>
+              {ges.ohneGroesse === 1
+                ? t("Eine Fläche hat keine Größe – ihre Bäume sind hier nicht mitgerechnet.")
+                : t("{n} Flächen haben keine Größe – ihre Bäume sind hier nicht mitgerechnet.", {
+                    n: ges.ohneGroesse,
+                  })}
+            </div>
+          )}
         </div>
       )}
 

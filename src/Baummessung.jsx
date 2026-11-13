@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { farben } from "./konfiguration.js";
-import { zahl, grundflaeche, volumen, mittel, wzpAuswerten, alleArten } from "./baum/berechnung.js";
+import { zahl, grundflaeche, volumen, mittel, wzpAuswerten, alleArten, flaechenGesamt } from "./baum/berechnung.js";
 import { laden, speichern, leererStand } from "./baum/speicher.js";
 import { baueXlsx } from "./xlsx.js";
 import Winkelzaehlprobe from "./baum/Winkelzaehlprobe.jsx";
@@ -82,7 +82,8 @@ export default function Baummessung() {
      gezaehlt hat. Sonst stuenden Zahlen zu einer Art da, die es in der
      Liste nicht mehr gibt. */
   const artBenutzt = (name) =>
-    stand.wzp.arten.some((a) => a.name === name) || stand.baeume.some((b) => b.art === name);
+    stand.wzp.arten.some((a) => a.name === name) ||
+    stand.flaechen.some((f) => f.baeume.some((b) => b.art === name));
 
   const artWeg = (name) => {
     if (artBenutzt(name)) {
@@ -98,8 +99,12 @@ export default function Baummessung() {
   const setzeFeld = (feld) => (wert) => setStand((alt) => ({ ...alt, [feld]: wert }));
   const setWzp = (wie) =>
     setStand((alt) => ({ ...alt, wzp: typeof wie === "function" ? wie(alt.wzp) : wie }));
-  const setBaeume = (wie) =>
-    setStand((alt) => ({ ...alt, baeume: typeof wie === "function" ? wie(alt.baeume) : wie }));
+  const setFlaechen = (wie) =>
+    setStand((alt) => ({ ...alt, flaechen: typeof wie === "function" ? wie(alt.flaechen) : wie }));
+  /* Die aktive Flaeche darf nie ins Leere zeigen - auch nicht, wenn die
+     letzte entfernt wurde oder ein alter Stand weniger Flaechen hat. */
+  const flaecheAktiv = Math.min(stand.flaecheAktiv ?? 0, stand.flaechen.length - 1);
+  const setFlaecheAktiv = (i) => setStand((alt) => ({ ...alt, flaecheAktiv: i }));
 
   /* Standort der Messung - nur auf Antippen. Von selbst zu orten waere hier
      falsch: wer die Formzahlen anschaut oder eine alte Messung noch einmal
@@ -169,21 +174,26 @@ export default function Baummessung() {
       }
       auswertung = { ...erg, zaehlfaktor: zahl(stand.wzp.zaehlfaktor) || 4 };
     } else {
-      if (!stand.baeume.length) {
+      const alleBaeume = stand.flaechen.flatMap((f) => f.baeume);
+      if (!alleBaeume.length) {
         setHinweis(t("Noch keine Bäume eingetragen"));
         return;
       }
-      const flaeche = zahl(stand.flaeche) || 0;
-      const gGesamt = stand.baeume.reduce((s, b) => s + grundflaeche(b.bhd), 0);
-      const vGesamt = stand.baeume.reduce((s, b) => s + volumen(b.bhd, b.hoehe, b.formzahl), 0);
+      /* Alle Probeflaechen zusammen: Baeume durch die Summe der
+         Flaechen, nicht der Mittelwert der Einzelhochrechnungen. */
+      const ges = flaechenGesamt(stand.flaechen);
+      const flaeche = ges.flaecheGesamt || 0;
+      const gGesamt = alleBaeume.reduce((s, b) => s + grundflaeche(b.bhd), 0);
+      const vGesamt = alleBaeume.reduce((s, b) => s + volumen(b.bhd, b.hoehe, b.formzahl), 0);
       auswertung = {
-        baeume: stand.baeume,
+        baeume: alleBaeume,
         flaeche: flaeche || null,
+        anzahlFlaechen: stand.flaechen.length,
         gGesamt,
         vGesamt,
-        gHa: flaeche ? (gGesamt * 10000) / flaeche : null,
-        vHa: flaeche ? (vGesamt * 10000) / flaeche : null,
-        nHa: flaeche ? (stand.baeume.length * 10000) / flaeche : null,
+        gHa: ges.jeHektar ? ges.jeHektar.grundflaeche : null,
+        vHa: ges.jeHektar ? ges.jeHektar.vorrat : null,
+        nHa: ges.jeHektar ? ges.jeHektar.staemme : null,
       };
     }
 
@@ -225,24 +235,32 @@ export default function Baummessung() {
         ]),
       ];
     } else {
-      if (!stand.baeume.length) {
+      if (!stand.flaechen.some((f) => f.baeume.length)) {
         setHinweis(t("Noch keine Bäume eingetragen"));
         return;
       }
+      /* Die Flaeche steht als eigene Spalte dabei: Ohne sie liessen sich
+         die Zeilen zweier Probeflaechen in der Tabelle nicht mehr
+         auseinanderhalten. Sie heisst nach ihrer Nummer, nicht nach dem
+         uebersetzten Wort - die Datei soll in beiden Sprachen gleich
+         aussehen. */
       zeilen = [
-        ["Ort", "Verfahren", "Flaeche_m2", "Baumart", "BHD_cm", "Hoehe_m", "Formzahl",
+        ["Ort", "Verfahren", "Flaeche_Nr", "Flaeche_m2", "Baumart", "BHD_cm", "Hoehe_m", "Formzahl",
          "Grundflaeche_m2", "Volumen_m3"],
-        ...stand.baeume.map((b) => [
-          stand.ort,
-          "Einzelbaeume",
-          zahl(stand.flaeche),
-          b.art,
-          zahl(b.bhd),
-          zahl(b.hoehe),
-          zahl(b.formzahl),
-          Math.round(grundflaeche(b.bhd) * 10000) / 10000,
-          Math.round(volumen(b.bhd, b.hoehe, b.formzahl) * 1000) / 1000,
-        ]),
+        ...stand.flaechen.flatMap((f, i) =>
+          f.baeume.map((b) => [
+            stand.ort,
+            "Einzelbaeume",
+            i + 1,
+            zahl(f.groesse),
+            b.art,
+            zahl(b.bhd),
+            zahl(b.hoehe),
+            zahl(b.formzahl),
+            Math.round(grundflaeche(b.bhd) * 10000) / 10000,
+            Math.round(volumen(b.bhd, b.hoehe, b.formzahl) * 1000) / 1000,
+          ]),
+        ),
       ];
     }
 
@@ -376,12 +394,12 @@ export default function Baummessung() {
         <Einzelbaeume
           arten={arten}
           onArtHinzu={artHinzu}
-          flaeche={stand.flaeche}
-          setFlaeche={setzeFeld("flaeche")}
+          flaechen={stand.flaechen}
+          setFlaechen={setFlaechen}
+          aktiv={flaecheAktiv}
+          setAktiv={setFlaecheAktiv}
           formzahlen={stand.formzahlen}
           formzahlStufen={stand.formzahlStufen}
-          baeume={stand.baeume}
-          setBaeume={setBaeume}
           setHinweis={setHinweis}
         />
       )}

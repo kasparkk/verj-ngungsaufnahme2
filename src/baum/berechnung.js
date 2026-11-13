@@ -69,6 +69,28 @@ export function volumen(bhdCm, hoeheM, formzahl) {
 /* Auswertung ueber alle eingetragenen Baeume.
    flaecheM2 = aufgenommene Flaeche; nur damit ist die Hochrechnung je Hektar
    moeglich. */
+/* Mehrere Probeflaechen zusammen hochrechnen.
+
+   Richtig ist: alle Baeume durch die SUMME der Flaechen - nicht der
+   Mittelwert der einzelnen Hochrechnungen. Sonst zaehlt eine kleine
+   Flaeche mit drei Baeumen genauso schwer wie eine grosse mit dreissig.
+
+   Flaechen ohne eingetragene Groesse bleiben draussen: Ihre Baeume
+   wuerden die Dichte erhoehen, ohne Flaeche dazuzugeben. Wie viele es
+   sind, steht im Ergebnis - verschwiegen wird nichts. */
+export function flaechenGesamt(flaechen) {
+  const liste = Array.isArray(flaechen) ? flaechen : [];
+  const mitGroesse = liste.filter((f) => zahl(f.groesse) > 0);
+  const summeFlaeche = mitGroesse.reduce((s, f) => s + zahl(f.groesse), 0);
+  const baeume = mitGroesse.flatMap((f) => f.baeume ?? []);
+  return {
+    ...auswerten(baeume, summeFlaeche),
+    flaecheGesamt: summeFlaeche,
+    anzahlFlaechen: mitGroesse.length,
+    ohneGroesse: liste.filter((f) => zahl(f.groesse) <= 0 && (f.baeume ?? []).length > 0).length,
+  };
+}
+
 export function auswerten(baeume, flaecheM2) {
   const gueltig = baeume.filter((b) => zahl(b.bhd) > 0);
   const anzahl = gueltig.length;

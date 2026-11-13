@@ -42,7 +42,11 @@ export function baueGeoJsonMessung(stand, auswertung) {
     });
   } else {
     Object.assign(eigenschaften, {
+      /* Die Summe aller Probeflaechen, und wie viele es waren: Ohne die
+         Zahl liest man 1.250 m² als eine Flaeche und weiss nicht, wie
+         die Hochrechnung zustande kam. */
       flaeche_m2: auswertung.flaeche ?? null,
+      flaechen: auswertung.anzahlFlaechen ?? 1,
       baumarten: [...new Set(auswertung.baeume.map((b) => b.art).filter(Boolean))].join(", ") || null,
       baeume: auswertung.baeume.length,
       grundflaeche_m2: rund(auswertung.gGesamt, 4),

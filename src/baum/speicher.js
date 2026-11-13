@@ -42,10 +42,44 @@ export const leererStand = () => ({
   formzahlStufen: {},
   // Winkelzaehlprobe
   wzp: { zaehlfaktor: 4, arten: WZP_START.map(leereArt) },
-  // Einzelbaeume
-  flaeche: "500",
+  /* Einzelbaeume: mehrere Flaechen nebeneinander.
+
+     Eine Aufnahme besteht im Bestand selten aus einer einzigen
+     Probeflaeche - man steckt zwei, drei ab und rechnet sie zusammen
+     hoch. Jede haelt ihre eigene Groesse und ihre eigenen Baeume; einen
+     Namen bekommt sie nicht, sie heisst nach ihrer Stelle in der Liste
+     ("Fläche 1"). So bleibt der Name uebersetzbar und muss nicht
+     mitgespeichert werden. */
+  flaechen: [leereFlaeche()],
+  flaecheAktiv: 0,
+});
+
+export const leereFlaeche = (groesse = "500") => ({
+  id: `f${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`,
+  groesse,
   baeume: [],
 });
+
+/* Aeltere Staende kannten nur EINE Flaeche (flaeche + baeume). Sie wird
+   zur ersten Flaeche der Liste - niemand soll eine Aufnahme verlieren,
+   weil die App dazugelernt hat. */
+function flaechenLaden(daten) {
+  const roh = Array.isArray(daten.flaechen) ? daten.flaechen : null;
+  if (roh && roh.length) {
+    return roh.map((f, i) => ({
+      id: String(f?.id ?? `f${i}`),
+      groesse: String(f?.groesse ?? "500"),
+      baeume: Array.isArray(f?.baeume) ? f.baeume : [],
+    }));
+  }
+  return [
+    {
+      id: "f1",
+      groesse: String(daten.flaeche ?? "500"),
+      baeume: Array.isArray(daten.baeume) ? daten.baeume : [],
+    },
+  ];
+}
 
 /* Hoehenstufen aus dem Speicher holen.
 
@@ -103,8 +137,8 @@ export function laden() {
           alter: a.alter ?? "",
         })),
       },
-      flaeche: daten.flaeche ?? standard.flaeche,
-      baeume: Array.isArray(daten.baeume) ? daten.baeume : [],
+      flaechen: flaechenLaden(daten),
+      flaecheAktiv: 0,
     };
   } catch {
     return leererStand();
@@ -112,5 +146,5 @@ export function laden() {
 }
 
 export function speichern(stand) {
-  localStorage.setItem(SCHLUESSEL, JSON.stringify({ version: 2, ...stand }));
+  localStorage.setItem(SCHLUESSEL, JSON.stringify({ version: 3, ...stand }));
 }

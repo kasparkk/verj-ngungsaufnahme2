@@ -164,6 +164,25 @@ export const WOERTER = {
     "View the result for everyone",
   "ABTEILUNG":
     "COMPARTMENT",
+  // Einzelbaeume: mehrere Probeflaechen nebeneinander.
+  "FLÄCHEN":
+    "PLOTS",
+  "Fläche {n}":
+    "Plot {n}",
+  "+ Fläche":
+    "+ Plot",
+  "Diese Fläche entfernen":
+    "Remove this plot",
+  "Fläche entfernen":
+    "Remove plot",
+  "ALLE FLÄCHEN · {n} Baum auf {m} m²":
+    "ALL PLOTS · {n} tree on {m} m²",
+  "ALLE FLÄCHEN · {n} Bäume auf {m} m²":
+    "ALL PLOTS · {n} trees on {m} m²",
+  "Eine Fläche hat keine Größe – ihre Bäume sind hier nicht mitgerechnet.":
+    "One plot has no size – its trees are left out of this figure.",
+  "{n} Flächen haben keine Größe – ihre Bäume sind hier nicht mitgerechnet.":
+    "{n} plots have no size – their trees are left out of this figure.",
   "FLÄCHE m²":
     "AREA m²",
   "Kreis davor":
