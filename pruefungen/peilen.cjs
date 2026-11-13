@@ -163,6 +163,56 @@ const neige = async (page, grad) => {
   pruefe('die Entfernung bleibt stehen',
     await page.getByLabel('Entfernung').inputValue(), '20');
 
+  console.log('\nDER BILDSCHIRM HÄLT 60 WERTE JE SEKUNDE AUS');
+  /* Gemeldet: "sometimes the thing kinda freezes when doing the angle
+     thing". Ursache war, dass JEDES Sensorereignis den ganzen Messer neu
+     gezeichnet hat - auf Android sind das etwa 60 je Sekunde, mitsamt
+     Sucherbild. Nachgemessen: 103 Aktualisierungen in 1,5 s.
+
+     Gesammelt wird weiter jeder Wert (der Median lebt davon), gezeichnet
+     hoechstens zehnmal je Sekunde. Die Pruefung schickt 120 Ereignisse in
+     1,2 s und zaehlt, wie oft sich die Zahl auf dem Bildschirm aendert. */
+  const takt = await page.evaluate(async () => {
+    const feld = [...document.querySelectorAll('div')].find(
+      (d) => d.textContent.trim().endsWith('°') &&
+             d.textContent.trim().length < 10 &&
+             getComputedStyle(d).fontSize === '40px');
+    if (!feld) return -1;
+    let n = 0;
+    const beo = new MutationObserver(() => { n++; });
+    beo.observe(feld, { childList: true, characterData: true, subtree: true });
+    for (let i = 0; i < 120; i++) {
+      window.dispatchEvent(new (window.DeviceOrientationEvent || Event)('deviceorientation',
+        { beta: 80 + Math.sin(i / 6) * 6, gamma: 0, alpha: 180 }));
+      await new Promise((f) => setTimeout(f, 10));
+    }
+    await new Promise((f) => setTimeout(f, 300));
+    beo.disconnect();
+    return n;
+  });
+  pruefe(`${takt} Aktualisierungen statt 103 - hoechstens 25`, takt > 0 && takt <= 25, true);
+  pruefe('aber es bleibt nicht stehen', takt >= 5, true);
+
+  console.log('\nOHNE SUCHERBILD SAGT DIE APP ES UND BIETET EINEN ZWEITEN ANLAUF');
+  /* Im Pruefbrowser gibt es keine Kamera - dasselbe, was ein Nutzer
+     sieht, der die Freigabe ablehnt oder dessen Geraet die Kamera
+     gerade nicht hergibt. */
+  pruefe('sagt, dass es ohne Bild weitergeht',
+    await page.getByText(/Kein Sucherbild/).count(), 1);
+  pruefe('und bietet einen neuen Versuch an',
+    await page.getByRole('button',{name:'Sucher erneut starten'}).count(), 1);
+  /* Erst etwas festhalten - das Zurücksetzen oben hat beide Winkel
+     geleert. Ein neuer Kameraversuch darf sie nicht noch einmal
+     wegwerfen: Er laeuft durch denselben Effekt, der frueher beim
+     Schliessen aufgeraeumt hat. */
+  await neige(page, 40);
+  await tippe(page.getByRole('button',{name:'Spitze festhalten'}));
+  await page.waitForTimeout(250);
+  await tippe(page.getByRole('button',{name:'Sucher erneut starten'}));
+  await page.waitForTimeout(500);
+  pruefe('der Versuch wirft die festgehaltenen Winkel nicht weg',
+    (await page.getByRole('button',{name:'Spitze festhalten'}).innerText()).includes('✓ 40,0°'), true);
+
   console.log('\nBREITE');
   for (const w of [320, 390]) {
     await page.setViewportSize({width:w,height:900}); await page.waitForTimeout(300);

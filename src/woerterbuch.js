@@ -177,6 +177,10 @@ export const WOERTER = {
     "View the result for everyone",
   "ABTEILUNG":
     "COMPARTMENT",
+  "Kein Sucherbild. Gemessen wird trotzdem – der Winkel gehört zur Richtung der Rückkamera.":
+    "No viewfinder image. The measurement still works – the angle belongs to the direction the rear camera points.",
+  "Sucher erneut starten":
+    "Start the viewfinder again",
   // Neuer Bestand = neues Blatt, mit einem Weg zurueck.
   "Neue Aufnahme für „{neu}“ beginnen? Die Zahlen von „{alt}“ gehören zum alten Bestand.":
     "Start a new survey for “{neu}”? The figures from “{alt}” belong to the old stand.",

@@ -74,13 +74,30 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
   // Die Anleitung steht zugeklappt; wer sie braucht, tippt sie auf.
   const [anleitungOffen, setAnleitungOffen] = useState(false);
   const [kamera, setKamera] = useState("unbekannt"); // unbekannt|laeuft|nein
+  /* Hochzaehlen heisst: Sucher noch einmal starten. Als Zahl, nicht als
+     Schalter - so laesst er sich beliebig oft anstossen. */
+  const [kameraVersuch, setKameraVersuch] = useState(0);
   const videoRef = useRef(null);
   const stromRef = useRef(null);
 
+  /* Der Sensor liefert auf Android etwa 60 Werte je Sekunde. Jeder davon
+     hat bisher den ganzen Messer neu gezeichnet - mitsamt Sucherbild,
+     Schaetzung und Knoepfen. Nachgemessen waren das 103 Aktualisierungen
+     in 1,5 s; auf einem Mittelklassegeraet ist genau das das "kinda
+     freezes" aus dem Feldtest.
+
+     Gesammelt wird weiter jeder Wert - der Median lebt davon. Auf den
+     Bildschirm kommt er hoechstens zehnmal je Sekunde; schneller koennte
+     ein Mensch ohnehin nicht ablesen. */
+  const ANZEIGE_MS = 100;
+  const letzteAnzeige = useRef(0);
+
   const lesen = (e) => {
     if (e.beta == null) return;
-    kamAn.current = true;
-    setSensor("laeuft");
+    if (!kamAn.current) {
+      kamAn.current = true;
+      setSensor("laeuft");
+    }
     const roh = neigungAusBeta(e.beta);
     if (roh == null) return;
 
@@ -89,9 +106,16 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
     rohwerte.current = [...rohwerte.current, { zeit: jetzt, wert: roh }].filter(
       (w) => jetzt - w.zeit <= 800,
     );
+    if (jetzt - letzteAnzeige.current < ANZEIGE_MS) return;
+    letzteAnzeige.current = jetzt;
     setWinkel(geglaettet(rohwerte.current, jetzt));
     setZittern(unruhe(rohwerte.current, jetzt));
   };
+
+  /* Beim Festhalten zaehlt der frischeste Wert, nicht der zuletzt
+     gezeichnete: Die Anzeige hinkt um bis zu einen Zehntelmoment nach,
+     die Rohwerte nicht. */
+  const winkelJetzt = () => geglaettet(rohwerte.current, Date.now()) ?? winkel;
 
   useEffect(() => {
     if (!offen) return;
@@ -155,7 +179,16 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
       }
       try {
         const strom = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
+          /* Mit Groesse und Bildrate gefragt: Ohne diese Bitte liefern
+             manche Geraete 1080p oder mehr. Fuer ein Fadenkreuz auf einem
+             Handybildschirm ist das verschwendete Rechenzeit - und genau
+             die fehlt dann beim Zeichnen der Neigung. */
+          video: {
+            facingMode: { ideal: "environment" },
+            width: { ideal: 1280 },
+            height: { ideal: 960 },
+            frameRate: { ideal: 30, max: 30 },
+          },
           audio: false,
         });
         if (abgebrochen) {
@@ -163,7 +196,12 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
           return;
         }
         stromRef.current = strom;
-        if (videoRef.current) videoRef.current.srcObject = strom;
+        if (videoRef.current) {
+          videoRef.current.srcObject = strom;
+          /* autoPlay allein genuegt nicht ueberall: Nach dem Zurueckkommen
+             aus dem Hintergrund bleibt das Bild sonst stehen. */
+          videoRef.current.play?.().catch(() => {});
+        }
         setKamera("laeuft");
       } catch {
         if (!abgebrochen) setKamera("nein");
@@ -178,22 +216,54 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
       abgebrochen = true;
       stromRef.current?.getTracks().forEach((spur) => spur.stop());
       stromRef.current = null;
-      setKamera("unbekannt");
-      /* Alles zuruecksetzen, was zu DIESEM Baum gehoert.
-
-         Nicht nur Kosmetik: Blieben die Winkel stehen, koennte man beim
-         naechsten Baum nur "Spitze" antippen und bekaeme eine Hoehe, die
-         den Fuss vom vorigen Baum benutzt - ohne dass irgendetwas darauf
-         hinweist. Die Entfernung bleibt dagegen stehen; sie ist gross
-         sichtbar und oft dieselbe. */
-      rohwerte.current = [];
-      setWinkel(null);
-      setZittern(null);
-      setUnten(null);
-      setOben(null);
-      setUntenText("");
-      setObenText("");
     };
+  }, [offen, kameraVersuch]);
+
+  /* Zurueck aus dem Hintergrund: Android beendet die Kameraspur, wenn die
+     App weggeschaltet oder der Bildschirm gesperrt wird. Der Sucher bliebe
+     danach schwarz, ohne dass etwas darauf hinweist - gemeldet als "the
+     camera thing doesn't work that well". Also neu starten, sobald die
+     Seite wieder vorne ist. */
+  useEffect(() => {
+    if (!offen) return;
+    const wieder = () => {
+      if (document.visibilityState !== "visible") return;
+      const spur = stromRef.current?.getVideoTracks?.()[0];
+      if (!spur || spur.readyState === "ended" || spur.muted) {
+        setKameraVersuch((n) => n + 1);
+      } else {
+        videoRef.current?.play?.().catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", wieder);
+    return () => document.removeEventListener("visibilitychange", wieder);
+  }, [offen]);
+
+  /* Alles zuruecksetzen, was zu DIESEM Baum gehoert - beim Schliessen,
+     und nur dann.
+
+     Nicht nur Kosmetik: Blieben die Winkel stehen, koennte man beim
+     naechsten Baum nur "Spitze" antippen und bekaeme eine Hoehe, die den
+     Fuss vom vorigen Baum benutzt - ohne dass irgendetwas darauf
+     hinweist. Die Entfernung bleibt dagegen stehen; sie ist gross
+     sichtbar und oft dieselbe.
+
+     Getrennt vom Kamera-Effekt: Der laeuft auch bei jedem neuen Versuch,
+     und ein neuer Kameraversuch darf keine festgehaltenen Winkel
+     loeschen. */
+  useEffect(() => {
+    if (offen) return;
+    stromRef.current?.getTracks().forEach((spur) => spur.stop());
+    stromRef.current = null;
+    setKamera("unbekannt");
+    rohwerte.current = [];
+    letzteAnzeige.current = 0;
+    setWinkel(null);
+    setZittern(null);
+    setUnten(null);
+    setOben(null);
+    setUntenText("");
+    setObenText("");
   }, [offen]);
 
   const erlaubnisHolen = async () => {
@@ -603,6 +673,34 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
               )}
             </div>
           </div>
+
+          {/* Kein Sucher: Das darf nicht stumm bleiben. Gemessen wird auch
+              ohne Bild - aber wer die Kamera erwartet, soll wissen, woran
+              er ist, und es noch einmal versuchen koennen. Nach einer
+              abgelehnten Freigabe reicht dafuer oft ein zweiter Anlauf. */}
+          {kamera === "nein" && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, marginBottom: 8 }}>
+                {t("Kein Sucherbild. Gemessen wird trotzdem – der Winkel gehört zur Richtung der Rückkamera.")}
+              </div>
+              <button
+                onClick={() => setKameraVersuch((n) => n + 1)}
+                style={{
+                  width: "100%",
+                  background: "transparent",
+                  border: `1px solid ${farben.line}`,
+                  color: farben.text,
+                  borderRadius: 10,
+                  padding: "11px 0",
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+              >
+                {t("Sucher erneut starten")}
+              </button>
+            </div>
+          )}
+
           {/* Was jetzt dran ist - direkt ueber den Knoepfen, dort schaut
               man ohnehin hin, wenn man vom Fadenkreuz herunterblickt. */}
           <div
@@ -637,8 +735,9 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
           <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
             <button
               onClick={() => {
-                setOben(winkel);
-                if (winkel != null) stups(FESTGEHALTEN);
+                const w = winkelJetzt();
+                setOben(w);
+                if (w != null) stups(FESTGEHALTEN);
               }}
               aria-label={t("Spitze festhalten")}
               style={peilKnopf(schritt === "spitze")}
@@ -650,8 +749,9 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
             </button>
             <button
               onClick={() => {
-                setUnten(winkel);
-                if (winkel != null) stups(FESTGEHALTEN);
+                const w = winkelJetzt();
+                setUnten(w);
+                if (w != null) stups(FESTGEHALTEN);
               }}
               aria-label={t("Fuß festhalten")}
               style={peilKnopf(schritt === "fuss")}
