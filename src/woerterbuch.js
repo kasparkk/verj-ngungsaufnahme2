@@ -1000,8 +1000,8 @@ export const WOERTER = {
     "1 · Sight the top",
   "2 · Stammfuß anpeilen":
     "2 · Sight the base of the trunk",
-  "✓ Fertig – die Höhe steht unten":
-    "✓ Done – the height is below",
+  "✓ Fertig – zum Ändern einen der beiden antippen":
+    "✓ Done – tap either one to change it",
   "Die Spitze liegt unter dem Fuß – einen der beiden neu anpeilen":
     "The top is below the base – sight one of the two again",
   "Jetzt fehlt nur noch die Entfernung oben":

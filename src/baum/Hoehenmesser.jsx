@@ -117,6 +117,23 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
      die Rohwerte nicht. */
   const winkelJetzt = () => geglaettet(rohwerte.current, Date.now()) ?? winkel;
 
+  /* Winkel und Hoehe stehen VOR allen Haken - zwei von ihnen haengen
+     davon ab, ob die Messung schon steht, und was in einer
+     Abhaengigkeitsliste steht, wird beim Zeichnen gelesen, nicht erst
+     danach. (Erst andersherum versucht: Die Seite warf "Cannot access
+     before initialization" und blieb weiss.) */
+  const u = vonHand || sensor === "nein" ? Number(untenText.replace(",", ".")) : unten;
+  const o = vonHand || sensor === "nein" ? Number(obenText.replace(",", ".")) : oben;
+  const hoehe = baumHoehe(String(entfernung).replace(",", "."), u, o);
+  const eintippen = vonHand || sensor === "nein";
+
+  /* Steht die Hoehe, ist das Peilen vorbei: Sucher und Neigungsanzeige
+     haben nichts mehr zu sagen und nehmen den Platz weg, an dem das
+     Ergebnis und "Übernehmen" stehen. Solange eine Entfernung fehlt oder
+     die Spitze unter dem Fuss liegt, bleibt der Sucher - dann muss man
+     ja noch einmal peilen. */
+  const messungSteht = hoehe != null;
+
   useEffect(() => {
     if (!offen) return;
     setHandyhoehe(handyhoeheLaden());
@@ -169,7 +186,11 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
      Ohne Kamera - am Rechner, abgelehnte Freigabe - bleibt die Zahl allein
      stehen; gerechnet wird genauso. */
   useEffect(() => {
-    if (!offen) return;
+    /* Steht die Hoehe, laeuft die Kamera nicht weiter: Sie ist der
+       groesste Stromfresser im Bestand, und zu sehen ist sie dann
+       ohnehin nicht mehr. Wird einer der Winkel neu angepeilt, faellt
+       messungSteht zurueck und der Sucher startet von selbst. */
+    if (!offen || messungSteht) return;
     let abgebrochen = false;
 
     const starten = async () => {
@@ -217,7 +238,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
       stromRef.current?.getTracks().forEach((spur) => spur.stop());
       stromRef.current = null;
     };
-  }, [offen, kameraVersuch]);
+  }, [offen, kameraVersuch, messungSteht]);
 
   /* Zurueck aus dem Hintergrund: Android beendet die Kameraspur, wenn die
      App weggeschaltet oder der Bildschirm gesperrt wird. Der Sucher bliebe
@@ -280,13 +301,6 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
     }
   };
 
-  /* Vor dem fruehen Ausstieg, nicht danach: Der Stups-Effekt weiter unten
-     braucht die Hoehe, und Haken duerfen nicht hinter einem return stehen -
-     React zaehlt sie sonst je nach Durchlauf verschieden. */
-  const u = vonHand || sensor === "nein" ? Number(untenText.replace(",", ".")) : unten;
-  const o = vonHand || sensor === "nein" ? Number(obenText.replace(",", ".")) : oben;
-  const hoehe = baumHoehe(String(entfernung).replace(",", "."), u, o);
-  const eintippen = vonHand || sensor === "nein";
 
   /* Zwei Stuepse, sobald die Hoehe zum ersten Mal dasteht - egal, was
      zuletzt gefehlt hat: der zweite Winkel oder die Entfernung. Als
@@ -579,6 +593,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
         </div>
       ) : (
         <>
+          {!messungSteht && (
           <div
             style={{
               position: "relative",
@@ -673,12 +688,13 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
               )}
             </div>
           </div>
+          )}
 
           {/* Kein Sucher: Das darf nicht stumm bleiben. Gemessen wird auch
               ohne Bild - aber wer die Kamera erwartet, soll wissen, woran
               er ist, und es noch einmal versuchen koennen. Nach einer
               abgelehnten Freigabe reicht dafuer oft ein zweiter Anlauf. */}
-          {kamera === "nein" && (
+          {kamera === "nein" && !messungSteht && (
             <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, marginBottom: 8 }}>
                 {t("Kein Sucherbild. Gemessen wird trotzdem – der Winkel gehört zur Richtung der Rückkamera.")}
@@ -723,7 +739,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
               : schritt === "fuss"
                 ? t("2 · Stammfuß anpeilen")
                 : hoehe != null
-                  ? t("✓ Fertig – die Höhe steht unten")
+                  ? t("✓ Fertig – zum Ändern einen der beiden antippen")
                   : hatEntfernung
                     ? t("Die Spitze liegt unter dem Fuß – einen der beiden neu anpeilen")
                     : t("Jetzt fehlt nur noch die Entfernung oben")}
@@ -735,6 +751,13 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
           <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
             <button
               onClick={() => {
+                /* Steht die Messung, ist der Sucher weg - dann kann ein
+                   Antippen nicht "festhalten" heissen, sondern nur "den
+                   hier noch einmal". Der Sucher kommt damit zurueck. */
+                if (messungSteht) {
+                  setOben(null);
+                  return;
+                }
                 const w = winkelJetzt();
                 setOben(w);
                 if (w != null) stups(FESTGEHALTEN);
@@ -749,6 +772,10 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
             </button>
             <button
               onClick={() => {
+                if (messungSteht) {
+                  setUnten(null);
+                  return;
+                }
                 const w = winkelJetzt();
                 setUnten(w);
                 if (w != null) stups(FESTGEHALTEN);
@@ -992,7 +1019,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
           beim Peilen ohne Kamerabild. Beim Eintippen von Winkeln hilft er
           nicht, und sechs Zeilen Text schieben die Knoepfe nach unten.
           Alles Uebrige steht in "So geht's" - aufgeklappt, wer es will. */}
-      {kamera === "nein" && !eintippen && (
+      {kamera === "nein" && !eintippen && !messungSteht && (
         <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, marginTop: 16 }}>
           {t(
             "Ohne Kamerabild gilt: Der Winkel gehört zu der Richtung, in die die Rückkamera zeigt – also senkrecht zur Bildschirmfläche, nicht entlang der Oberkante.",

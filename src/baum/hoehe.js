@@ -20,13 +20,27 @@ export const GRAD = Math.PI / 180;
 
 /* Rueckgabe null heisst: damit laesst sich nicht rechnen. Der Aufrufer
    zeigt dann nichts an, statt eine Scheinzahl auszugeben. */
+/* Ein fehlender Winkel ist KEINE Null.
+
+   Number(null) ist 0, und damit rechnete die Hoehe bisher weiter: Wer
+   die Entfernung eingetragen und erst einen der beiden Winkel
+   festgehalten hatte, bekam eine Hoehe angezeigt, die den anderen
+   Winkel als "waagerecht" annahm - 20 m Entfernung und nur der Fuss bei
+   -10° ergaben 3,5 m. Eine Zahl, die niemand gemessen hat, ist
+   schlimmer als gar keine. */
+function winkelWert(x) {
+  if (x == null || x === "") return null;
+  const n = Number(x);
+  return Number.isFinite(n) ? n : null;
+}
+
 export function baumHoehe(entfernung, winkelUnten, winkelOben) {
   const d = Number(entfernung);
-  const u = Number(winkelUnten);
-  const o = Number(winkelOben);
+  const u = winkelWert(winkelUnten);
+  const o = winkelWert(winkelOben);
 
   if (!Number.isFinite(d) || d <= 0) return null;
-  if (!Number.isFinite(u) || !Number.isFinite(o)) return null;
+  if (u == null || o == null) return null;
   // Bei 90 Grad laeuft der Tangens ins Unendliche - sinnlos und gefaehrlich.
   if (Math.abs(u) >= 89 || Math.abs(o) >= 89) return null;
   // Die Spitze muss ueber dem Fuss liegen, sonst wurde verwechselt.

@@ -127,11 +127,10 @@ const neige = async (page, grad) => {
   pruefe('zweiter Winkel: wieder ein kurzer Stups',
     (await stupse()).join(" | "), '40 | 40');
 
-  console.log('\nMIT ENTFERNUNG IST ES FERTIG');
-  const vorEntfernung = await knopfY();
+  console.log('\nMIT ENTFERNUNG IST ES FERTIG - UND DER SUCHER GEHT WEG');
   await page.getByLabel('Entfernung').fill('20'); await page.waitForTimeout(300);
-  pruefe('und beim Eintragen der Entfernung auch', (await knopfY()) - vorEntfernung, 0);
-  pruefe('meldet fertig', await page.getByText('✓ Fertig – die Höhe steht unten').count(), 1);
+  pruefe('meldet fertig',
+    await page.getByText('✓ Fertig – zum Ändern einen der beiden antippen').count(), 1);
   // 20 · (tan 45° + tan 10°) = 23,53
   pruefe('und die Höhe stimmt', await page.getByText('23,5 m').count(), 1);
   pruefe('Übernehmen ist frei',
@@ -139,14 +138,39 @@ const neige = async (page, grad) => {
   // Zwei Stüße zum Schluss - das spürt man, ohne hinzusehen.
   pruefe('und zwei Stüße zum Fertigwerden',
     (await stupse()).join(" | "), '40 | 40 | 40,90,40');
+  /* Gewuenscht: "when the measuring is done the whole thing showing the
+     degree can go away". Danach stehen Hoehe und "Übernehmen" dort, wo
+     vorher der Sucher war - der Weg fuer den Daumen wird kuerzer. */
+  pruefe('die Neigung ist weg', await page.getByText('NEIGUNG',{exact:true}).count(), 0);
+  pruefe('der Sucher auch', await page.getByLabel('Sucher').count(), 0);
+  pruefe('die Peilknöpfe bleiben, mit ihren Werten',
+    (await page.getByRole('button',{name:'Spitze festhalten'}).innerText()).includes('✓ 45,0°'), true);
+
+  console.log('\nEINEN WINKEL ÄNDERN: ANTIPPEN HOLT DEN SUCHER ZURÜCK');
+  await tippe(page.getByRole('button',{name:'Spitze festhalten'}));
+  await page.waitForTimeout(250);
+  pruefe('die Neigung steht wieder da', await page.getByText('NEIGUNG',{exact:true}).count(), 1);
+  pruefe('und fragt nach der Spitze', await page.getByText('1 · Spitze anpeilen').count(), 1);
+  pruefe('die Höhe ist erst einmal weg', await page.getByText(/^\d+,\d m$/).count(), 0);
+  pruefe('der Fuß steht noch',
+    (await page.getByRole('button',{name:'Fuß festhalten'}).innerText()).includes('✓ -10,0°'), true);
+  await neige(page, 45);
+  await tippe(page.getByRole('button',{name:'Spitze festhalten'}));
+  await page.waitForTimeout(250);
+  pruefe('und wieder fertig', await page.getByText('23,5 m').count(), 1);
 
   console.log('\nVERTAUSCHT: DIE APP SAGT ES, STATT STUMM ZU BLEIBEN');
+  // Fuß neu anpeilen: einmal zum Freigeben, dann über der Spitze festhalten.
+  await tippe(page.getByRole('button',{name:'Fuß festhalten'}));
+  await page.waitForTimeout(250);
   await neige(page, 50);
   await tippe(page.getByRole('button',{name:'Fuß festhalten'}));   // Fuß über der Spitze
   await page.waitForTimeout(200);
   pruefe('nennt den Grund',
     await page.getByText('Die Spitze liegt unter dem Fuß – einen der beiden neu anpeilen').count(), 1);
   pruefe('keine Höhe', await page.getByText(/^\d+,\d m$/).count(), 0);
+  pruefe('der Sucher bleibt - es ist ja noch nichts fertig',
+    await page.getByText('NEIGUNG',{exact:true}).count(), 1);
   pruefe('Übernehmen gesperrt',
     await page.getByRole('button',{name:'Übernehmen',exact:true}).isDisabled(), true);
 
@@ -154,7 +178,8 @@ const neige = async (page, grad) => {
   await neige(page, -8);
   await tippe(page.getByRole('button',{name:'Fuß festhalten'}));
   await page.waitForTimeout(200);
-  pruefe('wieder fertig', await page.getByText('✓ Fertig – die Höhe steht unten').count(), 1);
+  pruefe('wieder fertig',
+    await page.getByText('✓ Fertig – zum Ändern einen der beiden antippen').count(), 1);
 
   console.log('\nZURÜCKSETZEN FÄNGT VON VORNE AN');
   await tippe(page.getByRole('button',{name:'Zurücksetzen'}));

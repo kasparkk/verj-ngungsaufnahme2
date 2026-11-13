@@ -33,6 +33,15 @@ pruefe("Entfernung 0", baumHoehe(0, -10, 45), null);
 pruefe("Spitze unter dem Fuß", baumHoehe(20, 45, -10), null);
 pruefe("senkrecht nach oben", baumHoehe(20, -10, 90), null);
 pruefe("Text statt Winkel", baumHoehe(20, "abc", 45), null);
+/* Ein fehlender Winkel ist keine Null. Number(null) ist 0 - damit kam aus
+   "Entfernung eingetragen, erst einen Winkel festgehalten" eine Hoehe
+   heraus, die den anderen Winkel als waagerecht annahm. Gefunden beim
+   Ausblenden des Suchers: Nach dem Freigeben der Spitze stand plotzlich
+   3,5 m da statt "–". */
+pruefe("Spitze fehlt noch", baumHoehe(20, -10, null), null);
+pruefe("Fuß fehlt noch", baumHoehe(20, null, 45), null);
+pruefe("leeres Feld ist kein Winkel", baumHoehe(20, "", 45), null);
+pruefe("undefined ist kein Winkel", baumHoehe(20, -10, undefined), null);
 
 titel("NEIGUNG aus der Gerätelage (beta − 90 = Kameraachse)");
 pruefe("senkrecht gehalten = waagerecht", neigungAusBeta(90), 0);
