@@ -620,8 +620,8 @@ export default function Verjuengung() {
       return;
     }
 
-    const name = `Verjuengung_${kopf.trupp || "Aufnahme"}.xlsx`;
-    const blob = baueXlsx(zeilen, "Verjüngung");
+    const name = `${t("Verjüngung")}_${kopf.trupp || t("Aufnahme")}.xlsx`;
+    const blob = baueXlsx(zeilen, t("Verjüngung"));
 
     // Teilen-Dialog, falls das Geraet Dateien teilen kann.
     try {

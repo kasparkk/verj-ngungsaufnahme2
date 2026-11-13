@@ -7,14 +7,27 @@
 
    Was hier NICHT steht, ist auch nicht uebersetzt - und das mit Absicht:
 
-   - Die Spalten der Excel-, CSV- und GeoJSON-Dateien bleiben deutsch. Sonst
-     entstuenden aus einer Spracheinstellung zwei Dateiformate, und die
-     Tabelle des Kollegen passte nicht mehr zur eigenen.
+   - Die Spalten der Excel-Dateien folgen der eingestellten Sprache. Das
+     war lange andersherum ("sonst entstehen aus einer Spracheinstellung
+     zwei Dateiformate"), ist aber ausdruecklich so gewuenscht: Wer die
+     App auf Englisch stellt, reicht die Datei auch an jemanden weiter,
+     der Deutsch nicht liest. Wer sie an einen deutschen Kollegen gibt,
+     stellt vorher auf DE zurueck - dann steht wieder Wort fuer Wort das
+     Alte da.
+     Ausgenommen bleibt die Mastertabelle des Monitorings: Sie bildet
+     eine vorgegebene Excel-Maske nach und muss Spalte fuer Spalte so
+     heissen, wie sie dort heisst. Uebersetzt waere die Datei nicht
+     zweisprachig, sondern unbrauchbar. Die GeoJSON-Dateien behalten
+     ebenfalls ihre Feldnamen - die liest ein Kartenprogramm, kein
+     Mensch.
    - Die Stammdaten der Landesforst-Aufnahme (BZT, Mischung, Schichtung,
      Verbissziel-Stufen, Hoehenklassen) bleiben deutsch. Es sind die Werte
      des amtlichen Bogens; sie werden so gespeichert und so abgegeben.
-   - Baumartennamen stehen weiter unten in ARTEN - und auch die nur fuer die
-     ANZEIGE. Gespeichert und exportiert wird immer "Fichte".
+   - Baumartennamen stehen weiter unten in ARTEN. GESPEICHERT wird immer
+     der deutsche Name - er ist Teil des Datenbankschluessels. In den
+     Excel-Dateien steht er in der eingestellten Sprache: Eine Datei mit
+     englischen Spalten und deutschen Baumarten waere halb uebersetzt
+     und damit schlechter als beides.
 
    Die Fachbegriffe sind die forstlich gebraeuchlichen, nicht die
    woertlichen: Winkelzaehlprobe = angle count sampling (Bitterlich),
@@ -164,6 +177,97 @@ export const WOERTER = {
     "View the result for everyone",
   "ABTEILUNG":
     "COMPARTMENT",
+  /* Spalten der Excel-Dateien.
+
+     Die Dateien gehen aus der App heraus und werden von Menschen
+     gelesen - steht die App auf Englisch, sollen auch die Spalten
+     englisch sein. Unterstriche bleiben: So heissen Spaltenkoepfe, die
+     ein Programm weiterverarbeiten soll.
+
+     NICHT dabei: die Mastertabelle des Monitorings. Sie bildet eine
+     vorgegebene Excel-Maske nach und muss Spalte fuer Spalte so
+     heissen, wie sie dort heisst - uebersetzt waere die Datei
+     unbrauchbar. */
+  "Ort":
+    "Location",
+  "Alter_Jahre":
+    "Age_years",
+  "Verfahren":
+    "Method",
+  "Zaehlfaktor":
+    "Count_factor",
+  "Anzahl":
+    "Count",
+  "Hoehen_m":
+    "Heights_m",
+  "Mittelhoehe_m":
+    "Mean_height_m",
+  "BHD_cm":
+    "DBH_cm",
+  "Mittelstamm_cm":
+    "Mean_stem_cm",
+  "Grundflaeche_m2_ha":
+    "Basal_area_m2_ha",
+  "Vorrat_fm_ha":
+    "Volume_m3_ha",
+  "Staemme_ha":
+    "Stems_ha",
+  "Volumen_Mittelstamm_m3":
+    "Volume_mean_stem_m3",
+  "Winkelzaehlprobe":
+    "Angle_count_sampling",
+  "Flaeche_Nr":
+    "Plot_no",
+  "Flaeche_m2":
+    "Plot_m2",
+  "Hoehe_m":
+    "Height_m",
+  "Grundflaeche_m2":
+    "Basal_area_m2",
+  "Volumen_m3":
+    "Volume_m3",
+  "Einzelbaeume":
+    "Single_trees",
+  "Aufnahme":
+    "Survey",
+  "Abteilung":
+    "Compartment",
+  "gesamt":
+    "total",
+  "Verbiss_Prozent":
+    "Browsing_percent",
+  "Kreise_gesamt":
+    "Plots_total",
+  "Stueck_je_ha":
+    "Stems_per_ha",
+  "Probekreis":
+    "Sample_plot",
+  "Kreisflaeche_m2":
+    "Plot_area_m2",
+  "Breite":
+    "Latitude",
+  "Laenge":
+    "Longitude",
+  "Genauigkeit_m":
+    "Accuracy_m",
+  "X_UTM33":
+    "X_UTM33",
+  "Y_UTM33":
+    "Y_UTM33",
+  "UTM_33N":
+    "UTM_33N",
+  "Baumarten":
+    "Species",
+  "Karte":
+    "Map",
+  "Zählungen":
+    "Counts",
+  "Probekreise":
+    "Sample_plots",
+  "Lat":
+    "Lat",
+  "Lon":
+    "Lon",
   // Einzelbaeume: mehrere Probeflaechen nebeneinander.
   "FLÄCHEN":
     "PLOTS",

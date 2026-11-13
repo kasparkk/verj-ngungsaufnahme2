@@ -11,6 +11,7 @@
    als fehle die Angabe. */
 
 import { baueXlsxMehrblatt } from "./xlsx.js";
+import { t, artName } from "./sprache.js";
 import { nachUtm33 } from "./utm33.js";
 import { utmPaar, gradPaar } from "./koordinaten.js";
 import { normDatum } from "./datum.js";
@@ -96,12 +97,12 @@ export function eingegrenzt(auswertung, zeilen, kopf) {
 
 export function baueErgebnisDatei(auswertung, zeilen, kopf) {
   const blattAuswertung = [
-    ["Abteilung", "Datum", "Baumart", "verbissen", "unverbissen", "gesamt",
-     "Verbiss_Prozent", "Kreise_gesamt", "Stueck_je_ha"],
+    [t("Abteilung"), t("Datum"), t("Baumart"), t("verbissen"), t("unverbissen"), t("gesamt"),
+     t("Verbiss_Prozent"), t("Kreise_gesamt"), t("Stueck_je_ha")],
     ...auswertung.map((a) => [
       a.abteilung ?? "",
       a.aufnahmedatum ?? "",
-      a.baumart,
+      artName(a.baumart),
       Number(a.verbissen) || 0,
       Number(a.unverbissen) || 0,
       Number(a.gesamt) || 0,
@@ -115,9 +116,9 @@ export function baueErgebnisDatei(auswertung, zeilen, kopf) {
      gezaehlt wird. Summe und Verbissanteil stehen gleich daneben, damit man
      einen auffaelligen Kreis findet, ohne selbst zu rechnen. */
   const blattZaehlungen = [
-    ["Person", "Abteilung", "Datum", "Probekreis", "Kreisflaeche_m2", "Baumart",
-     "verbissen", "unverbissen", "gesamt", "Verbiss_Prozent",
-     "Breite", "Laenge", "Genauigkeit_m", "X_UTM33", "Y_UTM33", "UTM_33N", "Grad"],
+    [t("Person"), t("Abteilung"), t("Datum"), t("Probekreis"), t("Kreisflaeche_m2"), t("Baumart"),
+     t("verbissen"), t("unverbissen"), t("gesamt"), t("Verbiss_Prozent"),
+     t("Breite"), t("Laenge"), t("Genauigkeit_m"), t("X_UTM33"), t("Y_UTM33"), t("UTM_33N"), t("Grad")],
     ...zeilen.map((z) => {
       const utm = z.lat != null && z.lon != null ? nachUtm33(Number(z.lat), Number(z.lon)) : null;
       const verbissen = Number(z.verbissen) || 0;
@@ -129,7 +130,7 @@ export function baueErgebnisDatei(auswertung, zeilen, kopf) {
         z.aufnahmedatum ?? "",
         z.kreis,
         Number(z.kreisflaeche) || "",
-        z.baumart,
+        artName(z.baumart),
         verbissen,
         unverbissen,
         gesamt,
@@ -146,9 +147,10 @@ export function baueErgebnisDatei(auswertung, zeilen, kopf) {
   ];
 
   const blattKreise = [
-    ["Person", "Abteilung", "Datum", "Probekreis", "Kreisflaeche_m2", "Baumarten",
-     "verbissen", "unverbissen", "gesamt", "Verbiss_Prozent",
-     "Breite", "Laenge", "Genauigkeit_m", "X_UTM33", "Y_UTM33", "UTM_33N", "Grad", "Karte"],
+    [t("Person"), t("Abteilung"), t("Datum"), t("Probekreis"), t("Kreisflaeche_m2"), t("Baumarten"),
+     t("verbissen"), t("unverbissen"), t("gesamt"), t("Verbiss_Prozent"),
+     t("Breite"), t("Laenge"), t("Genauigkeit_m"), t("X_UTM33"), t("Y_UTM33"), t("UTM_33N"), t("Grad"),
+     t("Karte")],
     ...probekreise(zeilen).map((k) => {
       const utm = k.lat != null ? nachUtm33(k.lat, k.lon) : null;
       return [
@@ -178,16 +180,16 @@ export function baueErgebnisDatei(auswertung, zeilen, kopf) {
   ];
 
   return baueXlsxMehrblatt([
-    { name: "Zählungen", zeilen: blattZaehlungen },
-    { name: "Probekreise", zeilen: blattKreise },
-    { name: "Auswertung", zeilen: blattAuswertung },
+    { name: t("Zählungen"), zeilen: blattZaehlungen },
+    { name: t("Probekreise"), zeilen: blattKreise },
+    { name: t("Auswertung"), zeilen: blattAuswertung },
   ]);
 }
 
 export const ergebnisDateiname = (kopf) => {
   const teil = (kopf?.abteilung || "").trim().replace(/[^\wäöüÄÖÜß -]/g, "") || "Aufnahme";
   const datum = (kopf?.datum || "").trim();
-  return `Verjuengung_${teil}${datum ? "_" + datum : ""}.xlsx`;
+  return `${t("Verjüngung")}_${teil}${datum ? "_" + datum : ""}.xlsx`;
 };
 
 /* Die Probekreise als GeoJSON.

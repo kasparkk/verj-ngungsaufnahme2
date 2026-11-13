@@ -8,7 +8,7 @@ import Einzelbaeume from "./baum/Einzelbaeume.jsx";
 import Formzahlen from "./baum/Formzahlen.jsx";
 import KoordinatenKopieren from "./komponenten/KoordinatenKopieren.jsx";
 import { baueGeoJsonMessung, geoDateiname } from "./baum/geo.js";
-import { useT } from "./sprache.js";
+import { useT, artName } from "./sprache.js";
 
 /* Rahmen der Baummessung mit zwei Verfahren:
 
@@ -212,16 +212,21 @@ export default function Baummessung() {
         setHinweis(t("Noch nichts gezählt"));
         return;
       }
+      /* Die Spalten stehen in der Sprache, die eingestellt ist: Eine
+         Datei, die man weiterreicht, nuetzt wenig, wenn die Ueberschriften
+         der Empfaenger nicht lesen kann. Die Mastertabelle des Monitorings
+         bleibt davon ausgenommen - sie bildet eine vorgegebene Excel-Maske
+         nach und muss Spalte fuer Spalte so heissen, wie sie heisst. */
       zeilen = [
-        ["Ort", "Alter_Jahre", "Verfahren", "Zaehlfaktor", "Baumart", "Anzahl", "Hoehen_m", "Mittelhoehe_m",
-         "BHD_cm", "Mittelstamm_cm", "Formzahl", "Grundflaeche_m2_ha", "Vorrat_fm_ha",
-         "Staemme_ha", "Volumen_Mittelstamm_m3"],
+        [t("Ort"), t("Alter_Jahre"), t("Verfahren"), t("Zaehlfaktor"), t("Baumart"), t("Anzahl"),
+         t("Hoehen_m"), t("Mittelhoehe_m"), t("BHD_cm"), t("Mittelstamm_cm"), t("Formzahl"),
+         t("Grundflaeche_m2_ha"), t("Vorrat_fm_ha"), t("Staemme_ha"), t("Volumen_Mittelstamm_m3")],
         ...mitZahlen.map((a) => [
           stand.ort,
           a.alterJahre,
-          "Winkelzaehlprobe",
+          t("Winkelzaehlprobe"),
           zahl(stand.wzp.zaehlfaktor),
-          a.name,
+          artName(a.name),
           a.anzahl,
           a.hoehen.join(" "),
           Math.round(mittel(a.hoehen) * 10) / 10,
@@ -245,15 +250,15 @@ export default function Baummessung() {
          uebersetzten Wort - die Datei soll in beiden Sprachen gleich
          aussehen. */
       zeilen = [
-        ["Ort", "Verfahren", "Flaeche_Nr", "Flaeche_m2", "Baumart", "BHD_cm", "Hoehe_m", "Formzahl",
-         "Grundflaeche_m2", "Volumen_m3"],
+        [t("Ort"), t("Verfahren"), t("Flaeche_Nr"), t("Flaeche_m2"), t("Baumart"), t("BHD_cm"),
+         t("Hoehe_m"), t("Formzahl"), t("Grundflaeche_m2"), t("Volumen_m3")],
         ...stand.flaechen.flatMap((f, i) =>
           f.baeume.map((b) => [
             stand.ort,
-            "Einzelbaeume",
+            t("Einzelbaeume"),
             i + 1,
             zahl(f.groesse),
-            b.art,
+            artName(b.art),
             zahl(b.bhd),
             zahl(b.hoehe),
             zahl(b.formzahl),
@@ -264,8 +269,8 @@ export default function Baummessung() {
       ];
     }
 
-    const name = `Baummessung_${stand.ort || "Aufnahme"}.xlsx`;
-    await weitergeben(baueXlsx(zeilen, "Baummessung"), name, "Baummessung", t("Excel-Datei gespeichert"));
+    const name = `${t("Baummessung")}_${stand.ort || t("Aufnahme")}.xlsx`;
+    await weitergeben(baueXlsx(zeilen, t("Baummessung")), name, "Baummessung", t("Excel-Datei gespeichert"));
   };
 
   // 16 px: darunter zoomt iOS beim Antippen in das Feld hinein.

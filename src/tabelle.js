@@ -1,4 +1,5 @@
 import { utmPaar, gradPaar } from "./koordinaten.js";
+import { t, artName } from "./sprache.js";
 
 /* Baut die Aufnahme als Tabelle: eine Zeile je Probekreis, je Baumart zwei
    Spalten (verbissen / unverbissen). Kreise ohne jede Zahl bleiben weg. */
@@ -6,19 +7,24 @@ import { utmPaar, gradPaar } from "./koordinaten.js";
 // Zeilen als Arrays - Zahlen bleiben Zahlen, damit Excel damit rechnen kann.
 // Rueckgabe null heisst: noch nichts gezaehlt.
 export function baueZeilen(kopf, arten, kreise) {
+  /* Ueberschriften in der eingestellten Sprache - die Datei geht aus der
+     App heraus und wird von jemandem gelesen, nicht von der App. Die
+     Zahlen darunter bleiben Zahlen. */
   const kopfzeile = [
-    "Person",
-    "Abteilung",
-    "Datum",
-    "Kreisflaeche_m2",
-    "Kreis",
-    "Lat",
-    "Lon",
-    "Genauigkeit_m",
-    "UTM_33N",
-    "Grad",
+    t("Person"),
+    t("Abteilung"),
+    t("Datum"),
+    t("Kreisflaeche_m2"),
+    t("Kreis"),
+    t("Lat"),
+    t("Lon"),
+    t("Genauigkeit_m"),
+    t("UTM_33N"),
+    t("Grad"),
   ];
-  arten.forEach((art) => kopfzeile.push(`${art.name} verbissen`, `${art.name} unverbissen`));
+  arten.forEach((art) =>
+    kopfzeile.push(`${artName(art.name)} ${t("verbissen")}`, `${artName(art.name)} ${t("unverbissen")}`),
+  );
 
   const zeilen = [kopfzeile];
 
