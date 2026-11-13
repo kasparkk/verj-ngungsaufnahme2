@@ -107,6 +107,13 @@ export function laden() {
   } catch {
     return leererStand();
   }
+  return ausText(roh);
+}
+
+/* Aus gespeichertem Text einen brauchbaren Stand machen. Getrennt vom
+   Laden, weil dieselbe Pruefung auch fuer die zurueckgelegte vorige
+   Aufnahme gilt - was von der Platte kommt, ist nie zu trauen. */
+function ausText(roh) {
   if (!roh) return leererStand();
 
   try {
@@ -147,4 +154,85 @@ export function laden() {
 
 export function speichern(stand) {
   localStorage.setItem(SCHLUESSEL, JSON.stringify({ version: 3, ...stand }));
+}
+
+/* Die vorige Aufnahme - ein einziger Platz zum Zurueckholen.
+
+   Wer einen neuen Bestand anfaengt, leert das Blatt. Das ist gewollt;
+   ohne Netz darunter waere es aber ein Tipp, der eine Aufnahme kostet
+   und den niemand rueckgaengig machen kann. Deshalb wandert die alte
+   Aufnahme hierher und bleibt, bis die naechste sie ersetzt. */
+const VORIGE = "baummessung:vorige";
+
+export function vorigeZuruecklegen(stand) {
+  try {
+    localStorage.setItem(VORIGE, JSON.stringify({ version: 3, ...stand }));
+  } catch {
+    /* Kein Platz mehr: Das Zurueckholen entfaellt dann, die neue
+       Aufnahme beginnt trotzdem. Besser als gar nicht weiterzukommen. */
+  }
+}
+
+export function vorigeDa() {
+  try {
+    return Boolean(localStorage.getItem(VORIGE));
+  } catch {
+    return false;
+  }
+}
+
+export function vorigeHolen() {
+  try {
+    const roh = localStorage.getItem(VORIGE);
+    if (!roh) return null;
+    return ausText(roh);
+  } catch {
+    return null;
+  }
+}
+
+export function vorigeWeg() {
+  try {
+    localStorage.removeItem(VORIGE);
+  } catch {
+    /* Dann bleibt sie eben liegen - sie steht niemandem im Weg. */
+  }
+}
+
+/* Hat diese Aufnahme ueberhaupt etwas zu verlieren? Entscheidet, ob beim
+   Umbenennen des Bestandes gefragt wird. Ein leeres Blatt wird einfach
+   umbenannt, ohne Frage - sonst fragt die App beim ersten Eintippen des
+   Ortes nach etwas, das es noch gar nicht gibt. */
+export function hatDaten(stand) {
+  const wzp = stand.wzp?.arten ?? [];
+  const gezaehlt = wzp.some(
+    (a) => (a.anzahl ?? 0) > 0 || (a.hoehen ?? []).length > 0 || (a.durchmesser ?? []).length > 0,
+  );
+  const baeume = (stand.flaechen ?? []).some((f) => (f.baeume ?? []).length > 0);
+  return gezaehlt || baeume;
+}
+
+/* Ein frisches Blatt fuer den naechsten Bestand.
+
+   Was zum BESTAND gehoert, geht weg: Zahlen, Hoehen, Durchmesser,
+   Baeume, Flaechen, Koordinate. Was zur ARBEITSWEISE gehoert, bleibt:
+   Formzahlen samt Hoehenstufen, selbst eingetragene Baumarten, der
+   Zaehlfaktor, die Liste der Baumarten (nur auf Null gesetzt) und die
+   Groesse der Probeflaeche. Wer zehn Bestaende am Tag aufnimmt, stellt
+   das nicht zehnmal neu ein. */
+export function neueAufnahme(stand, ort) {
+  return {
+    ...leererStand(),
+    modus: stand.modus,
+    ort,
+    alter: "",
+    formzahlen: stand.formzahlen,
+    formzahlStufen: stand.formzahlStufen,
+    eigeneArten: stand.eigeneArten,
+    wzp: {
+      zaehlfaktor: stand.wzp.zaehlfaktor,
+      arten: (stand.wzp.arten ?? []).map((a) => ({ ...leereArt(a.name), id: a.id })),
+    },
+    flaechen: [leereFlaeche(stand.flaechen?.[0]?.groesse ?? "500")],
+  };
 }

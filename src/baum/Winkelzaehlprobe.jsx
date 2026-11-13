@@ -279,6 +279,10 @@ export default function Winkelzaehlprobe({
             <button
               key={k}
               onClick={() => setWzp((alt) => ({ ...alt, zaehlfaktor: k }))}
+              /* Welcher Faktor gilt, sagt bisher nur die Farbe. Eine
+                 Vorlesehilfe sieht keine Farbe - und eine Pruefung auch
+                 nicht. */
+              aria-pressed={wzp.zaehlfaktor === k}
               style={{
                 flex: 1,
                 background:

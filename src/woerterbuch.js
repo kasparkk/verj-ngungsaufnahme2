@@ -177,6 +177,19 @@ export const WOERTER = {
     "View the result for everyone",
   "ABTEILUNG":
     "COMPARTMENT",
+  // Neuer Bestand = neues Blatt, mit einem Weg zurueck.
+  "Neue Aufnahme für „{neu}“ beginnen? Die Zahlen von „{alt}“ gehören zum alten Bestand.":
+    "Start a new survey for “{neu}”? The figures from “{alt}” belong to the old stand.",
+  "Neu beginnen":
+    "Start fresh",
+  "Nur umbenennen":
+    "Just rename",
+  "Neue Aufnahme. Die vorige liegt bereit.":
+    "New survey. The previous one is kept.",
+  "Zurückholen":
+    "Bring it back",
+  "Die vorige Aufnahme steht wieder da":
+    "The previous survey is back",
   /* Spalten der Excel-Dateien.
 
      Die Dateien gehen aus der App heraus und werden von Menschen

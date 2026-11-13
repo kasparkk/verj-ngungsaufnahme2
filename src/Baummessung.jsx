@@ -1,7 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { farben } from "./konfiguration.js";
 import { zahl, grundflaeche, volumen, mittel, wzpAuswerten, alleArten, flaechenGesamt } from "./baum/berechnung.js";
-import { laden, speichern, leererStand } from "./baum/speicher.js";
+import {
+  laden,
+  speichern,
+  leererStand,
+  hatDaten,
+  neueAufnahme,
+  vorigeZuruecklegen,
+  vorigeDa,
+  vorigeHolen,
+  vorigeWeg,
+} from "./baum/speicher.js";
 import { baueXlsx } from "./xlsx.js";
 import Winkelzaehlprobe from "./baum/Winkelzaehlprobe.jsx";
 import Einzelbaeume from "./baum/Einzelbaeume.jsx";
@@ -24,6 +34,21 @@ export default function Baummessung() {
   const [geladen, setGeladen] = useState(false);
   const [hinweis, setHinweis] = useState("");
   const [formzahlenOffen, setFormzahlenOffen] = useState(false);
+  /* Umbenennen des Bestandes.
+
+     Gemeldet: "wenn man den Namen vom Feld ändert, stehen immer noch die
+     gleichen Daten drin." Genau so war es - der Name war eine blosse
+     Beschriftung, die Zahlen des vorigen Bestandes blieben stehen und
+     waeren unter dem neuen Namen in der Datei gelandet.
+
+     Jetzt fragt die App beim Umbenennen, ob ein neues Blatt gemeint ist.
+     Sie fragt nur, wenn es etwas zu verlieren gibt, und sie leert nichts
+     ohne Antwort. ortBeiFokus haelt den Namen fest, mit dem das Feld
+     betreten wurde - erst beim Verlassen wird verglichen, nicht bei
+     jedem Buchstaben. */
+  const [ortBeiFokus, setOrtBeiFokus] = useState(null);
+  const [ortFrage, setOrtFrage] = useState(null);
+  const [zurueckholbar, setZurueckholbar] = useState(false);
   const [gpsLaeuft, setGpsLaeuft] = useState(false);
 
   /* Hoehe der festen Leiste unten, gemessen statt geraten. Geraten war sie
@@ -99,6 +124,28 @@ export default function Baummessung() {
   const setzeFeld = (feld) => (wert) => setStand((alt) => ({ ...alt, [feld]: wert }));
   const setWzp = (wie) =>
     setStand((alt) => ({ ...alt, wzp: typeof wie === "function" ? wie(alt.wzp) : wie }));
+  /* Ein neues Blatt fuer den naechsten Bestand - die alte Aufnahme
+     wandert dabei auf den Platz zum Zurueckholen, nicht in den
+     Papierkorb. */
+  const neuBeginnen = (ort) => {
+    vorigeZuruecklegen({ ...stand, ort: ortFrage?.alt ?? stand.ort });
+    setStand(neueAufnahme(stand, ort));
+    setOrtFrage(null);
+    setZurueckholbar(true);
+  };
+
+  const vorigeZurueck = () => {
+    const alt = vorigeHolen();
+    if (!alt) {
+      setZurueckholbar(false);
+      return;
+    }
+    setStand(alt);
+    vorigeWeg();
+    setZurueckholbar(false);
+    setHinweis(t("Die vorige Aufnahme steht wieder da"));
+  };
+
   const setFlaechen = (wie) =>
     setStand((alt) => ({ ...alt, flaechen: typeof wie === "function" ? wie(alt.flaechen) : wie }));
   /* Die aktive Flaeche darf nie ins Leere zeigen - auch nicht, wenn die
@@ -320,6 +367,18 @@ export default function Baummessung() {
             style={feldStil}
             value={stand.ort}
             onChange={(e) => setzeFeld("ort")(e.target.value)}
+            onFocus={() => setOrtBeiFokus(stand.ort)}
+            onBlur={() => {
+              const vorher = (ortBeiFokus ?? "").trim();
+              const jetzt = stand.ort.trim();
+              setOrtBeiFokus(null);
+              /* Gefragt wird nur bei einer echten Umbenennung mit Daten.
+                 Wer den Ort zum ERSTEN Mal eintraegt, benennt die
+                 laufende Aufnahme - da gibt es nichts zu fragen. */
+              if (!vorher || !jetzt || vorher === jetzt) return;
+              if (!hatDaten(stand)) return;
+              setOrtFrage({ alt: vorher, neu: jetzt });
+            }}
             placeholder={t("z. B. {was}", { was: "4138 b1" })}
             aria-label={t("ORT / BESTAND")}
           />
@@ -336,6 +395,93 @@ export default function Baummessung() {
           />
         </div>
       </div>
+
+      {/* Die Frage beim Umbenennen. Sie steht da, wo sie entsteht - unter
+          dem Feld -, nennt beide Namen und leert nichts von selbst. */}
+      {ortFrage && (
+        <div
+          style={{
+            border: `1px solid ${farben.unverb}`,
+            borderRadius: 12,
+            padding: "12px 14px",
+            marginBottom: 14,
+          }}
+        >
+          <div style={{ fontSize: 13, lineHeight: 1.5, marginBottom: 10 }}>
+            {t("Neue Aufnahme für „{neu}“ beginnen? Die Zahlen von „{alt}“ gehören zum alten Bestand.", {
+              neu: ortFrage.neu,
+              alt: ortFrage.alt,
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={() => neuBeginnen(ortFrage.neu)}
+              style={{
+                flex: 1,
+                background: farben.unverb,
+                border: "none",
+                color: farben.bg,
+                borderRadius: 10,
+                padding: "12px 0",
+                fontSize: 14,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              {t("Neu beginnen")}
+            </button>
+            <button
+              onClick={() => setOrtFrage(null)}
+              style={{
+                flex: 1,
+                background: "transparent",
+                border: `1px solid ${farben.line}`,
+                color: farben.text,
+                borderRadius: 10,
+                padding: "12px 0",
+                fontSize: 14,
+                cursor: "pointer",
+              }}
+            >
+              {t("Nur umbenennen")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Nach dem Leeren: ein Weg zurueck. Ohne ihn waere "Neu beginnen"
+          ein Tipp, der eine ganze Aufnahme kostet. */}
+      {zurueckholbar && !ortFrage && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            background: farben.surface,
+            borderRadius: 12,
+            padding: "10px 12px",
+            marginBottom: 14,
+          }}
+        >
+          <div style={{ flex: 1, fontSize: 12, color: farben.muted, lineHeight: 1.4 }}>
+            {t("Neue Aufnahme. Die vorige liegt bereit.")}
+          </div>
+          <button
+            onClick={vorigeZurueck}
+            style={{
+              background: "transparent",
+              border: `1px solid ${farben.line}`,
+              color: farben.text,
+              borderRadius: 10,
+              padding: "10px 12px",
+              fontSize: 13,
+              cursor: "pointer",
+            }}
+          >
+            {t("Zurückholen")}
+          </button>
+        </div>
+      )}
 
       {/* Standort des Standpunktes bzw. der Flaeche. Oben beim Ort, weil er
           wie der Ort zum Bestand gehoert und nicht zum Verfahren. */}
