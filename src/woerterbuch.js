@@ -458,8 +458,8 @@ export const WOERTER = {
     "Base",
   "Höhe messen":
     "Measure height",
-  "Fadenkreuz auf den Stammfuß richten und antippen, dann auf die Spitze.":
-    "Aim the crosshair at the base of the trunk and tap, then at the top.",
+  "Fadenkreuz auf die Spitze richten und antippen, dann auf den Stammfuß.":
+    "Put the crosshair on the top and tap, then on the base of the trunk.",
   "So geht’s":
     "How it works",
   "So weit vom Baum weg, dass du die Spitze gut siehst – etwa eine Baumlänge. Die Strecke abschreiten oder messen.":
@@ -992,10 +992,10 @@ export const WOERTER = {
   "{art} aus der Liste nehmen":
     "Take {art} out of the list",
   // Der gefuehrte Ablauf beim Peilen
-  "1 · Stammfuß anpeilen":
-    "1 · Sight the base of the trunk",
-  "2 · Spitze anpeilen":
-    "2 · Sight the top",
+  "1 · Spitze anpeilen":
+    "1 · Sight the top",
+  "2 · Stammfuß anpeilen":
+    "2 · Sight the base of the trunk",
   "✓ Fertig – die Höhe steht unten":
     "✓ Done – the height is below",
   "Die Spitze liegt unter dem Fuß – einen der beiden neu anpeilen":

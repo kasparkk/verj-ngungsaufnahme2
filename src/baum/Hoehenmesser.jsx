@@ -243,7 +243,12 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
      festhaelt. Deshalb fuehrt die App jetzt: Sie sagt, was dran ist, und
      hebt den Knopf hervor, der gemeint ist. */
   const hatEntfernung = Number(String(entfernung).replace(",", ".")) > 0;
-  const schritt = u == null ? "fuss" : o == null ? "spitze" : "fertig";
+  /* Erst die Spitze, dann der Stammfuss. Rechnerisch ist die
+     Reihenfolge gleichgueltig - h = d · (tan oben − tan unten) kennt
+     keine Reihenfolge -, so herum gewuenscht: Man sucht die Spitze
+     ohnehin zuerst, weil sie die schwierige von beiden ist; der Fuss
+     steht danach noch da, wo er war. */
+  const schritt = o == null ? "spitze" : u == null ? "fuss" : "fertig";
 
   /* Vorschlag fuer die Entfernung aus dem Fusswinkel.
 
@@ -340,7 +345,7 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
           zugeklappt - ganz ohne Hinweis dazustehen waere aber der falsche
           Tausch, wenn jemand den Messer zum ersten Mal oeffnet. */}
       <div style={{ fontSize: 11, color: farben.muted, lineHeight: 1.5, margin: "8px 0 2px" }}>
-        {t("Fadenkreuz auf den Stammfuß richten und antippen, dann auf die Spitze.")}
+        {t("Fadenkreuz auf die Spitze richten und antippen, dann auf den Stammfuß.")}
       </div>
 
       <button
@@ -391,10 +396,10 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
               />
             </li>
             <li>
-              <Markiert text={t("Fadenkreuz auf den *Stammfuß* → „Fuß“ antippen.")} />
+              <Markiert text={t("Fadenkreuz auf die *Spitze* → „Spitze“ antippen.")} />
             </li>
             <li>
-              <Markiert text={t("Fadenkreuz auf die *Spitze* → „Spitze“ antippen.")} />
+              <Markiert text={t("Fadenkreuz auf den *Stammfuß* → „Fuß“ antippen.")} />
             </li>
             <li>{t("Höhe steht da → „Übernehmen“, dann mit + in die Liste.")}</li>
           </ol>
@@ -477,19 +482,6 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
         <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
-              {t("FUSS Grad")}
-            </div>
-            <input
-              style={feld}
-              value={untenText}
-              onChange={(e) => setUntenText(e.target.value)}
-              inputMode="decimal"
-              placeholder={t("Winkel in Grad")}
-              aria-label={t("Winkel zum Fuß")}
-            />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
               {t("SPITZE Grad")}
             </div>
             <input
@@ -499,6 +491,19 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
               inputMode="decimal"
               placeholder={t("Winkel in Grad")}
               aria-label={t("Winkel zur Spitze")}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 10, color: farben.muted, letterSpacing: 0.6 }}>
+              {t("FUSS Grad")}
+            </div>
+            <input
+              style={feld}
+              value={untenText}
+              onChange={(e) => setUntenText(e.target.value)}
+              inputMode="decimal"
+              placeholder={t("Winkel in Grad")}
+              aria-label={t("Winkel zum Fuß")}
             />
           </div>
         </div>
@@ -615,10 +620,10 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
                     : farben.text,
             }}
           >
-            {schritt === "fuss"
-              ? t("1 · Stammfuß anpeilen")
-              : schritt === "spitze"
-                ? t("2 · Spitze anpeilen")
+            {schritt === "spitze"
+              ? t("1 · Spitze anpeilen")
+              : schritt === "fuss"
+                ? t("2 · Stammfuß anpeilen")
                 : hoehe != null
                   ? t("✓ Fertig – die Höhe steht unten")
                   : hatEntfernung
@@ -626,20 +631,10 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
                     : t("Jetzt fehlt nur noch die Entfernung oben")}
           </div>
 
+          {/* Die Spitze steht links, weil sie zuerst drankommt - links
+              liest man zuerst, und der hervorgehobene Knopf soll der
+              sein, der gemeint ist. */}
           <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-            <button
-              onClick={() => {
-                setUnten(winkel);
-                if (winkel != null) stups(FESTGEHALTEN);
-              }}
-              aria-label={t("Fuß festhalten")}
-              style={peilKnopf(schritt === "fuss")}
-            >
-              {t("Fuß")}
-              <div style={{ fontSize: 11, opacity: 0.75, marginTop: 2 }}>
-                {unten == null ? t("anpeilen") : `✓ ${nk1(unten)}°`}
-              </div>
-            </button>
             <button
               onClick={() => {
                 setOben(winkel);
@@ -651,6 +646,19 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
               {t("Spitze")}
               <div style={{ fontSize: 11, opacity: 0.75, marginTop: 2 }}>
                 {oben == null ? t("anpeilen") : `✓ ${nk1(oben)}°`}
+              </div>
+            </button>
+            <button
+              onClick={() => {
+                setUnten(winkel);
+                if (winkel != null) stups(FESTGEHALTEN);
+              }}
+              aria-label={t("Fuß festhalten")}
+              style={peilKnopf(schritt === "fuss")}
+            >
+              {t("Fuß")}
+              <div style={{ fontSize: 11, opacity: 0.75, marginTop: 2 }}>
+                {unten == null ? t("anpeilen") : `✓ ${nk1(unten)}°`}
               </div>
             </button>
           </div>

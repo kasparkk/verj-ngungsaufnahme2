@@ -82,10 +82,13 @@ const neige = async (page, grad) => {
     page.getByRole('button',{name:'Fuß festhalten'}).evaluate(
       (el) => Math.round(el.getBoundingClientRect().top));
 
-  console.log('\nSCHRITT 1');
-  pruefe('sagt, was dran ist', await page.getByText('1 · Stammfuß anpeilen').count(), 1);
-  pruefe('Fuß steht auf "anpeilen"',
-    (await page.getByRole('button',{name:'Fuß festhalten'}).innerText()).includes('anpeilen'), true);
+  console.log('\nSCHRITT 1: DIE SPITZE');
+  /* Erst die Spitze, dann der Fuss - so gewuenscht. Rechnerisch ist die
+     Reihenfolge gleichgueltig, fuer die Fuehrung nicht: Der
+     hervorgehobene Knopf muss der sein, der dran ist. */
+  pruefe('sagt, was dran ist', await page.getByText('1 · Spitze anpeilen').count(), 1);
+  pruefe('Spitze steht auf "anpeilen"',
+    (await page.getByRole('button',{name:'Spitze festhalten'}).innerText()).includes('anpeilen'), true);
 
   console.log('\nDIE SCHÄTZUNG RECHNET MIT, OHNE DASS MAN ETWAS ANTIPPT');
   /* Gewuenscht: "auto enable tilt thing". Wer das Fadenkreuz auf den
@@ -98,25 +101,25 @@ const neige = async (page, grad) => {
   pruefe('Übernehmen ist frei, ohne dass der Fuß festgehalten wäre',
     await page.getByRole('button',{name:'Schätzung übernehmen'}).isDisabled(), false);
 
-  console.log('\nSCHRITT 2');
+  console.log('\nSCHRITT 2: DER FUSS');
   const stupse = () => page.evaluate(() => window.__stupse.slice());
-  await neige(page, -10);
-  const vorFuss = await knopfY();
-  await tippe(page.getByRole('button',{name:'Fuß festhalten'}));
-  await page.waitForTimeout(200);
-  pruefe('jetzt die Spitze', await page.getByText('2 · Spitze anpeilen').count(), 1);
-  pruefe('der Fuß ist abgehakt',
-    (await page.getByRole('button',{name:'Fuß festhalten'}).innerText()).includes('✓ -10,0°'), true);
-  pruefe('Schritt 1 steht nicht mehr da', await page.getByText('1 · Stammfuß anpeilen').count(), 0);
-  pruefe('es hat gestupst', (await stupse()).join(" | "), '40');
-  pruefe('und nichts ist unter dem Daumen weggerutscht', (await knopfY()) - vorFuss, 0);
-
-  console.log('\nDANACH FEHLT DIE ENTFERNUNG - UND DAS STEHT AUCH DA');
   await neige(page, 45);
   const vorSpitze = await knopfY();
   await tippe(page.getByRole('button',{name:'Spitze festhalten'}));
   await page.waitForTimeout(200);
-  pruefe('auch beim zweiten Winkel bleibt alles stehen', (await knopfY()) - vorSpitze, 0);
+  pruefe('jetzt der Fuß', await page.getByText('2 · Stammfuß anpeilen').count(), 1);
+  pruefe('die Spitze ist abgehakt',
+    (await page.getByRole('button',{name:'Spitze festhalten'}).innerText()).includes('✓ 45,0°'), true);
+  pruefe('Schritt 1 steht nicht mehr da', await page.getByText('1 · Spitze anpeilen').count(), 0);
+  pruefe('es hat gestupst', (await stupse()).join(" | "), '40');
+  pruefe('und nichts ist unter dem Daumen weggerutscht', (await knopfY()) - vorSpitze, 0);
+
+  console.log('\nDANACH FEHLT DIE ENTFERNUNG - UND DAS STEHT AUCH DA');
+  await neige(page, -10);
+  const vorFuss = await knopfY();
+  await tippe(page.getByRole('button',{name:'Fuß festhalten'}));
+  await page.waitForTimeout(200);
+  pruefe('auch beim zweiten Winkel bleibt alles stehen', (await knopfY()) - vorFuss, 0);
   pruefe('sagt, woran es liegt',
     await page.getByText('Jetzt fehlt nur noch die Entfernung oben').count(), 1);
   pruefe('Höhe steht noch nicht', await page.getByText(/^\d+,\d m$/).count(), 0);
@@ -156,7 +159,7 @@ const neige = async (page, grad) => {
   console.log('\nZURÜCKSETZEN FÄNGT VON VORNE AN');
   await tippe(page.getByRole('button',{name:'Zurücksetzen'}));
   await page.waitForTimeout(200);
-  pruefe('wieder Schritt 1', await page.getByText('1 · Stammfuß anpeilen').count(), 1);
+  pruefe('wieder Schritt 1', await page.getByText('1 · Spitze anpeilen').count(), 1);
   pruefe('die Entfernung bleibt stehen',
     await page.getByLabel('Entfernung').inputValue(), '20');
 
