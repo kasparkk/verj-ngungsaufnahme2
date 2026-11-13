@@ -87,9 +87,14 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
      freezes" aus dem Feldtest.
 
      Gesammelt wird weiter jeder Wert - der Median lebt davon. Auf den
-     Bildschirm kommt er hoechstens zehnmal je Sekunde; schneller koennte
-     ein Mensch ohnehin nicht ablesen. */
-  const ANZEIGE_MS = 100;
+     Bildschirm kommt er seltener.
+
+     Zuerst zehnmal je Sekunde, auf Wunsch aus dem Feldtest jetzt etwa
+     sechzehnmal ("increase the sensor frequency a little bit but not as
+     much as when it was bugging"). Das ist immer noch ein Viertel der
+     Ereignisse, die hereinkommen - gemessen 20 Aktualisierungen in 1,2 s
+     statt 103. */
+  const ANZEIGE_MS = 60;
   const letzteAnzeige = useRef(0);
 
   const lesen = (e) => {
@@ -601,11 +606,21 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
               borderRadius: 14,
               overflow: "hidden",
               marginBottom: 12,
-              /* Auch schon, waehrend die Kamera startet: Sonst waechst der
-                 Kasten eine Sekunde nach dem Oeffnen und schiebt alles
-                 darunter weg. Erst wenn feststeht, dass es keine Kamera
-                 gibt, faellt der Platz weg. */
-              aspectRatio: kamera === "nein" ? undefined : "3 / 4",
+              /* Der Sucher nimmt sich, was uebrig bleibt - nicht mehr.
+
+                 Vorher war er 3:4 hoch, auf 390 px Breite also 483 px.
+                 Damit endeten die Peilknoepfe bei 797 px: auf einem
+                 Handy mit sichtbarer Adressleiste (etwa 735 px Fenster)
+                 lagen sie unter dem Rand, und man musste zum Antippen
+                 erst scrollen - gemeldet aus dem Feldtest.
+
+                 40vh laesst auf jedem Geraet Platz fuer Schrittzeile,
+                 Knoepfe und Ergebnis; 90vw haelt ihn auch auf einem
+                 langen Bildschirm in vernuenftigen Grenzen. Auch schon,
+                 waehrend die Kamera startet: Sonst waechst der Kasten
+                 eine Sekunde nach dem Oeffnen und schiebt alles darunter
+                 weg. */
+              height: kamera === "nein" ? undefined : "min(40vh, 90vw)",
               maxWidth: "100%",
             }}
           >
