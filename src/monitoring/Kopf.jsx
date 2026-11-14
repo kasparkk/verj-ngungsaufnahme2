@@ -164,7 +164,7 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
           <TextFeld wert={punkt.monitorer} setWert={setzeFeld("monitorer")} platzhalter={t("Vor- und Nachname")} />
         </Feld>
         <Feld titel={t("Untersuchungsgebiet")}>
-          <TextFeld wert={punkt.gebiet} setWert={setzeFeld("gebiet")} platzhalter={t("z. B. {was}", { was: "FB Gebersdorf" })} />
+          <TextFeld wert={punkt.gebiet} setWert={setzeFeld("gebiet")} platzhalter={t("Name des Gebiets eintragen")} />
         </Feld>
         <Feld titel={t("Datum")}>
           <input

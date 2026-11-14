@@ -1087,7 +1087,7 @@ export default function Verjuengung() {
             onChange={(e) => setAbteilungEntwurf(e.target.value)}
             onBlur={abteilungUebernehmen}
             onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
-            placeholder={t("z. B. {was}", { was: "4138 b1" })}
+            placeholder={t("Name oder Nummer eintragen")}
             aria-label={t("ABTEILUNG")}
           />
         </div>

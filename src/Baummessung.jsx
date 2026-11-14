@@ -379,7 +379,7 @@ export default function Baummessung() {
               if (!hatDaten(stand)) return;
               setOrtFrage({ alt: vorher, neu: jetzt });
             }}
-            placeholder={t("z. B. {was}", { was: "4138 b1" })}
+            placeholder={t("Name oder Nummer eintragen")}
             aria-label={t("ORT / BESTAND")}
           />
         </div>

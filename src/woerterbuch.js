@@ -912,8 +912,6 @@ export const WOERTER = {
     "Activate a species",
   // Beispiele in leeren Feldern - mit "z. B." davor, damit eine graue Zahl
   // nicht wie ein eingetragener Wert aussieht.
-  "z. B. {was}":
-    "e.g. {was}",
   "{was} eintragen":
     "Enter {was}",
   "≈ {m} m":
@@ -946,6 +944,10 @@ export const WOERTER = {
     "📐 Measure the height",
   "+ Baum aufnehmen":
     "+ Record this tree",
+  "Name oder Nummer eintragen":
+    "Enter a name or number",
+  "Name des Gebiets eintragen":
+    "Enter the name of the area",
   // Hinweise in leeren Feldern: ein Wort, das sagt, was hineingehört -
   // nie eine Zahl, die wie ein eingetragener Wert aussieht.
   "Alter in Jahren":

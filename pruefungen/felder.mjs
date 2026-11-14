@@ -5,9 +5,13 @@
    genau das: "da stehen so Fake-Zahlen im Hintergrund".
 
    Die Beschriftung ueber dem Feld sagt ohnehin, was hineingehoert
-   ("BHD cm", "HÖHE m"), die Zahl darin sagt nichts dazu. Beispiele in
-   Worten sind erlaubt, muessen sich aber als Beispiel zu erkennen geben:
-   "z. B. 4138 b1".
+   ("BHD cm", "HÖHE m"), die Zahl darin sagt nichts dazu.
+
+   Auch ein als Beispiel gekennzeichnetes "z. B. 4138 b1" faellt darunter.
+   Es stand im Feld ORT / BESTAND und wurde genauso gemeldet: Was da grau
+   steht, sieht aus wie ein Eintrag. Ein Platzhalter sagt, WAS
+   hineingehoert ("Name oder Nummer eintragen"), nicht, wie ein Eintrag
+   aussaehe.
 
    Aufruf:  node pruefungen/felder.mjs
 */
@@ -46,6 +50,25 @@ for (const datei of dateien(QUELLE)) {
       gefunden.push(`${kurz}: placeholder="${wert}"`);
     }
   }
+}
+
+/* Beispiele in Platzhaltern - gleich welcher Form. Die Zahl steht hier
+   in einem Argument ("z. B. {was}", { was: "4138 b1" }) und ginge der
+   Suche oben durch die Lappen. */
+const BEISPIELE = [];
+for (const datei of dateien(QUELLE)) {
+  const quelle = readFileSync(datei, "utf8");
+  const kurz = relative(QUELLE, datei);
+  for (const m of quelle.matchAll(/(?:placeholder|platzhalter)=\{t\(\s*"([^"]*z\.\s?B\.[^"]*)"/g)) {
+    BEISPIELE.push(`${kurz}: "${m[1]}"`);
+  }
+}
+if (BEISPIELE.length) {
+  fehler += BEISPIELE.length;
+  console.log(`\n✗ ${BEISPIELE.length} Platzhalter zeigen ein Beispiel statt zu sagen, was hineingehört:`);
+  for (const z of BEISPIELE) console.log(`     ${z}`);
+} else {
+  console.log("   ✓  kein Platzhalter zeigt einen Beispieleintrag");
 }
 
 console.log(`${geprueft} feste Platzhalter im Quelltext`);
