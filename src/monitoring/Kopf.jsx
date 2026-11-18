@@ -13,6 +13,7 @@ import { Abschnitt, Feld, TextFeld, AuswahlFeld, KnopfWahl, JaNein, beschriftung
 import { useT, artName, t, zahlOrt } from "../sprache.js";
 import KoordinatenKopieren from "../komponenten/KoordinatenKopieren.jsx";
 import { nk as nkBaustein } from "bausteine/zahlen";
+import { ortung } from "bausteine/gps";
 
 const nk = (wert, stellen = 1) => nkBaustein(wert, stellen, zahlOrt());
 
@@ -54,35 +55,24 @@ export default function Kopf({ punkt, aendere, setHinweis }) {
     aendere((p) => ({ ...p, referenz: { ...p.referenz, [feld]: wert } }));
   const setzeFeld = (feld) => (wert) => aendere((p) => ({ ...p, [feld]: wert }));
 
-  const orten = () => {
-    if (!navigator.geolocation) {
-      setHinweis(t("Kein GPS auf diesem Gerät"));
-      return;
-    }
+  const orten = async () => {
     setGpsLaeuft(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setGpsLaeuft(false);
-        aendere((p) => ({
-          ...p,
-          lat: pos.coords.latitude,
-          lon: pos.coords.longitude,
-          genauigkeit: pos.coords.accuracy,
-          quelle: "geraet",
-          verlegt:
-            giltAlsVerlegt(
-              p.sollLat, p.sollLon,
-              pos.coords.latitude, pos.coords.longitude,
-              p.radius, pos.coords.accuracy,
-            ) ?? p.verlegt,
-        }));
-      },
-      () => {
-        setGpsLaeuft(false);
-        setHinweis(t("Standort nicht verfügbar"));
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
-    );
+    try {
+      const { breite, laenge, genauigkeit } = await ortung();
+      aendere((p) => ({
+        ...p,
+        lat: breite,
+        lon: laenge,
+        genauigkeit,
+        quelle: "geraet",
+        verlegt:
+          giltAlsVerlegt(p.sollLat, p.sollLon, breite, laenge, p.radius, genauigkeit) ?? p.verlegt,
+      }));
+    } catch (fehler) {
+      setHinweis(t(fehler.grund === "kein-gps" ? "Kein GPS auf diesem Gerät" : "Standort nicht verfügbar"));
+    } finally {
+      setGpsLaeuft(false);
+    }
   };
 
   /* Uebernimmt die am Messstab abgelesene Koordinate. Gerechnet wird
