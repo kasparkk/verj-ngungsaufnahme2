@@ -9,6 +9,7 @@ import {
   geoDateiname,
 } from "../ergebnisExport.js";
 import { useT, artName, zahlOrt } from "../sprache.js";
+import { weitergeben as weitergebenDatei } from "bausteine/export";
 
 const kopfZelle = {
   padding: "6px 8px",
@@ -52,24 +53,7 @@ export default function ErgebnisAnsicht({
      Excel, der Karten-App, Mail oder der Wolke. Klappt das nicht, wird sie
      heruntergeladen. Beide Ausgaben gehen denselben Weg. */
   const weitergeben = async (blob, name, erfolg) => {
-    try {
-      const datei = new File([blob], name, { type: blob.type });
-      if (navigator.canShare?.({ files: [datei] })) {
-        await navigator.share({ files: [datei], title: t("Verjüngungsaufnahme") });
-        return;
-      }
-    } catch (fehler) {
-      if (fehler?.name === "AbortError") return;
-    }
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    if ((await weitergebenDatei(blob, name, t("Verjüngungsaufnahme"))) !== "gespeichert") return;
     setMeldung(erfolg ?? t("{name} gespeichert", { name }));
   };
 

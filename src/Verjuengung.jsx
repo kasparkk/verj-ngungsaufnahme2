@@ -3,7 +3,7 @@ import { farben, BAUMART_VORSCHLAEGE, leererKreis } from "./konfiguration.js";
 import { ladeAlles, speichereAlles, heute, startBaumarten, leeresBlatt, blattSchluessel } from "./speicher.js";
 import { normDatum, zeigeDatum, wochentag } from "./datum.js";
 import { baueTabelle, baueZeilen } from "./tabelle.js";
-import { baueXlsx } from "./xlsx.js";
+import { baueXlsx } from "bausteine/export";
 import PersonWahl, { alsBuchstabe } from "./komponenten/PersonWahl.jsx";
 import KoordinatenKopieren from "./komponenten/KoordinatenKopieren.jsx";
 import { zeilenHochladen, ergebnisAllePersonen, ergebnisEinePerson, istSchlafend } from "./datenbank.js";
@@ -13,6 +13,7 @@ import UebersichtTabelle from "./komponenten/UebersichtTabelle.jsx";
 import StandortKarte from "./komponenten/StandortKarte.jsx";
 import ErgebnisAnsicht from "./komponenten/ErgebnisAnsicht.jsx";
 import { useT, artName } from "./sprache.js";
+import { weitergeben as weitergebenDatei } from "bausteine/export";
 
 // Wartezeit nach der letzten Aenderung, bevor automatisch abgeglichen wird.
 const SYNC_VERZOEGERUNG = 1500;
@@ -625,25 +626,7 @@ export default function Verjuengung() {
 
     // Teilen-Dialog, falls das Geraet Dateien teilen kann.
     try {
-      const datei = new File([blob], name, { type: blob.type });
-      if (navigator.canShare?.({ files: [datei] })) {
-        await navigator.share({ files: [datei], title: t("Verjüngungsaufnahme") });
-        return;
-      }
-    } catch (fehler) {
-      // Abbruch durch den Nutzer ist kein Fehler - dann nichts weiter tun.
-      if (fehler?.name === "AbortError") return;
-    }
-
-    try {
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = name;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      if ((await weitergebenDatei(blob, name, t("Verjüngungsaufnahme"))) !== "gespeichert") return;
       setHinweis(t("Excel-Datei gespeichert – in den Downloads antippen"));
     } catch {
       setCsvText(baueTabelle(kopf, arten, kreise, ";"));
@@ -708,24 +691,7 @@ export default function Verjuengung() {
       t("{n} Probekreise gespeichert", { n: fuerDatei.length }) +
       (ohne ? t(" – {n} ohne Standort weggelassen", { n: ohne }) : "");
 
-    try {
-      const datei = new File([blob], name, { type: blob.type });
-      if (navigator.canShare?.({ files: [datei] })) {
-        await navigator.share({ files: [datei], title: t("Verjüngungsaufnahme") });
-        return;
-      }
-    } catch (fehler) {
-      if (fehler?.name === "AbortError") return;
-    }
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    if ((await weitergebenDatei(blob, name, t("Verjüngungsaufnahme"))) !== "gespeichert") return;
     setHinweis(meldung);
   };
 

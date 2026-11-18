@@ -12,13 +12,14 @@ import {
   vorigeHolen,
   vorigeWeg,
 } from "./baum/speicher.js";
-import { baueXlsx } from "./xlsx.js";
+import { baueXlsx } from "bausteine/export";
 import Winkelzaehlprobe from "./baum/Winkelzaehlprobe.jsx";
 import Einzelbaeume from "./baum/Einzelbaeume.jsx";
 import Formzahlen from "./baum/Formzahlen.jsx";
 import KoordinatenKopieren from "./komponenten/KoordinatenKopieren.jsx";
 import { baueGeoJsonMessung, geoDateiname } from "./baum/geo.js";
 import { useT, artName } from "./sprache.js";
+import { weitergeben as weitergebenDatei } from "bausteine/export";
 
 /* Rahmen der Baummessung mit zwei Verfahren:
 
@@ -183,24 +184,7 @@ export default function Baummessung() {
   /* Erst der Weg ueber das Teilen-Menue, sonst herunterladen - fuer beide
      Ausgaben derselbe. */
   const weitergeben = async (blob, name, titel, erfolg) => {
-    try {
-      const datei = new File([blob], name, { type: blob.type });
-      if (navigator.canShare?.({ files: [datei] })) {
-        await navigator.share({ files: [datei], title: titel });
-        return;
-      }
-    } catch (fehler) {
-      if (fehler?.name === "AbortError") return;
-    }
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = name;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    if ((await weitergebenDatei(blob, name, titel)) !== "gespeichert") return;
     setHinweis(erfolg ?? t("{name} gespeichert", { name }));
   };
 
