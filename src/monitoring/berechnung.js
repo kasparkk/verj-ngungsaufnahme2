@@ -6,11 +6,10 @@
 
 import { BAUMARTEN, VERBISSZIELE, artNach } from "./stammdaten.js";
 import { entfernung } from "bausteine/geo";
+import { leseZahl as zahl } from "bausteine/zahlen";
 
-export const zahl = (wert) => {
-  const n = parseFloat(String(wert ?? "").replace(",", "."));
-  return Number.isFinite(n) ? n : 0;
-};
+// Eingabe lesen ("12,5" -> 12.5, Unlesbares -> 0); kommt aus den Bausteinen.
+export { zahl };
 
 // Probekreisflaeche aus dem Radius: A = pi * r^2, auf 0,1 m^2 gerundet.
 export const probekreisflaeche = (radius) => {

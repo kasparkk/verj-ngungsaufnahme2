@@ -14,6 +14,7 @@ import StandortKarte from "./komponenten/StandortKarte.jsx";
 import ErgebnisAnsicht from "./komponenten/ErgebnisAnsicht.jsx";
 import { useT, artName } from "./sprache.js";
 import { weitergeben as weitergebenDatei } from "bausteine/export";
+import { ortung } from "bausteine/gps";
 
 // Wartezeit nach der letzten Aenderung, bevor automatisch abgeglichen wird.
 const SYNC_VERZOEGERUNG = 1500;
@@ -387,37 +388,23 @@ export default function Verjuengung() {
      sie wuerde sonst im falschen Tag landen (der Probekreis wird nur ueber
      seine Nummer gesucht, und die 1 gibt es an jedem Tag). Deshalb wird der
      Tag beim Start gemerkt und beim Eintreffen geprueft. */
-  const holeStandort = (nr) => {
-    if (!navigator.geolocation) {
-      setHinweis(t("Kein GPS auf diesem Gerät"));
-      return;
-    }
+  const holeStandort = async (nr) => {
     const fuerTag = datumRef.current;
     setGpsLaeuft(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setGpsLaeuft(false);
-        if (datumRef.current !== fuerTag) return; // Tag inzwischen gewechselt
-        setKreise((alle) =>
-          alle.map((kreis) =>
-            kreis.nr === nr
-              ? {
-                  ...kreis,
-                  lat: pos.coords.latitude,
-                  lon: pos.coords.longitude,
-                  acc: pos.coords.accuracy,
-                }
-              : kreis
-          )
-        );
-      },
-      () => {
-        setGpsLaeuft(false);
-        if (datumRef.current !== fuerTag) return;
-        setHinweis(t("Standort nicht verfügbar"));
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
-    );
+    try {
+      const { breite, laenge, genauigkeit } = await ortung();
+      if (datumRef.current !== fuerTag) return; // Tag inzwischen gewechselt
+      setKreise((alle) =>
+        alle.map((kreis) =>
+          kreis.nr === nr ? { ...kreis, lat: breite, lon: laenge, acc: genauigkeit } : kreis
+        )
+      );
+    } catch (fehler) {
+      if (datumRef.current !== fuerTag) return;
+      setHinweis(t(fehler.grund === "kein-gps" ? "Kein GPS auf diesem Gerät" : "Standort nicht verfügbar"));
+    } finally {
+      setGpsLaeuft(false);
+    }
   };
 
   /* Neue Kreise werden bewusst OHNE Ortung angelegt. Frueher holte die App

@@ -20,6 +20,7 @@ import KoordinatenKopieren from "./komponenten/KoordinatenKopieren.jsx";
 import { baueGeoJsonMessung, geoDateiname } from "./baum/geo.js";
 import { useT, artName } from "./sprache.js";
 import { weitergeben as weitergebenDatei } from "bausteine/export";
+import { ortung } from "bausteine/gps";
 
 /* Rahmen der Baummessung mit zwei Verfahren:
 
@@ -157,28 +158,16 @@ export default function Baummessung() {
   /* Standort der Messung - nur auf Antippen. Von selbst zu orten waere hier
      falsch: wer die Formzahlen anschaut oder eine alte Messung noch einmal
      oeffnet, will keine neue Koordinate darueberschreiben. */
-  const holeStandort = () => {
-    if (!navigator.geolocation) {
-      setHinweis(t("Kein GPS auf diesem Gerät"));
-      return;
-    }
+  const holeStandort = async () => {
     setGpsLaeuft(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setGpsLaeuft(false);
-        setStand((alt) => ({
-          ...alt,
-          lat: pos.coords.latitude,
-          lon: pos.coords.longitude,
-          genauigkeit: pos.coords.accuracy,
-        }));
-      },
-      () => {
-        setGpsLaeuft(false);
-        setHinweis(t("Standort nicht verfügbar"));
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
-    );
+    try {
+      const { breite, laenge, genauigkeit } = await ortung();
+      setStand((alt) => ({ ...alt, lat: breite, lon: laenge, genauigkeit }));
+    } catch (fehler) {
+      setHinweis(t(fehler.grund === "kein-gps" ? "Kein GPS auf diesem Gerät" : "Standort nicht verfügbar"));
+    } finally {
+      setGpsLaeuft(false);
+    }
   };
 
   /* Erst der Weg ueber das Teilen-Menue, sonst herunterladen - fuer beide

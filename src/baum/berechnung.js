@@ -9,6 +9,7 @@
    Bonitaet weichen sie ab, und wer eigene Zahlen aus der Massentafel hat,
    soll sie eintragen koennen. Das Ergebnis ist eine Schaetzung, keine
    Massentafel-Genauigkeit. */
+import { leseZahl as zahl } from "bausteine/zahlen";
 
 export const BAUMARTEN = [
   { name: "Fichte", formzahl: 0.5 },
@@ -50,10 +51,8 @@ export function alleArten(eigene) {
 }
 
 // Nimmt Komma wie Punkt als Dezimaltrenner - im Feld tippt niemand Punkte.
-export function zahl(wert) {
-  const n = parseFloat(String(wert ?? "").replace(",", "."));
-  return Number.isFinite(n) ? n : 0;
-}
+// Eingabe lesen ("12,5" -> 12.5, Unlesbares -> 0); kommt aus den Bausteinen.
+export { zahl };
 
 // BHD in Zentimetern -> Grundflaeche in Quadratmetern.
 export function grundflaeche(bhdCm) {
