@@ -147,16 +147,7 @@ export function masterZeilen(punkte) {
   return zeilen;
 }
 
-/* CSV fuer den deutschen Excel-Import: Semikolon als Trenner, Komma als
-   Dezimalzeichen, BOM voran, damit Umlaute nicht zerfallen. */
-export function baueCsv(zeilen) {
-  const feld = (wert) => {
-    if (typeof wert === "number") return String(wert).replace(".", ",");
-    const text = String(wert ?? "");
-    return /[;"\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
-  };
-  return "﻿" + zeilen.map((z) => z.map(feld).join(";")).join("\r\n");
-}
+export { baueCsv } from "bausteine/export";
 
 /* GeoJSON der Aufnahmepunkte - ein Punkt je Aufnahmepunkt, nicht je Pflanze.
 

@@ -10,7 +10,7 @@
    kann den Probekreis gar nicht nennen - stand sie vorn, sah die Datei aus,
    als fehle die Angabe. */
 
-import { baueXlsxMehrblatt } from "./xlsx.js";
+import { baueXlsxMehrblatt } from "bausteine/export";
 import { t, artName } from "./sprache.js";
 import { nachUtm33 } from "bausteine/geo";
 import { utmPaar, gradPaar } from "bausteine/geo";
