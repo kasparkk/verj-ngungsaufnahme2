@@ -7,9 +7,9 @@ import ArtErgaenzen from "./ArtErgaenzen.jsx";
 import { leereFlaeche } from "./speicher.js";
 import { useEinstellungen } from "../einstellungen.js";
 import { stups, FESTGEHALTEN } from "../stups.js";
+import { nk as nkBaustein } from "bausteine/zahlen";
 
-const nk = (wert, stellen = 2) =>
-  Number(wert).toLocaleString(zahlOrt(), { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
+const nk = (wert, stellen = 2) => nkBaustein(wert, stellen, zahlOrt());
 
 /* Einzelbaeume: jeder Baum wird mit BHD und Hoehe auf einer abgesteckten
    Flaeche erfasst. Aufwendiger als die Winkelzaehlprobe, dafuer hat man die

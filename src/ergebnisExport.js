@@ -12,8 +12,8 @@
 
 import { baueXlsxMehrblatt } from "./xlsx.js";
 import { t, artName } from "./sprache.js";
-import { nachUtm33 } from "./utm33.js";
-import { utmPaar, gradPaar } from "./koordinaten.js";
+import { nachUtm33 } from "bausteine/geo";
+import { utmPaar, gradPaar } from "bausteine/geo";
 import { normDatum } from "./datum.js";
 
 const rund = (wert, stellen) => {

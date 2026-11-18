@@ -8,8 +8,8 @@
    und der Bearbeitungsstand des Punktes. */
 
 import { artNach } from "./stammdaten.js";
-import { nachUtm33 } from "../utm33.js";
-import { utmPaar, gradPaar } from "../koordinaten.js";
+import { nachUtm33 } from "bausteine/geo";
+import { utmPaar, gradPaar } from "bausteine/geo";
 import {
   probekreisflaeche,
   zielProfil,

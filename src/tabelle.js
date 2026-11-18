@@ -1,4 +1,4 @@
-import { utmPaar, gradPaar } from "./koordinaten.js";
+import { utmPaar, gradPaar } from "bausteine/geo";
 import { t, artName } from "./sprache.js";
 
 /* Baut die Aufnahme als Tabelle: eine Zeile je Probekreis, je Baumart zwei

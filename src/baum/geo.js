@@ -9,7 +9,7 @@
    Falle. Die UTM-Werte stehen zusaetzlich in den Eigenschaften, weil in den
    Masken der Landesforst damit gearbeitet wird; als Geometrie taugen sie
    nicht. */
-import { nachUtm33 } from "../utm33.js";
+import { nachUtm33 } from "bausteine/geo";
 
 const rund = (wert, stellen) => {
   const f = 10 ** stellen;
