@@ -6,12 +6,9 @@ import {
 } from "./berechnung.js";
 import { beschriftung } from "./Felder.jsx";
 import { useT, t, zahlOrt } from "../sprache.js";
+import { nk as nkBaustein } from "bausteine/zahlen";
 
-const nk = (wert, stellen = 0) =>
-  Number(wert).toLocaleString(zahlOrt(), {
-    minimumFractionDigits: stellen,
-    maximumFractionDigits: stellen,
-  });
+const nk = (wert, stellen = 0) => nkBaustein(wert, stellen, zahlOrt());
 
 const STUFEN_FARBE = { VZ1: farben.unverb, VZ2: "#D9A441", VZ3: farben.verb };
 

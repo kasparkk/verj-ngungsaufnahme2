@@ -9,12 +9,9 @@ import { useT, artName, zahlOrt } from "../sprache.js";
 import ArtErgaenzen from "./ArtErgaenzen.jsx";
 import { useEinstellungen } from "../einstellungen.js";
 import { stups, FESTGEHALTEN, GEZAEHLT } from "../stups.js";
+import { nk as nkBaustein } from "bausteine/zahlen";
 
-const nk = (wert, stellen = 1) =>
-  Number(wert).toLocaleString(zahlOrt(), {
-    minimumFractionDigits: stellen,
-    maximumFractionDigits: stellen,
-  });
+const nk = (wert, stellen = 1) => nkBaustein(wert, stellen, zahlOrt());
 
 /* Liste gemessener Werte (Hoehen bzw. Durchmesser) mit Mittelwert.
 

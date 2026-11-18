@@ -2,9 +2,9 @@ import { useState } from "react";
 import { farben } from "../konfiguration.js";
 import { STANDARD_FORMZAHL, zahl } from "./berechnung.js";
 import { useT, artName, zahlOrt } from "../sprache.js";
+import { nk as nkBaustein } from "bausteine/zahlen";
 
-const nk = (wert, stellen = 2) =>
-  Number(wert).toLocaleString(zahlOrt(), { minimumFractionDigits: stellen, maximumFractionDigits: stellen });
+const nk = (wert, stellen = 2) => nkBaustein(wert, stellen, zahlOrt());
 
 /* Formzahlen einstellen - Grundwert je Baumart und, wer mag, eine
    Staffelung nach Hoehe.

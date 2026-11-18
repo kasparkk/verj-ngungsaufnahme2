@@ -5,7 +5,7 @@
    etwas anderes zu rechnen waere schlimmer als der Widerspruch selbst. */
 
 import { BAUMARTEN, VERBISSZIELE, artNach } from "./stammdaten.js";
-import { entfernung } from "../utm33.js";
+import { entfernung } from "bausteine/geo";
 
 export const zahl = (wert) => {
   const n = parseFloat(String(wert ?? "").replace(",", "."));
