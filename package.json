@@ -10,7 +10,7 @@
     "pruefen": "node pruefungen/rechnung.mjs && node pruefungen/sprache.mjs && node pruefungen/felder.mjs"
   },
   "dependencies": {
-    "bausteine": "https://codeload.github.com/kasparkk/bausteine/tar.gz/9b54c8dd4b06ed61444f0e973cceb295a42d80e1",
+    "bausteine": "https://codeload.github.com/kasparkk/bausteine/tar.gz/b02576e99737510473880f3448db3dd8cced962c",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
