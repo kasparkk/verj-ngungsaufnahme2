@@ -18,6 +18,7 @@ import ArEntfernung, { arMoeglich } from "./ArEntfernung.jsx";
 import { useT, zahlOrt } from "../sprache.js";
 import { stups, FESTGEHALTEN, FERTIG } from "../stups.js";
 import Markiert from "../komponenten/Markiert.jsx";
+import { kamera } from "bausteine/kamera";
 
 /* Hoehenmessung mit dem Neigungssensor des Handys.
 
@@ -78,7 +79,6 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
      Schalter - so laesst er sich beliebig oft anstossen. */
   const [kameraVersuch, setKameraVersuch] = useState(0);
   const videoRef = useRef(null);
-  const stromRef = useRef(null);
 
   /* Der Sensor liefert auf Android etwa 60 Werte je Sekunde. Jeder davon
      hat bisher den ganzen Messer neu gezeichnet - mitsamt Sucherbild,
@@ -196,74 +196,12 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
        ohnehin nicht mehr. Wird einer der Winkel neu angepeilt, faellt
        messungSteht zurueck und der Sucher startet von selbst. */
     if (!offen || messungSteht) return;
-    let abgebrochen = false;
-
-    const starten = async () => {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setKamera("nein");
-        return;
-      }
-      try {
-        const strom = await navigator.mediaDevices.getUserMedia({
-          /* Mit Groesse und Bildrate gefragt: Ohne diese Bitte liefern
-             manche Geraete 1080p oder mehr. Fuer ein Fadenkreuz auf einem
-             Handybildschirm ist das verschwendete Rechenzeit - und genau
-             die fehlt dann beim Zeichnen der Neigung. */
-          video: {
-            facingMode: { ideal: "environment" },
-            width: { ideal: 1280 },
-            height: { ideal: 960 },
-            frameRate: { ideal: 30, max: 30 },
-          },
-          audio: false,
-        });
-        if (abgebrochen) {
-          strom.getTracks().forEach((spur) => spur.stop());
-          return;
-        }
-        stromRef.current = strom;
-        if (videoRef.current) {
-          videoRef.current.srcObject = strom;
-          /* autoPlay allein genuegt nicht ueberall: Nach dem Zurueckkommen
-             aus dem Hintergrund bleibt das Bild sonst stehen. */
-          videoRef.current.play?.().catch(() => {});
-        }
-        setKamera("laeuft");
-      } catch {
-        if (!abgebrochen) setKamera("nein");
-      }
-    };
-    starten();
-
-    /* Der Strom MUSS beim Schliessen angehalten werden. Sonst laeuft die
-       Kamera im Hintergrund weiter, das Laempchen bleibt an und der Akku
-       geht im Bestand unnoetig drauf. */
-    return () => {
-      abgebrochen = true;
-      stromRef.current?.getTracks().forEach((spur) => spur.stop());
-      stromRef.current = null;
-    };
+    // Start, Groessenbitte, Ausschalten und Neustart nach dem Hintergrund
+    // uebernimmt der Baustein "kamera". Der Strom MUSS beim Schliessen
+    // angehalten werden, sonst laeuft die Kamera im Hintergrund weiter.
+    const sucher = kamera(() => videoRef.current, { aenderung: setKamera });
+    return () => sucher.stop();
   }, [offen, kameraVersuch, messungSteht]);
-
-  /* Zurueck aus dem Hintergrund: Android beendet die Kameraspur, wenn die
-     App weggeschaltet oder der Bildschirm gesperrt wird. Der Sucher bliebe
-     danach schwarz, ohne dass etwas darauf hinweist - gemeldet als "the
-     camera thing doesn't work that well". Also neu starten, sobald die
-     Seite wieder vorne ist. */
-  useEffect(() => {
-    if (!offen) return;
-    const wieder = () => {
-      if (document.visibilityState !== "visible") return;
-      const spur = stromRef.current?.getVideoTracks?.()[0];
-      if (!spur || spur.readyState === "ended" || spur.muted) {
-        setKameraVersuch((n) => n + 1);
-      } else {
-        videoRef.current?.play?.().catch(() => {});
-      }
-    };
-    document.addEventListener("visibilitychange", wieder);
-    return () => document.removeEventListener("visibilitychange", wieder);
-  }, [offen]);
 
   /* Alles zuruecksetzen, was zu DIESEM Baum gehoert - beim Schliessen,
      und nur dann.
@@ -279,8 +217,6 @@ export default function Hoehenmesser({ offen, onSchliessen, onUebernehmen, ueber
      loeschen. */
   useEffect(() => {
     if (offen) return;
-    stromRef.current?.getTracks().forEach((spur) => spur.stop());
-    stromRef.current = null;
     setKamera("unbekannt");
     rohwerte.current = [];
     letzteAnzeige.current = 0;
