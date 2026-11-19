@@ -70,7 +70,8 @@
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     <script>
-      if ("serviceWorker" in navigator) {
+      // In der Android-App (Capacitor) liegen die Dateien schon im Paket, dort kein Service Worker.
+      if ("serviceWorker" in navigator && !window.Capacitor) {
         // Lief hier schon eine Fassung? Dann ist ein Wechsel ein echtes Update.
         var hatteController = !!navigator.serviceWorker.controller;
         var laedtNeu = false;
