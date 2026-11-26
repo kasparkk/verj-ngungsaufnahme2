@@ -664,12 +664,8 @@ export const WOERTER = {
     "{was} copied",
   "PERSON":
     "PERSON",
-  "Person zurück":
-    "Previous person",
   "Gewählte Person":
     "Chosen person",
-  "Person weiter":
-    "Next person",
   "Lage der Probekreise zueinander, Norden oben – ohne Kartenhintergrund, damit es auch ohne Empfang funktioniert.":
     "The sample plots relative to each other, north up – without a map background, so it works without reception too.",
   "Für diesen Tag ist noch kein Standort erfasst. Beim Probekreis oben auf „📍 Standort erfassen“ tippen.":
